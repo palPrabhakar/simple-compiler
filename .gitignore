@@ -33,3 +33,7 @@
 
 # Directories
 build/
+.cache/
+
+# Misc
+compile_commands.json

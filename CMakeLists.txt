@@ -16,10 +16,11 @@ FetchContent_Declare(
 FetchContent_MakeAvailable(sjp)
 
 # Source Files
-file(GLOB_RECURSE SOURCES "src/*.cpp" "include/*.h")
+file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Executable Target
 add_executable(sc ${SOURCES})
+target_include_directories(sc PRIVATE include/)
 target_link_libraries(sc sjp)
 
 # Enable Testing only in Debug mode
