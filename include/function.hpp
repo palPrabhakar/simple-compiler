@@ -20,6 +20,10 @@ class Function {
         args.push_back(std::move(operand));
     }
 
+    void AddInstructions(std::unique_ptr<InstructionBase> instr) {
+        instructions.push_back(std::move(instr));
+    }
+
     std::string GetName() const { return name; }
 
   private:

@@ -1,5 +1,9 @@
 #pragma once
 
+#define OP_CODE_STR ""
+
+#define ADD_OP_CODE(x) OP_CODE_STR##x,
+
 // clang-format off
 enum class OpCode {
     // Arithmetic
@@ -7,42 +11,35 @@ enum class OpCode {
     MUL,
     SUB,
     DIV,
-
     // Comparison
     EQ,
     LT,
     GT,
     LE,
     GE,
-
     // Logic
     NOT,
     AND,
     OR,
-
     // Control
     JMP,
     BR,
     CALL,
     RET,
-
     // Miscellaneous
     ID,
     PRINT,
     CONST,
     NOP,
-
     // SSA
     SET,
     GET,
-
     // Memory
     ALLOC,
     FREE,
     LOAD,
     STORE,
     PTRADD,
-
     // Floating
     FADD,
     FMUL,

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cassert>
 #include <memory>
 #include <type_traits>
 
@@ -9,7 +10,8 @@ namespace sc {
 enum class DataType {
     INT,
     BOOL,
-    FLOAT
+    FLOAT,
+    LABEL
 };
 // clang-format on
 
@@ -31,6 +33,14 @@ class RegOperand : public OperandBase {
     RegOperand(DataType _type) : OperandBase(_type) {}
 };
 
+class LabelOperand : public OperandBase {
+  public:
+    LabelOperand(DataType _type = DataType::LABEL) : OperandBase(_type) {
+        assert(_type == DataType::LABEL &&
+               "DataType not LABEL for LabelOperand\n");
+    }
+};
+
 template <typename T> class ImmedOperand : public OperandBase {
   public:
     ImmedOperand(DataType _type) : OperandBase(_type), val(T{}) {}
@@ -40,13 +50,4 @@ template <typename T> class ImmedOperand : public OperandBase {
   private:
     T val;
 };
-
-template <typename T>
-concept OperandType = std::is_base_of_v<OperandBase, T>;
-
-template <OperandType T>
-std::shared_ptr<OperandBase> MakeOperand(std::string type_str) {
-    DataType type = GetDataTypeFromStr(type_str);
-    return std::make_shared<T>(type);
-}
 } // namespace sc
