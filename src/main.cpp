@@ -4,7 +4,7 @@
 #include <iostream>
 
 namespace sc {
-Program Parse(sjp::Json);
+std::unique_ptr<Program> ParseProgram(sjp::Json);
 }
 
 int main(int argc, char *argv[]) {
@@ -14,6 +14,6 @@ int main(int argc, char *argv[]) {
     std::ifstream ifs(argv[1]);
     auto json_parser = sjp::Parser(ifs);
     auto data = json_parser.Parse();
-    auto program = sc::Parse(data);
+    auto program = sc::ParseProgram(data);
     return 0;
 }

@@ -20,6 +20,7 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Executable Target
 add_executable(sc ${SOURCES})
+target_compile_options(sc PRIVATE -Wall -Wextra -Wpedantic -O0 -g)
 target_include_directories(sc PRIVATE include/)
 target_link_libraries(sc sjp)
 

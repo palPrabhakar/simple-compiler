@@ -1,68 +1,33 @@
 #pragma once
+#include "OpCodes.hpp"
+#include "operands.hpp"
+#include <memory>
 
-// clang-format off
-enum class OpCodes {
-    // Arithmetic
-    ADD,
-    MUL,
-    SUB,
-    DIV,
-
-    // Comparison
-    EQ,
-    LT,
-    GT,
-    LE,
-    GE,
-
-    // Logic
-    NOT,
-    AND,
-    OR,
-
-    // Control
-    JMP,
-    BR,
-    CALL,
-    RET,
-
-    // Miscellaneous
-    ID,
-    PRINT,
-    CONST,
-    NOP,
-
-    // SSA
-    SET,
-    GET,
-
-    // Memory
-    ALLOC,
-    FREE,
-    LOAD,
-    STORE,
-    PTRADD,
-
-    // Floating
-    FADD,
-    FMUL,
-    FSUB,
-    FDIV,
-
-    // FComparisons
-    FEQ,
-    FLT,
-    FLE,
-    FGT,
-    FGE
-};
-// clang-format on
-
+namespace sc {
 class InstructionBase {
   public:
-    virtual void emit_code_str();
     virtual ~InstructionBase();
 
   protected:
-    InstructionBase() = delete;
+    InstructionBase(OpCode _op_code) : op_code(_op_code) {}
+
+  private:
+    OpCode op_code;
 };
+
+class UnaryInstruction : public InstructionBase {
+  public:
+    UnaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
+
+  private:
+    std::weak_ptr<OperandBase> operands[2];
+};
+
+class BinaryInstruction : public InstructionBase {
+  public:
+    BinaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
+
+  private:
+    std::weak_ptr<OperandBase> operands[3];
+};
+} // namespace sc
