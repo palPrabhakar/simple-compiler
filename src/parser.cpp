@@ -5,9 +5,9 @@
 #include "operands.hpp"
 #include "program.hpp"
 #include <format>
-#include <iostream>
 #include <memory>
 #include <optional>
+#include <stdexcept>
 #include <string>
 #include <unordered_map>
 
@@ -50,9 +50,8 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
                       std::string type_str, sym_tbl &tbl) {
     // One single ImmedOperand represents every instance of that constant
     T value = GetJsonValue<T>(instr.Get("value").value());
-    auto dest = instr.Get("dest")->Get<std::string>().value();
-    std::string sym_name = "_$K_" + type_str + "_" + std::to_string(value);
     auto instr_ptr = std::make_unique<ConstInstruction>();
+    auto dest = instr.Get("dest")->Get<std::string>().value();
     if (tbl.contains(dest)) {
         // dest already exists
         instr_ptr->SetOperand(tbl[dest], 0);
@@ -63,6 +62,7 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(dest_oprnd, 0);
         func->AddOperand(std::move(dest_oprnd));
     }
+    std::string sym_name = "_$K_" + type_str + "_" + std::to_string(value);
     if (tbl.contains(sym_name)) {
         // Const already exists
         instr_ptr->SetOperand(tbl[sym_name], 1);
@@ -98,6 +98,39 @@ std::unique_ptr<Function> MakeConstInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
+std::unique_ptr<Function>
+MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
+                          sjp::Json &instr, sym_tbl &symbols) {
+
+    auto instr_ptr = std::make_unique<ArithmeticInstruction>(opcode);
+    auto dest = instr.Get("dest")->Get<std::string>().value();
+    auto type_str = instr.Get("type")->Get<std::string>().value();
+    DataType type = GetDataTypeFromStr(type_str);
+    if (symbols.contains(dest)) {
+        // dest already exists
+        instr_ptr->SetOperand(symbols[dest], 0);
+    } else {
+        // create new dest reg operand
+        auto dest_oprnd = std::make_shared<RegOperand>(type);
+        symbols[dest] = dest_oprnd;
+        instr_ptr->SetOperand(dest_oprnd, 0);
+        func->AddOperand(std::move(dest_oprnd));
+    }
+    auto args = instr.Get("args").value();
+    assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
+    for (size_t i = 0; i < args.Size(); ++i) {
+        auto arg = args.Get(i)->Get<std::string>().value();
+        if (!symbols.contains(arg)) {
+            throw std::runtime_error(
+                std::format("Error parsing function {} instructions."
+                            "Use of an undefine operand {} found.\n",
+                            func->GetName(), arg));
+        }
+        instr_ptr->SetOperand(symbols[arg], i + 1);
+    }
+    return func;
+}
+
 std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
                                             sjp::Json &instr,
                                             sym_tbl &symbols) {
@@ -106,6 +139,10 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     switch (opcode) {
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
+    case OpCode::ADD:
+        return MakeArithmeticInstruction(std::move(func), opcode, instr,
+                                         symbols);
+        break;
     default:
         break;
     }

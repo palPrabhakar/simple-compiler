@@ -68,10 +68,18 @@ class TernaryInstruction : public InstructionBase {
 class ConstInstruction : public BinaryInstruction {
     // Src is ImmedOperand
   public:
-    ConstInstruction(OpCode _op_code = OpCode::CONST)
-        : BinaryInstruction(_op_code) {
-        assert(_op_code == OpCode::CONST &&
+    ConstInstruction(OpCode _opcode = OpCode::CONST)
+        : BinaryInstruction(_opcode) {
+        assert(_opcode == OpCode::CONST &&
                "OpCode not CONST for ConstInstruction\n");
+    }
+};
+
+class ArithmeticInstruction : public TernaryInstruction {
+  public:
+    ArithmeticInstruction(OpCode _opcode) : TernaryInstruction(_opcode) {
+        assert((_opcode >= OpCode::ADD && _opcode <= OpCode::DIV) &&
+               "OpCode not for ArithmeticInstruction\n");
     }
 };
 
@@ -85,4 +93,5 @@ class CallInstruction : public InstructionBase {};
 
 class PrintInstruction : public InstructionBase {};
 
-std::unique_ptr<InstructionBase> MakeConstInstruction(sjp::Json &instr); } // namespace sc
+std::unique_ptr<InstructionBase> MakeConstInstruction(sjp::Json &instr);
+} // namespace sc

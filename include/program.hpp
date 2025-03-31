@@ -13,6 +13,12 @@ class Program {
 
     ~Program() = default;
 
+    size_t GetSize() const { return functions.size(); }
+
+    std::unique_ptr<Function>& GetFunction(size_t idx) {
+        return functions[idx];
+    }
+
   private:
     std::vector<std::unique_ptr<Function>> functions;
 };

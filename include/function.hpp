@@ -26,6 +26,10 @@ class Function {
 
     std::string GetName() const { return name; }
 
+    size_t GetInstructionSize() { return instructions.size(); }
+    size_t GetOperandSize() { return operands.size(); }
+    size_t GetArgsSize() { return args.size(); }
+
   private:
     std::vector<std::unique_ptr<InstructionBase>> instructions;
     std::vector<std::shared_ptr<OperandBase>> operands;
