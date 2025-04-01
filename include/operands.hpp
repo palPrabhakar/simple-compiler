@@ -35,10 +35,11 @@ class RegOperand : public OperandBase {
 
 class LabelOperand : public OperandBase {
   public:
-    LabelOperand(DataType _type = DataType::LABEL) : OperandBase(_type) {
-        assert(_type == DataType::LABEL &&
-               "DataType not LABEL for LabelOperand\n");
-    }
+    LabelOperand(std::string _lbl_name)
+        : OperandBase(DataType::LABEL), lbl_name(std::move(_lbl_name)) {}
+
+  private:
+    std::string lbl_name;
 };
 
 template <typename T> class ImmedOperand : public OperandBase {

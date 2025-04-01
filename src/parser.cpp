@@ -103,6 +103,9 @@ std::unique_ptr<Function>
 MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
                           sjp::Json &instr, sym_tbl &symbols) {
 
+    auto args = instr.Get("args").value();
+    assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
+
     auto instr_ptr = std::make_unique<ArithmeticInstruction>(opcode);
     auto dest = instr.Get("dest")->Get<std::string>().value();
     auto type_str = instr.Get("type")->Get<std::string>().value();
@@ -117,8 +120,6 @@ MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
         instr_ptr->SetOperand(dest_oprnd, 0);
         func->AddOperand(std::move(dest_oprnd));
     }
-    auto args = instr.Get("args").value();
-    assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
     for (size_t i = 0; i < args.Size(); ++i) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
@@ -129,6 +130,40 @@ MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
         }
         instr_ptr->SetOperand(symbols[arg], i + 1);
     }
+    func->AddInstructions(std::move(instr_ptr));
+    return func;
+}
+
+std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
+                                                sjp::Json &instr,
+                                                sym_tbl &symbols) {
+    auto labels = instr.Get("labels").value();
+    assert(labels.Size() == 2 && "Label size != 2 in MakeBranchInstruction\n");
+    auto args = instr.Get("args").value();
+    assert(args.Size() == 1 && "Argument size != 1 in MakeBranchInstruction\n");
+
+    auto instr_ptr = std::make_unique<BranchInstruction>();
+
+    for (size_t i = 0; i < labels.Size(); ++i) {
+        auto lbl = labels.Get(i)->Get<std::string>().value();
+        if (!symbols.contains(lbl)) {
+            auto operand = std::make_shared<LabelOperand>(lbl);
+            symbols[lbl] = operand;
+            instr_ptr->SetOperand(operand, i);
+            func->AddOperand(std::move(operand));
+        } else {
+            instr_ptr->SetOperand(symbols[lbl], i);
+        }
+    }
+
+    auto arg = args.Get(0)->Get<std::string>().value();
+    if (!symbols.contains(arg)) {
+        throw std::runtime_error(
+            std::format("Error parsing BranchInstruction in function {}."
+                        "Use of an undefined operand {} found.\n",
+                        func->GetName(), arg));
+    }
+
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }
@@ -145,10 +180,10 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
     for (size_t i = 0; i < args.Size(); ++i) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
-            throw std::runtime_error(std::format(
-                "Error parsing PrintInstruction in function {}."
-                "Use of an undefined operand {} found.\n",
-                func->GetName(), arg));
+            throw std::runtime_error(
+                std::format("Error parsing PrintInstruction in function {}."
+                            "Use of an undefined operand {} found.\n",
+                            func->GetName(), arg));
         }
         instr_ptr->SetOperand(symbols[arg], i);
     }
@@ -165,8 +200,18 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::ADD:
+    case OpCode::MUL:
+    case OpCode::SUB:
+    case OpCode::DIV:
+    case OpCode::EQ:
+    case OpCode::LT:
+    case OpCode::GT:
+    case OpCode::LE:
+    case OpCode::GE:
         return MakeArithmeticInstruction(std::move(func), opcode, instr,
                                          symbols);
+    case OpCode::BR:
+        return MakeBranchInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
     default:

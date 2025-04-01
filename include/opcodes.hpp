@@ -42,7 +42,6 @@ enum class OpCode {
     FMUL,
     FSUB,
     FDIV,
-
     // FComparisons
     FEQ,
     FLT,

@@ -99,6 +99,10 @@ class PrintInstruction : public InstructionBase {
 
 class BranchInstruction : public TernaryInstruction {
     // One source and two destinations
+    // Source - RegOperand
+    // Dest - LabelOperand
+  public:
+    BranchInstruction() : TernaryInstruction(OpCode::BR) {}
 };
 
 class RetInstruction : public UnaryInstruction {};
