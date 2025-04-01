@@ -14,11 +14,13 @@ class InstructionBase {
     virtual ~InstructionBase() = default;
     virtual void SetOperand(std::weak_ptr<OperandBase>, size_t) = 0;
 
+    OpCode GetOpCode() const { return opcode; }
+
   protected:
-    InstructionBase(OpCode _op_code) : op_code(_op_code) {}
+    InstructionBase(OpCode _opcode) : opcode(_opcode) {}
 
   private:
-    OpCode op_code;
+    OpCode opcode;
 };
 
 class UnaryInstruction : public InstructionBase {

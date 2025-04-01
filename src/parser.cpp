@@ -73,6 +73,7 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(src_oprnd, 1);
         func->AddOperand(std::move(src_oprnd));
     }
+    func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 
@@ -128,6 +129,7 @@ MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
         }
         instr_ptr->SetOperand(symbols[arg], i + 1);
     }
+    func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 
@@ -150,7 +152,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
         }
         instr_ptr->SetOperand(symbols[arg], i);
     }
-
+    func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 

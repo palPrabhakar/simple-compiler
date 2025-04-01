@@ -1,9 +1,6 @@
 #pragma once
 
-#define OP_CODE_STR ""
-
-#define ADD_OP_CODE(x) OP_CODE_STR##x,
-
+namespace sc {
 // clang-format off
 enum class OpCode {
     // Arithmetic
@@ -54,4 +51,4 @@ enum class OpCode {
     FGE
 };
 // clang-format on
-
+}; // namespace sc
