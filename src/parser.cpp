@@ -121,13 +121,36 @@ MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
     for (size_t i = 0; i < args.Size(); ++i) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
-            throw std::runtime_error(
-                std::format("Error parsing function {} instructions."
-                            "Use of an undefine operand {} found.\n",
-                            func->GetName(), arg));
+            throw std::runtime_error(std::format(
+                "Error parsing ArithmeticInstruction in function {}."
+                "Use of an undefined operand {} found.\n",
+                func->GetName(), arg));
         }
         instr_ptr->SetOperand(symbols[arg], i + 1);
     }
+    return func;
+}
+
+std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
+                                               sjp::Json &instr,
+                                               sym_tbl &symbols) {
+    auto args = instr.Get("args").value();
+    if (args.Size() == 0)
+        // Nothing to print
+        return func;
+
+    auto instr_ptr = std::make_unique<PrintInstruction>();
+    for (size_t i = 0; i < args.Size(); ++i) {
+        auto arg = args.Get(i)->Get<std::string>().value();
+        if (!symbols.contains(arg)) {
+            throw std::runtime_error(std::format(
+                "Error parsing PrintInstruction in function {}."
+                "Use of an undefined operand {} found.\n",
+                func->GetName(), arg));
+        }
+        instr_ptr->SetOperand(symbols[arg], i);
+    }
+
     return func;
 }
 
@@ -142,7 +165,8 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::ADD:
         return MakeArithmeticInstruction(std::move(func), opcode, instr,
                                          symbols);
-        break;
+    case OpCode::PRINT:
+        return MakePrintInstruction(std::move(func), instr, symbols);
     default:
         break;
     }
