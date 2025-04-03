@@ -13,6 +13,7 @@
 
 namespace sc {
 using sym_tbl = std::unordered_map<std::string, std::weak_ptr<OperandBase>>;
+static OpCode opcode = OpCode::NOP;
 
 template <typename T> static inline T GetJsonValue(sjp::Json json) {
     if constexpr (std::is_same_v<int, T>) {
@@ -100,8 +101,8 @@ std::unique_ptr<Function> MakeConstInstruction(std::unique_ptr<Function> func,
 }
 
 std::unique_ptr<Function>
-MakeArithmeticInstruction(std::unique_ptr<Function> func, OpCode opcode,
-                          sjp::Json &instr, sym_tbl &symbols) {
+MakeArithmeticInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
+                          sym_tbl &symbols) {
 
     auto args = instr.Get("args").value();
     assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
@@ -168,6 +169,63 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
+std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
+                                              sjp::Json &instr,
+                                              sym_tbl &symbols) {
+    auto jfuncs = instr.Get("funcs").value();
+    assert(jfuncs.Size() == 1 &&
+           "More than one function specified in CallInstruction\n");
+    auto instr_ptr = std::make_unique<CallInstruction>();
+    instr_ptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
+
+    // first do dest, since first argument
+    auto dest = instr.Get("dest")->Get<std::string>().value();
+    if (symbols.contains(dest)) {
+        // dest already exists
+        instr_ptr->SetOperand(symbols[dest], 0);
+    } else {
+        // create new dest reg operand
+        DataType type =
+            GetDataTypeFromStr(instr.Get("type")->Get<std::string>().value());
+        auto dest_oprnd = std::make_shared<RegOperand>(type);
+        symbols[dest] = dest_oprnd;
+        instr_ptr->SetOperand(dest_oprnd, 0);
+        func->AddOperand(std::move(dest_oprnd));
+    }
+
+    auto args = instr.Get("args").value();
+    for (size_t i = 0; i < args.Size(); ++i) {
+        auto arg = args.Get(i)->Get<std::string>().value();
+        if (!symbols.contains(arg)) {
+            throw std::runtime_error(
+                std::format("Error parsing CallInstruction in function {}."
+                            "Use of an undefined operand {} found.\n",
+                            func->GetName(), arg));
+        }
+        instr_ptr->SetOperand(symbols[arg], i + 1);
+    }
+    func->AddInstructions(std::move(instr_ptr));
+    return func;
+}
+
+std::unique_ptr<Function> MakeRetInstruction(std::unique_ptr<Function> func,
+                                             sjp::Json &instr,
+                                             sym_tbl &symbols) {
+    auto args = instr.Get("args").value();
+    assert(args.Size() == 1 && "More than one return value specified\n");
+    auto instr_ptr = std::make_unique<RetInstruction>();
+    auto arg = args.Get(0)->Get<std::string>().value();
+    if (!symbols.contains(arg)) {
+        throw std::runtime_error(
+            std::format("Error parsing RetInstruction in function {}."
+                        "Use of an undefined return-value {} found.\n",
+                        func->GetName(), arg));
+    }
+    instr_ptr->SetOperand(symbols[arg], 0);
+    func->AddInstructions(std::move(instr_ptr));
+    return func;
+}
+
 std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
                                                sjp::Json &instr,
                                                sym_tbl &symbols) {
@@ -191,11 +249,38 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
+std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
+                                               sjp::Json &instr,
+                                               sym_tbl &symbols) {
+    auto lbl = instr.Get("label")->Get<std::string>().value();
+    auto instr_ptr = std::make_unique<LabelInstruction>();
+    if (!symbols.contains(lbl)) {
+        auto operand = std::make_shared<LabelOperand>(lbl);
+        symbols[lbl] = operand;
+        instr_ptr->SetOperand(operand, 0);
+        func->AddOperand(std::move(operand));
+    } else {
+        instr_ptr->SetOperand(symbols[lbl], 0);
+    }
+    func->AddInstructions(std::move(instr_ptr));
+    return func;
+}
+
 std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
                                             sjp::Json &instr,
                                             sym_tbl &symbols) {
-    auto opcode_str = instr.Get("op")->Get<std::string>().value();
-    OpCode opcode = GetOpCodeFromStr(opcode_str);
+    auto opcode_str = instr.Get("op");
+    if (opcode_str == std::nullopt) {
+        if (instr.Get("label") == std::nullopt) {
+            throw std::runtime_error(
+                std::format("Error parsing function {}. "
+                            "No valid instructions found.\n",
+                            func->GetName()));
+        }
+        opcode = OpCode::LABEL;
+    } else {
+        opcode = GetOpCodeFromStr(opcode_str->Get<std::string>().value());
+    }
     switch (opcode) {
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
@@ -208,10 +293,15 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::GT:
     case OpCode::LE:
     case OpCode::GE:
-        return MakeArithmeticInstruction(std::move(func), opcode, instr,
-                                         symbols);
+        return MakeArithmeticInstruction(std::move(func), instr, symbols);
     case OpCode::BR:
         return MakeBranchInstruction(std::move(func), instr, symbols);
+    case OpCode::CALL:
+        return MakeCallInstruction(std::move(func), instr, symbols);
+    case OpCode::RET:
+        return MakeRetInstruction(std::move(func), instr, symbols);
+    case OpCode::LABEL:
+        return MakeLabelInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
     default:

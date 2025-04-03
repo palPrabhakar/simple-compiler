@@ -47,7 +47,9 @@ enum class OpCode {
     FLT,
     FLE,
     FGT,
-    FGE
+    FGE,
+    // Misc
+    LABEL
 };
 // clang-format on
 }; // namespace sc
