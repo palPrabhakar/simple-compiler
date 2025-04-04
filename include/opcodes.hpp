@@ -15,9 +15,9 @@ enum class OpCode {
     LE,
     GE,
     // Logic
-    NOT,
     AND,
     OR,
+    NOT,
     // Control
     JMP,
     BR,
