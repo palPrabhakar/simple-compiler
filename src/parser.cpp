@@ -5,7 +5,6 @@
 #include "operands.hpp"
 #include "program.hpp"
 #include <format>
-#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -137,13 +136,31 @@ std::unique_ptr<Function> MakeTernaryInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
+std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
+                                             sjp::Json &instr,
+                                             sym_tbl &symbols) {
+    auto labels = instr.Get("labels").value();
+    assert(labels.Size() == 1 && "Label size != 1 in JmpInstruction\n");
+    auto instr_ptr = std::make_unique<BranchInstruction>();
+    auto lbl = labels.Get(0)->Get<std::string>().value();
+    if (!symbols.contains(lbl)) {
+        auto operand = std::make_shared<LabelOperand>(lbl);
+        symbols[lbl] = operand;
+        instr_ptr->SetOperand(operand, 0);
+        func->AddOperand(std::move(operand));
+    } else {
+        instr_ptr->SetOperand(symbols[lbl], 0);
+    }
+    return func;
+}
+
 std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
                                                 sjp::Json &instr,
                                                 sym_tbl &symbols) {
     auto labels = instr.Get("labels").value();
-    assert(labels.Size() == 2 && "Label size != 2 in MakeBranchInstruction\n");
+    assert(labels.Size() == 2 && "Label size != 2 in BranchInstruction\n");
     auto args = instr.Get("args").value();
-    assert(args.Size() == 1 && "Argument size != 1 in MakeBranchInstruction\n");
+    assert(args.Size() == 1 && "Argument size != 1 in BranchInstruction\n");
 
     auto instr_ptr = std::make_unique<BranchInstruction>();
 
@@ -284,8 +301,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         opcode = GetOpCodeFromStr(opcode_str->Get<std::string>().value());
     }
     switch (opcode) {
-    case OpCode::CONST:
-        return MakeConstInstruction(std::move(func), instr, symbols);
+    // Arithmetic Instructions
     case OpCode::ADD:
         return MakeTernaryInstruction<AddInstruction>(std::move(func), instr,
                                                       symbols);
@@ -298,6 +314,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::DIV:
         return MakeTernaryInstruction<DivInstruction>(std::move(func), instr,
                                                       symbols);
+    // Comparison Instructions
     case OpCode::EQ:
         return MakeTernaryInstruction<EqInstruction>(std::move(func), instr,
                                                      symbols);
@@ -313,19 +330,73 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::GE:
         return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
                                                      symbols);
+    // Logic Instructions
+    case OpCode::AND:
+        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
+                                                     symbols);
+    case OpCode::OR:
+        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
+                                                     symbols);
+    case OpCode::NOT:
+        assert(false && "todo not\n");
+    // Control Instructions
+    case OpCode::JMP:
+        return MakeJmpInstruction(std::move(func), instr, symbols);
+        break;
     case OpCode::BR:
         return MakeBranchInstruction(std::move(func), instr, symbols);
     case OpCode::CALL:
         return MakeCallInstruction(std::move(func), instr, symbols);
     case OpCode::RET:
         return MakeRetInstruction(std::move(func), instr, symbols);
-    case OpCode::LABEL:
-        return MakeLabelInstruction(std::move(func), instr, symbols);
+    // SSA Instructions
+    case OpCode::SET:
+        assert(false && "todo set\n");
+    case OpCode::GET:
+        assert(false && "todo get\n");
+    // Memory Instructions
+    case OpCode::ALLOC:
+        assert(false && "todo alloc\n");
+    case OpCode::FREE:
+        assert(false && "todo free\n");
+    case OpCode::LOAD:
+        assert(false && "todo load\n");
+    case OpCode::STORE:
+        assert(false && "todo store\n");
+    case OpCode::PTRADD:
+        assert(false && "todo ptradd\n");
+    // Floating Instructions
+    case OpCode::FADD:
+        assert(false && "todo fadd\n");
+    case OpCode::FMUL:
+        assert(false && "todo fmul");
+    case OpCode::FSUB:
+        assert(false && "todo fsub\n");
+    case OpCode::FDIV:
+        assert(false && "todo fdiv\n");
+    // Floating Comparisons
+    case OpCode::FEQ:
+        assert(false && "todo feq\n");
+    case OpCode::FLT:
+        assert(false && "todo flt");
+    case OpCode::FLE:
+        assert(false && "todo fle\n");
+    case OpCode::FGT:
+        assert(false && "todo fgt\n");
+    case OpCode::FGE:
+        assert(false && "todo fge\n");
+    // Miscellaneous Instructions
+    case OpCode::ID:
+        assert(false && "todo id\n");
+    case OpCode::CONST:
+        return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
+    case OpCode::LABEL:
+        return MakeLabelInstruction(std::move(func), instr, symbols);
+    case OpCode::NOP:
+        assert(false && "todo nop\n");
     default:
-        std::cerr << opcode_str->Get<std::string>().value_or("invalid opcode\n")
-                  << "\n";
         assert(false && "Invalid opcode\n");
     }
     return nullptr;
