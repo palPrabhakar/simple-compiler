@@ -100,13 +100,13 @@ std::unique_ptr<Function> MakeConstInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
-template <typename T>
-std::unique_ptr<Function> MakeTernaryInstruction(std::unique_ptr<Function> func,
-                                                 sjp::Json &instr,
-                                                 sym_tbl &symbols) {
+template <typename T, size_t argSize = 2>
+std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
+                                          sjp::Json &instr, sym_tbl &symbols) {
 
     auto args = instr.Get("args").value();
-    assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
+    assert(args.Size() == argSize &&
+           "Arithmetic operator size not equal to 2\n");
 
     auto instr_ptr = std::make_unique<T>();
     auto dest = instr.Get("dest")->Get<std::string>().value();
@@ -303,42 +303,32 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     switch (opcode) {
     // Arithmetic Instructions
     case OpCode::ADD:
-        return MakeTernaryInstruction<AddInstruction>(std::move(func), instr,
-                                                      symbols);
+        return MakeInstruction<AddInstruction>(std::move(func), instr, symbols);
     case OpCode::MUL:
-        return MakeTernaryInstruction<MulInstruction>(std::move(func), instr,
-                                                      symbols);
+        return MakeInstruction<MulInstruction>(std::move(func), instr, symbols);
     case OpCode::SUB:
-        return MakeTernaryInstruction<SubInstruction>(std::move(func), instr,
-                                                      symbols);
+        return MakeInstruction<SubInstruction>(std::move(func), instr, symbols);
     case OpCode::DIV:
-        return MakeTernaryInstruction<DivInstruction>(std::move(func), instr,
-                                                      symbols);
+        return MakeInstruction<DivInstruction>(std::move(func), instr, symbols);
     // Comparison Instructions
     case OpCode::EQ:
-        return MakeTernaryInstruction<EqInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<EqInstruction>(std::move(func), instr, symbols);
     case OpCode::LT:
-        return MakeTernaryInstruction<LtInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<LtInstruction>(std::move(func), instr, symbols);
     case OpCode::GT:
-        return MakeTernaryInstruction<GtInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<GtInstruction>(std::move(func), instr, symbols);
     case OpCode::LE:
-        return MakeTernaryInstruction<LeInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<LeInstruction>(std::move(func), instr, symbols);
     case OpCode::GE:
-        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
     // Logic Instructions
     case OpCode::AND:
-        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
     case OpCode::OR:
-        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
-                                                     symbols);
+        return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
     case OpCode::NOT:
-        assert(false && "todo not\n");
+        return MakeInstruction<NotInstruction, 1>(std::move(func), instr,
+                                                  symbols);
     // Control Instructions
     case OpCode::JMP:
         return MakeJmpInstruction(std::move(func), instr, symbols);
@@ -387,7 +377,8 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         assert(false && "todo fge\n");
     // Miscellaneous Instructions
     case OpCode::ID:
-        assert(false && "todo id\n");
+        return MakeInstruction<IdInstruction, 1>(std::move(func), instr,
+                                                 symbols);
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:

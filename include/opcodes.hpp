@@ -47,8 +47,8 @@ enum class OpCode {
     ID,
     CONST,
     PRINT,
-    NOP,
-    LABEL
+    LABEL,
+    NOP
 };
 // clang-format on
 }; // namespace sc

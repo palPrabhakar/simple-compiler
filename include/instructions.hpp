@@ -162,9 +162,9 @@ class RetInstruction : public UnaryInstruction {
 };
 
 // Miscellaneous Instructions
-class IdInstruction : public InstructionBase {
+class IdInstruction : public BinaryInstruction {
   public:
-    IdInstruction() : InstructionBase(OpCode::ID) {}
+    IdInstruction() : BinaryInstruction(OpCode::ID) {}
 };
 
 class ConstInstruction : public BinaryInstruction {
