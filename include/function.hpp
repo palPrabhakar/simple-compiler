@@ -13,12 +13,10 @@ class Function {
     Function(std::string _name) : name(_name) {}
     ~Function() = default;
 
-    void AddOperand(std::shared_ptr<OperandBase> operand) {
+    void AddOperand(std::unique_ptr<OperandBase> operand) {
         operands.push_back(std::move(operand));
     }
-    void AddArgs(std::weak_ptr<OperandBase> operand) {
-        args.push_back(std::move(operand));
-    }
+    void AddArgs(OperandBase *operand) { args.push_back(std::move(operand)); }
     void AddInstructions(std::unique_ptr<InstructionBase> instr) {
         instructions.push_back(std::move(instr));
     }
@@ -29,16 +27,16 @@ class Function {
     std::unique_ptr<InstructionBase> &GetInstruction(size_t idx) {
         return instructions[idx];
     }
-    std::weak_ptr<OperandBase> GetOperand(size_t idx) { return operands[idx]; }
-    std::weak_ptr<OperandBase> GetArgs(size_t idx) { return args[idx]; }
+    OperandBase *GetOperand(size_t idx) { return operands[idx].get(); }
+    OperandBase *GetArgs(size_t idx) { return args[idx]; }
     size_t GetInstructionSize() { return instructions.size(); }
     size_t GetOperandSize() { return operands.size(); }
     size_t GetArgsSize() { return args.size(); }
 
   private:
     std::vector<std::unique_ptr<InstructionBase>> instructions;
-    std::vector<std::shared_ptr<OperandBase>> operands;
-    std::vector<std::weak_ptr<OperandBase>> args;
+    std::vector<std::unique_ptr<OperandBase>> operands;
+    std::vector<OperandBase *> args;
     std::string name;
 };
 } // namespace sc

@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 namespace sc {
-using sym_tbl = std::unordered_map<std::string, std::weak_ptr<OperandBase>>;
+using sym_tbl = std::unordered_map<std::string, OperandBase*>;
 static OpCode opcode = OpCode::NOP;
 
 template <typename T> static inline T GetJsonValue(sjp::Json json) {
@@ -37,9 +37,9 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
                             "Redeclaration of argument name {}\n",
                             func->GetName(), name));
         }
-        auto operand = std::make_shared<RegOperand>(GetDataTypeFromStr(type), name);
-        func->AddArgs(operand);
-        symbols[name] = operand;
+        auto operand = std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
+        func->AddArgs(operand.get());
+        symbols[name] = operand.get();
         func->AddOperand(std::move(operand));
     }
     return func;
@@ -58,9 +58,9 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(tbl[dest], 0);
     } else {
         // create new dest reg operand
-        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
-        tbl[dest] = dest_oprnd;
-        instr_ptr->SetOperand(dest_oprnd, 0);
+        auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
+        tbl[dest] = dest_oprnd.get();
+        instr_ptr->SetOperand(dest_oprnd.get(), 0);
         func->AddOperand(std::move(dest_oprnd));
     }
     std::string sym_name = "_$K_" + type_str + "_" + std::to_string(value);
@@ -69,9 +69,9 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(tbl[sym_name], 1);
     } else {
         // Create new Immed Operand
-        auto src_oprnd = std::make_shared<ImmedOperand<T>>(type, sym_name, value);
-        tbl[sym_name] = src_oprnd;
-        instr_ptr->SetOperand(src_oprnd, 1);
+        auto src_oprnd = std::make_unique<ImmedOperand<T>>(type, sym_name, value);
+        tbl[sym_name] = src_oprnd.get();
+        instr_ptr->SetOperand(src_oprnd.get(), 1);
         func->AddOperand(std::move(src_oprnd));
     }
     func->AddInstructions(std::move(instr_ptr));
@@ -117,9 +117,9 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(symbols[dest], 0);
     } else {
         // create new dest reg operand
-        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
-        symbols[dest] = dest_oprnd;
-        instr_ptr->SetOperand(dest_oprnd, 0);
+        auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
+        symbols[dest] = dest_oprnd.get();
+        instr_ptr->SetOperand(dest_oprnd.get(), 0);
         func->AddOperand(std::move(dest_oprnd));
     }
     for (size_t i = 0; i < args.Size(); ++i) {
@@ -144,9 +144,9 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
     auto instr_ptr = std::make_unique<BranchInstruction>();
     auto lbl = labels.Get(0)->Get<std::string>().value();
     if (!symbols.contains(lbl)) {
-        auto operand = std::make_shared<LabelOperand>(lbl);
-        symbols[lbl] = operand;
-        instr_ptr->SetOperand(operand, 0);
+        auto operand = std::make_unique<LabelOperand>(lbl);
+        symbols[lbl] = operand.get();
+        instr_ptr->SetOperand(operand.get(), 0);
         func->AddOperand(std::move(operand));
     } else {
         instr_ptr->SetOperand(symbols[lbl], 0);
@@ -167,9 +167,9 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     for (size_t i = 0; i < labels.Size(); ++i) {
         auto lbl = labels.Get(i)->Get<std::string>().value();
         if (!symbols.contains(lbl)) {
-            auto operand = std::make_shared<LabelOperand>(lbl);
-            symbols[lbl] = operand;
-            instr_ptr->SetOperand(operand, i);
+            auto operand = std::make_unique<LabelOperand>(lbl);
+            symbols[lbl] = operand.get();
+            instr_ptr->SetOperand(operand.get(), i);
             func->AddOperand(std::move(operand));
         } else {
             instr_ptr->SetOperand(symbols[lbl], i);
@@ -206,9 +206,9 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
         // create new dest reg operand
         DataType type =
             GetDataTypeFromStr(instr.Get("type")->Get<std::string>().value());
-        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
-        symbols[dest] = dest_oprnd;
-        instr_ptr->SetOperand(dest_oprnd, 0);
+        auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
+        symbols[dest] = dest_oprnd.get();
+        instr_ptr->SetOperand(dest_oprnd.get(), 0);
         func->AddOperand(std::move(dest_oprnd));
     }
 
@@ -274,9 +274,9 @@ std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
     auto lbl = instr.Get("label")->Get<std::string>().value();
     auto instr_ptr = std::make_unique<LabelInstruction>();
     if (!symbols.contains(lbl)) {
-        auto operand = std::make_shared<LabelOperand>(lbl);
-        symbols[lbl] = operand;
-        instr_ptr->SetOperand(operand, 0);
+        auto operand = std::make_unique<LabelOperand>(lbl);
+        symbols[lbl] = operand.get();
+        instr_ptr->SetOperand(operand.get(), 0);
         func->AddOperand(std::move(operand));
     } else {
         instr_ptr->SetOperand(symbols[lbl], 0);

@@ -17,7 +17,7 @@ class InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) = 0;
 
-    virtual void SetOperand(std::weak_ptr<OperandBase> oprnd, size_t idx) {
+    virtual void SetOperand(OperandBase* oprnd, size_t idx) {
         if (idx < operands.size()) {
             operands[idx] = std::move(oprnd);
         } else {
@@ -25,7 +25,7 @@ class InstructionBase {
         }
     }
 
-    std::weak_ptr<OperandBase> GetOperand(size_t idx) {
+    OperandBase* GetOperand(size_t idx) {
         assert(idx < operands.size());
         return operands[idx];
     }
@@ -34,7 +34,7 @@ class InstructionBase {
 
   protected:
     InstructionBase(OpCode _opcode) : opcode(_opcode) {}
-    std::vector<std::weak_ptr<OperandBase>> operands;
+    std::vector<OperandBase *> operands; // non-owning pointers
 
   private:
     OpCode opcode;
@@ -46,7 +46,7 @@ class UnaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(std::weak_ptr<OperandBase> oprnd,
+    virtual void SetOperand(OperandBase* oprnd,
                             size_t idx) override {
         assert(idx == 0 && "UnaryInstruction::SetOperand invalid index\n");
         InstructionBase::SetOperand(std::move(oprnd), 0);
@@ -59,7 +59,7 @@ class BinaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(std::weak_ptr<OperandBase> oprnd,
+    virtual void SetOperand(OperandBase* oprnd,
                             size_t idx) override {
         assert((idx == 0 || idx == 1) &&
                "BinaryInstruction::SetOperand invalid index\n");
@@ -73,7 +73,7 @@ class TernaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(std::weak_ptr<OperandBase> oprnd,
+    virtual void SetOperand(OperandBase* oprnd,
                             size_t idx) override {
         assert((idx == 0 || idx == 1 || idx == 2) &&
                "BinaryInstruction::SetOperand invalid index\n");
