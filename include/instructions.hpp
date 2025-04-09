@@ -3,7 +3,6 @@
 #include "operands.hpp"
 #include <cassert>
 #include <iostream>
-#include <memory>
 #include <ostream>
 #include <vector>
 
@@ -17,7 +16,7 @@ class InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) = 0;
 
-    virtual void SetOperand(OperandBase* oprnd, size_t idx) {
+    virtual void SetOperand(OperandBase *oprnd, size_t idx) {
         if (idx < operands.size()) {
             operands[idx] = std::move(oprnd);
         } else {
@@ -25,7 +24,7 @@ class InstructionBase {
         }
     }
 
-    OperandBase* GetOperand(size_t idx) {
+    OperandBase *GetOperand(size_t idx) {
         assert(idx < operands.size());
         return operands[idx];
     }
@@ -46,8 +45,7 @@ class UnaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(OperandBase* oprnd,
-                            size_t idx) override {
+    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
         assert(idx == 0 && "UnaryInstruction::SetOperand invalid index\n");
         InstructionBase::SetOperand(std::move(oprnd), 0);
     }
@@ -59,8 +57,7 @@ class BinaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(OperandBase* oprnd,
-                            size_t idx) override {
+    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
         assert((idx == 0 || idx == 1) &&
                "BinaryInstruction::SetOperand invalid index\n");
         InstructionBase::SetOperand(std::move(oprnd), idx);
@@ -73,8 +70,7 @@ class TernaryInstruction : public InstructionBase {
 
     virtual void Dump(std::ostream &out = std::cout) override = 0;
 
-    virtual void SetOperand(OperandBase* oprnd,
-                            size_t idx) override {
+    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
         assert((idx == 0 || idx == 1 || idx == 2) &&
                "BinaryInstruction::SetOperand invalid index\n");
         InstructionBase::SetOperand(std::move(oprnd), idx);
@@ -86,7 +82,14 @@ class AddInstruction final : public TernaryInstruction {
   public:
     AddInstruction() : TernaryInstruction(OpCode::ADD) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        auto dest = GetOperand(0);
+        auto src0 = GetOperand(1);
+        auto src1 = GetOperand(2);
+        auto type = GetStrDataType(dest->GetType());
+        out << dest->GetName() << ":" << " " << type << " = add "
+            << src0->GetName() << " " << src1->GetName() << ";\n";
+    }
 };
 
 class MulInstruction final : public TernaryInstruction {
@@ -224,9 +227,24 @@ class ConstInstruction final : public BinaryInstruction {
     void Dump(std::ostream &out = std::cout) override {
         auto dest = GetOperand(0);
         auto src = GetOperand(1);
-        // out<<dest->GetName()<<":"<<" "<<type<<" = const";
-        // switch(src->GetType()) {
-        // }
+        auto type = GetStrDataType(dest->GetType());
+        out << dest->GetName() << ":" << " " << type << " = const ";
+        switch (src->GetType()) {
+        case DataType::INT: {
+            auto int_src = static_cast<ImmedOperand<int> *>(src);
+            out << int_src->GetValue();
+        } break;
+        case DataType::FLOAT:
+            assert(false && "todo float\n");
+            break;
+        case DataType::BOOL: {
+            auto bool_src = static_cast<ImmedOperand<bool> *>(src);
+            out << bool_src->GetValue();
+        } break;
+        default:
+            assert(false);
+        }
+        out<<";\n";
     }
 };
 
