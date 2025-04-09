@@ -2,10 +2,10 @@
 
 #include "instructions.hpp"
 #include "operands.hpp"
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
-#include <iostream>
 
 namespace sc {
 class Function {
@@ -22,6 +22,8 @@ class Function {
     void AddInstructions(std::unique_ptr<InstructionBase> instr) {
         instructions.push_back(std::move(instr));
     }
+
+    void Dump(std::ostream &out = std::cout);
 
     std::string GetName() const { return name; }
     std::unique_ptr<InstructionBase> &GetInstruction(size_t idx) {
