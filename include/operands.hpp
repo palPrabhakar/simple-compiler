@@ -1,8 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <memory>
-#include <type_traits>
 #include <string>
 
 namespace sc {
@@ -17,36 +15,41 @@ enum class DataType {
 // clang-format on
 
 DataType GetDataTypeFromStr(std::string);
+std::string GetStrDataType(DataType);
 
 class OperandBase {
   public:
     virtual ~OperandBase() = default;
 
+    DataType GetType() const { return type; }
+
+    std::string GetName() const { return name; }
+
   protected:
-    OperandBase(DataType _type) : type(_type) {}
+    OperandBase(DataType _type, std::string _name)
+        : type(_type), name(std::move(_name)) {}
 
   private:
     DataType type;
+    std::string name;
 };
 
 class RegOperand : public OperandBase {
   public:
-    RegOperand(DataType _type) : OperandBase(_type) {}
+    RegOperand(DataType type, std::string name) : OperandBase(type, name) {}
 };
 
 class LabelOperand : public OperandBase {
   public:
-    LabelOperand(std::string _lbl_name)
-        : OperandBase(DataType::LABEL), lbl_name(std::move(_lbl_name)) {}
-
-  private:
-    std::string lbl_name;
+    LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
 };
 
 template <typename T> class ImmedOperand : public OperandBase {
   public:
-    ImmedOperand(DataType _type) : OperandBase(_type), val(T{}) {}
-    ImmedOperand(DataType _type, T _val) : OperandBase(_type), val(_val) {}
+    ImmedOperand(DataType type, std::string name)
+        : OperandBase(type, name), val(T{}) {}
+    ImmedOperand(DataType type, std::string name, T val)
+        : OperandBase(type, name), val(val) {}
     T GetValue() { return val; }
 
   private:

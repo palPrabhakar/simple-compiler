@@ -16,4 +16,21 @@ DataType GetDataTypeFromStr(std::string type_str) {
     }
     __builtin_unreachable();
 }
+
+std::string GetStrDataType(DataType type) {
+    switch (type) {
+    case DataType::INT:
+        return "int";
+    case DataType::BOOL:
+        return "bool";
+    case DataType::FLOAT:
+        return "float";
+    case DataType::LABEL:
+        return "label";
+    default:
+        assert(false && "GetStrDataType: Invalid data type\n");
+    }
+    __builtin_unreachable();
+}
+
 } // namespace sc

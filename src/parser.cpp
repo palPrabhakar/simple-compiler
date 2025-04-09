@@ -37,7 +37,7 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
                             "Redeclaration of argument name {}\n",
                             func->GetName(), name));
         }
-        auto operand = std::make_shared<RegOperand>(GetDataTypeFromStr(type));
+        auto operand = std::make_shared<RegOperand>(GetDataTypeFromStr(type), name);
         func->AddArgs(operand);
         symbols[name] = operand;
         func->AddOperand(std::move(operand));
@@ -58,7 +58,7 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(tbl[dest], 0);
     } else {
         // create new dest reg operand
-        auto dest_oprnd = std::make_shared<RegOperand>(type);
+        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
         tbl[dest] = dest_oprnd;
         instr_ptr->SetOperand(dest_oprnd, 0);
         func->AddOperand(std::move(dest_oprnd));
@@ -69,7 +69,7 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(tbl[sym_name], 1);
     } else {
         // Create new Immed Operand
-        auto src_oprnd = std::make_shared<ImmedOperand<T>>(type, value);
+        auto src_oprnd = std::make_shared<ImmedOperand<T>>(type, sym_name, value);
         tbl[sym_name] = src_oprnd;
         instr_ptr->SetOperand(src_oprnd, 1);
         func->AddOperand(std::move(src_oprnd));
@@ -117,7 +117,7 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(symbols[dest], 0);
     } else {
         // create new dest reg operand
-        auto dest_oprnd = std::make_shared<RegOperand>(type);
+        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
         symbols[dest] = dest_oprnd;
         instr_ptr->SetOperand(dest_oprnd, 0);
         func->AddOperand(std::move(dest_oprnd));
@@ -206,7 +206,7 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
         // create new dest reg operand
         DataType type =
             GetDataTypeFromStr(instr.Get("type")->Get<std::string>().value());
-        auto dest_oprnd = std::make_shared<RegOperand>(type);
+        auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
         symbols[dest] = dest_oprnd;
         instr_ptr->SetOperand(dest_oprnd, 0);
         func->AddOperand(std::move(dest_oprnd));
