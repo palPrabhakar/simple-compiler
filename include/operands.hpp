@@ -3,6 +3,7 @@
 #include <cassert>
 #include <memory>
 #include <type_traits>
+#include <string>
 
 namespace sc {
 

@@ -26,6 +26,7 @@ target_link_libraries(sc sjp)
 
 # Enable Testing only in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     # Testing
     enable_testing()
 
