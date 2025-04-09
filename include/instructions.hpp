@@ -83,9 +83,9 @@ class AddInstruction final : public TernaryInstruction {
     AddInstruction() : TernaryInstruction(OpCode::ADD) {}
 
     void Dump(std::ostream &out = std::cout) override {
-        auto dest = GetOperand(0);
-        auto src0 = GetOperand(1);
-        auto src1 = GetOperand(2);
+        auto dest = operands[0];
+        auto src0 = operands[1];
+        auto src1 = operands[2];
         auto type = GetStrDataType(dest->GetType());
         out << dest->GetName() << ":" << " " << type << " = add "
             << src0->GetName() << " " << src1->GetName() << ";\n";
@@ -225,8 +225,8 @@ class ConstInstruction final : public BinaryInstruction {
     ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
 
     void Dump(std::ostream &out = std::cout) override {
-        auto dest = GetOperand(0);
-        auto src = GetOperand(1);
+        auto dest = operands[0];
+        auto src = operands[1];
         auto type = GetStrDataType(dest->GetType());
         out << dest->GetName() << ":" << " " << type << " = const ";
         switch (src->GetType()) {
@@ -252,7 +252,13 @@ class PrintInstruction final : public InstructionBase {
   public:
     PrintInstruction() : InstructionBase(OpCode::PRINT) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        out<<"print";
+        for(auto op: operands) {
+            out<<" "<<op->GetName();
+        }
+        out<<";\n";
+    }
 };
 
 class NopInstruction final : public InstructionBase {
