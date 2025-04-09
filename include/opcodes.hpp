@@ -23,11 +23,6 @@ enum class OpCode {
     BR,
     CALL,
     RET,
-    // Miscellaneous
-    ID,
-    PRINT,
-    CONST,
-    NOP,
     // SSA
     SET,
     GET,
@@ -48,7 +43,11 @@ enum class OpCode {
     FLE,
     FGT,
     FGE,
-    // Misc
+    // Miscellaneous
+    ID,
+    CONST,
+    PRINT,
+    NOP,
     LABEL
 };
 // clang-format on

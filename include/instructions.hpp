@@ -65,23 +65,73 @@ class TernaryInstruction : public InstructionBase {
     }
 };
 
-class ConstInstruction : public BinaryInstruction {
-    // Src is ImmedOperand
+// Arithmetic Instructions
+class AddInstruction : public TernaryInstruction {
   public:
-    ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
+    AddInstruction() : TernaryInstruction(OpCode::ADD) {}
 };
 
-class ArithmeticInstruction : public TernaryInstruction {
+class MulInstruction : public TernaryInstruction {
   public:
-    ArithmeticInstruction(OpCode _opcode) : TernaryInstruction(_opcode) {
-        assert((_opcode >= OpCode::ADD && _opcode <= OpCode::GE) &&
-               "OpCode not for ArithmeticInstruction\n");
-    }
+    MulInstruction() : TernaryInstruction(OpCode::MUL) {}
 };
 
-class PrintInstruction : public InstructionBase {
+class SubInstruction : public TernaryInstruction {
   public:
-    PrintInstruction() : InstructionBase(OpCode::PRINT) {}
+    SubInstruction() : TernaryInstruction(OpCode::SUB) {}
+};
+
+class DivInstruction : public TernaryInstruction {
+  public:
+    DivInstruction() : TernaryInstruction(OpCode::DIV) {}
+};
+
+// Comparison Instructions
+class EqInstruction : public TernaryInstruction {
+  public:
+    EqInstruction() : TernaryInstruction(OpCode::EQ) {}
+};
+
+class LtInstruction : public TernaryInstruction {
+  public:
+    LtInstruction() : TernaryInstruction(OpCode::LT) {}
+};
+
+class GtInstruction : public TernaryInstruction {
+  public:
+    GtInstruction() : TernaryInstruction(OpCode::GT) {}
+};
+
+class LeInstruction : public TernaryInstruction {
+  public:
+    LeInstruction() : TernaryInstruction(OpCode::LE) {}
+};
+
+class GeInstruction : public TernaryInstruction {
+  public:
+    GeInstruction() : TernaryInstruction(OpCode::GE) {}
+};
+
+// Logic Instructions
+class AndInstruction : public TernaryInstruction {
+  public:
+    AndInstruction() : TernaryInstruction(OpCode::AND) {}
+};
+
+class OrInstruction : public TernaryInstruction {
+  public:
+    OrInstruction() : TernaryInstruction(OpCode::OR) {}
+};
+
+class NotInstruction : public BinaryInstruction {
+  public:
+    NotInstruction() : BinaryInstruction(OpCode::NOT) {}
+};
+
+// Control Instruction
+class JmpInstruction : public UnaryInstruction {
+    public:
+        JmpInstruction() : UnaryInstruction(OpCode::JMP) {}
 };
 
 class BranchInstruction : public TernaryInstruction {
@@ -90,11 +140,6 @@ class BranchInstruction : public TernaryInstruction {
     // Dest - LabelOperand
   public:
     BranchInstruction() : TernaryInstruction(OpCode::BR) {}
-};
-
-class LabelInstruction : public UnaryInstruction {
-  public:
-    LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
 };
 
 class CallInstruction : public InstructionBase {
@@ -115,4 +160,32 @@ class RetInstruction : public UnaryInstruction {
   public:
     RetInstruction() : UnaryInstruction(OpCode::RET) {}
 };
+
+// Miscellaneous Instructions
+class IdInstruction : public InstructionBase {
+  public:
+    IdInstruction() : InstructionBase(OpCode::ID) {}
+};
+
+class ConstInstruction : public BinaryInstruction {
+    // Src is ImmedOperand
+  public:
+    ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
+};
+
+class PrintInstruction : public InstructionBase {
+  public:
+    PrintInstruction() : InstructionBase(OpCode::PRINT) {}
+};
+
+class NopInstruction : public InstructionBase {
+  public:
+    NopInstruction() : InstructionBase(OpCode::NOP) {}
+};
+
+class LabelInstruction : public UnaryInstruction {
+  public:
+    LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
+};
+
 } // namespace sc

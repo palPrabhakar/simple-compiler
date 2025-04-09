@@ -5,6 +5,7 @@
 #include "operands.hpp"
 #include "program.hpp"
 #include <format>
+#include <iostream>
 #include <memory>
 #include <optional>
 #include <stdexcept>
@@ -100,14 +101,15 @@ std::unique_ptr<Function> MakeConstInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
-std::unique_ptr<Function>
-MakeArithmeticInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
-                          sym_tbl &symbols) {
+template <typename T>
+std::unique_ptr<Function> MakeTernaryInstruction(std::unique_ptr<Function> func,
+                                                 sjp::Json &instr,
+                                                 sym_tbl &symbols) {
 
     auto args = instr.Get("args").value();
     assert(args.Size() == 2 && "Arithmetic operator size not equal to 2\n");
 
-    auto instr_ptr = std::make_unique<ArithmeticInstruction>(opcode);
+    auto instr_ptr = std::make_unique<T>();
     auto dest = instr.Get("dest")->Get<std::string>().value();
     auto type_str = instr.Get("type")->Get<std::string>().value();
     DataType type = GetDataTypeFromStr(type_str);
@@ -285,15 +287,32 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::ADD:
+        return MakeTernaryInstruction<AddInstruction>(std::move(func), instr,
+                                                      symbols);
     case OpCode::MUL:
+        return MakeTernaryInstruction<MulInstruction>(std::move(func), instr,
+                                                      symbols);
     case OpCode::SUB:
+        return MakeTernaryInstruction<SubInstruction>(std::move(func), instr,
+                                                      symbols);
     case OpCode::DIV:
+        return MakeTernaryInstruction<DivInstruction>(std::move(func), instr,
+                                                      symbols);
     case OpCode::EQ:
+        return MakeTernaryInstruction<EqInstruction>(std::move(func), instr,
+                                                     symbols);
     case OpCode::LT:
+        return MakeTernaryInstruction<LtInstruction>(std::move(func), instr,
+                                                     symbols);
     case OpCode::GT:
+        return MakeTernaryInstruction<GtInstruction>(std::move(func), instr,
+                                                     symbols);
     case OpCode::LE:
+        return MakeTernaryInstruction<LeInstruction>(std::move(func), instr,
+                                                     symbols);
     case OpCode::GE:
-        return MakeArithmeticInstruction(std::move(func), instr, symbols);
+        return MakeTernaryInstruction<GeInstruction>(std::move(func), instr,
+                                                     symbols);
     case OpCode::BR:
         return MakeBranchInstruction(std::move(func), instr, symbols);
     case OpCode::CALL:
@@ -305,7 +324,9 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
     default:
-        break;
+        std::cerr << opcode_str->Get<std::string>().value_or("invalid opcode\n")
+                  << "\n";
+        assert(false && "Invalid opcode\n");
     }
     return nullptr;
 }
