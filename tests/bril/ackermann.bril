@@ -1,6 +1,3 @@
-# Compute the Ackermann function recursively.
-# WARNING: Will quickly exceed stack size
-# ARGS: 3 6
 @ack(m: int, n: int): int {
   zero: int = const 0;
   one: int = const 1;
@@ -28,4 +25,3 @@
   tmp: int = call @ack m n;
   print tmp;
 }
-

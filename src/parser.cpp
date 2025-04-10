@@ -12,7 +12,7 @@
 #include <unordered_map>
 
 namespace sc {
-using sym_tbl = std::unordered_map<std::string, OperandBase*>;
+using sym_tbl = std::unordered_map<std::string, OperandBase *>;
 static OpCode opcode = OpCode::NOP;
 
 template <typename T> static inline T GetJsonValue(sjp::Json json) {
@@ -37,7 +37,8 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
                             "Redeclaration of argument name {}\n",
                             func->GetName(), name));
         }
-        auto operand = std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
+        auto operand =
+            std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
         func->AddArgs(operand.get());
         symbols[name] = operand.get();
         func->AddOperand(std::move(operand));
@@ -69,7 +70,8 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(tbl[sym_name], 1);
     } else {
         // Create new Immed Operand
-        auto src_oprnd = std::make_unique<ImmedOperand<T>>(type, sym_name, value);
+        auto src_oprnd =
+            std::make_unique<ImmedOperand<T>>(type, sym_name, value);
         tbl[sym_name] = src_oprnd.get();
         instr_ptr->SetOperand(src_oprnd.get(), 1);
         func->AddOperand(std::move(src_oprnd));
@@ -183,7 +185,7 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
                         "Use of an undefined operand {} found.\n",
                         func->GetName(), arg));
     }
-
+    instr_ptr->SetOperand(symbols[arg], 2);
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }

@@ -15,8 +15,9 @@ OpCode GetOpCodeFromStr(std::string);
     auto src0 = operands[1];                                                   \
     auto src1 = operands[2];                                                   \
     auto type = GetStrDataType(dest->GetType());                               \
-    out << dest->GetName() << ":" << " " << type << " =  " #name " "           \
-        << src0->GetName() << " " << src1->GetName() << ";\n";
+    out << dest->GetName() << ":"                                              \
+        << " " << type << " =  " #name " " << src0->GetName() << " "           \
+        << src1->GetName() << ";\n";
 
 class InstructionBase {
   public:
@@ -188,8 +189,8 @@ class BranchInstruction final : public TernaryInstruction {
     BranchInstruction() : TernaryInstruction(OpCode::BR) {}
 
     void Dump(std::ostream &out = std::cout) override {
-        // out << "br " << operands[0]->GetName() << "." << operands[1]->GetName()
-        //     << " ." << operands[2]->GetName() << ";\n";
+        out << "br " << operands[0]->GetName() << "." << operands[1]->GetName()
+            << " ." << operands[2]->GetName() << ";\n";
     }
 };
 
@@ -199,7 +200,15 @@ class CallInstruction final : public InstructionBase {
   public:
     CallInstruction() : InstructionBase(OpCode::CALL) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        auto dest = operands[0];
+        auto src0 = operands[1];
+        auto src1 = operands[2];
+        auto type = GetStrDataType(dest->GetType());
+        out << dest->GetName() << ":"
+            << " " << type << " = call @" << func << " " << src0->GetName()
+            << " " << src1->GetName() << ";\n";
+    }
 
     void SetFuncName(std::string fname) { func = fname; }
 
@@ -235,7 +244,8 @@ class ConstInstruction final : public BinaryInstruction {
         auto dest = operands[0];
         auto src = operands[1];
         auto type = GetStrDataType(dest->GetType());
-        out << dest->GetName() << ":" << " " << type << " = const ";
+        out << dest->GetName() << ":"
+            << " " << type << " = const ";
         switch (src->GetType()) {
         case DataType::INT: {
             auto int_src = static_cast<ImmedOperand<int> *>(src);
