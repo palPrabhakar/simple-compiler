@@ -406,8 +406,12 @@ std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
     sym_tbl symbols;
+    DataType type = DataType::VOID;
+    if(jfunc.Get("type").has_value()) {
+      type = GetDataTypeFromStr(jfunc.Get("type")->Get<std::string>().value());
+    }
     auto func = std::make_unique<Function>(
-        jfunc.Get("name")->Get<std::string>().value());
+        jfunc.Get("name")->Get<std::string>().value(), type);
     auto args = jfunc.Get("args");
     if (args != std::nullopt) {
         func = ParseArguments(std::move(func), args.value(), symbols);

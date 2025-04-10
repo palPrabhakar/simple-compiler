@@ -16,7 +16,7 @@ OpCode GetOpCodeFromStr(std::string);
     auto src1 = operands[2];                                                   \
     auto type = GetStrDataType(dest->GetType());                               \
     out << dest->GetName() << ":"                                              \
-        << " " << type << " =  " #name " " << src0->GetName() << " "           \
+        << " " << type << " = " #name " " << src0->GetName() << " "           \
         << src1->GetName() << ";\n";
 
 class InstructionBase {
@@ -189,8 +189,8 @@ class BranchInstruction final : public TernaryInstruction {
     BranchInstruction() : TernaryInstruction(OpCode::BR) {}
 
     void Dump(std::ostream &out = std::cout) override {
-        out << "br " << operands[0]->GetName() << "." << operands[1]->GetName()
-            << " ." << operands[2]->GetName() << ";\n";
+        out << "br " << operands[2]->GetName() << " ." << operands[0]->GetName()
+            << " ." << operands[1]->GetName() << ";\n";
     }
 };
 

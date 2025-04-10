@@ -10,7 +10,8 @@ enum class DataType {
     INT,
     BOOL,
     FLOAT,
-    LABEL
+    LABEL,
+    VOID
 };
 // clang-format on
 

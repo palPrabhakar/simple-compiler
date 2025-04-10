@@ -10,7 +10,8 @@
 namespace sc {
 class Function {
   public:
-    Function(std::string _name) : name(_name) {}
+    Function(std::string _name, DataType _ret_type)
+        : name(_name), ret_type(_ret_type) {}
 
     ~Function() = default;
 
@@ -47,5 +48,6 @@ class Function {
     std::vector<std::unique_ptr<OperandBase>> operands;
     std::vector<OperandBase *> args;
     std::string name;
+    DataType ret_type;
 };
 } // namespace sc
