@@ -10,6 +10,14 @@ namespace sc {
 
 OpCode GetOpCodeFromStr(std::string);
 
+#define PRINT_HELPER(name)                                                     \
+    auto dest = operands[0];                                                   \
+    auto src0 = operands[1];                                                   \
+    auto src1 = operands[2];                                                   \
+    auto type = GetStrDataType(dest->GetType());                               \
+    out << dest->GetName() << ":" << " " << type << " =  " #name " "           \
+        << src0->GetName() << " " << src1->GetName() << ";\n";
+
 class InstructionBase {
   public:
     virtual ~InstructionBase() = default;
@@ -82,35 +90,28 @@ class AddInstruction final : public TernaryInstruction {
   public:
     AddInstruction() : TernaryInstruction(OpCode::ADD) {}
 
-    void Dump(std::ostream &out = std::cout) override {
-        auto dest = operands[0];
-        auto src0 = operands[1];
-        auto src1 = operands[2];
-        auto type = GetStrDataType(dest->GetType());
-        out << dest->GetName() << ":" << " " << type << " = add "
-            << src0->GetName() << " " << src1->GetName() << ";\n";
-    }
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(add); }
 };
 
 class MulInstruction final : public TernaryInstruction {
   public:
     MulInstruction() : TernaryInstruction(OpCode::MUL) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(mul); }
 };
 
 class SubInstruction final : public TernaryInstruction {
   public:
     SubInstruction() : TernaryInstruction(OpCode::SUB) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(sub); }
 };
 
 class DivInstruction final : public TernaryInstruction {
   public:
     DivInstruction() : TernaryInstruction(OpCode::DIV) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(div); }
 };
 
 // Comparison Instructions
@@ -118,35 +119,35 @@ class EqInstruction final : public TernaryInstruction {
   public:
     EqInstruction() : TernaryInstruction(OpCode::EQ) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(eq); }
 };
 
 class LtInstruction final : public TernaryInstruction {
   public:
     LtInstruction() : TernaryInstruction(OpCode::LT) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(lt); }
 };
 
 class GtInstruction final : public TernaryInstruction {
   public:
     GtInstruction() : TernaryInstruction(OpCode::GT) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(gt); }
 };
 
 class LeInstruction final : public TernaryInstruction {
   public:
     LeInstruction() : TernaryInstruction(OpCode::LE) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(le); }
 };
 
 class GeInstruction final : public TernaryInstruction {
   public:
     GeInstruction() : TernaryInstruction(OpCode::GE) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(ge); }
 };
 
 // Logic Instructions
@@ -154,14 +155,14 @@ class AndInstruction final : public TernaryInstruction {
   public:
     AndInstruction() : TernaryInstruction(OpCode::AND) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(and); }
 };
 
 class OrInstruction final : public TernaryInstruction {
   public:
     OrInstruction() : TernaryInstruction(OpCode::OR) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override { PRINT_HELPER(or); }
 };
 
 class NotInstruction final : public BinaryInstruction {
@@ -186,7 +187,10 @@ class BranchInstruction final : public TernaryInstruction {
   public:
     BranchInstruction() : TernaryInstruction(OpCode::BR) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        // out << "br " << operands[0]->GetName() << "." << operands[1]->GetName()
+        //     << " ." << operands[2]->GetName() << ";\n";
+    }
 };
 
 class CallInstruction final : public InstructionBase {
@@ -194,6 +198,7 @@ class CallInstruction final : public InstructionBase {
     // Rest are arguments
   public:
     CallInstruction() : InstructionBase(OpCode::CALL) {}
+
     void Dump(std::ostream &out = std::cout) override {}
 
     void SetFuncName(std::string fname) { func = fname; }
@@ -208,7 +213,9 @@ class RetInstruction final : public UnaryInstruction {
   public:
     RetInstruction() : UnaryInstruction(OpCode::RET) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        out << "ret " << operands[0]->GetName() << ";\n";
+    }
 };
 
 // Miscellaneous Instructions
@@ -244,7 +251,7 @@ class ConstInstruction final : public BinaryInstruction {
         default:
             assert(false);
         }
-        out<<";\n";
+        out << ";\n";
     }
 };
 
@@ -253,11 +260,11 @@ class PrintInstruction final : public InstructionBase {
     PrintInstruction() : InstructionBase(OpCode::PRINT) {}
 
     void Dump(std::ostream &out = std::cout) override {
-        out<<"print";
-        for(auto op: operands) {
-            out<<" "<<op->GetName();
+        out << "print";
+        for (auto op : operands) {
+            out << " " << op->GetName();
         }
-        out<<";\n";
+        out << ";\n";
     }
 };
 
@@ -272,7 +279,9 @@ class LabelInstruction final : public UnaryInstruction {
   public:
     LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
 
-    void Dump(std::ostream &out = std::cout) override {}
+    void Dump(std::ostream &out = std::cout) override {
+        out << "." << operands[0]->GetName() << ":\n";
+    }
 };
 
 } // namespace sc
