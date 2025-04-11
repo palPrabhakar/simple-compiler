@@ -16,6 +16,16 @@ namespace sc {
 using sym_tbl = std::unordered_map<std::string, OperandBase *>;
 static OpCode opcode = OpCode::NOP;
 
+static inline void CheckSymbol(sym_tbl &symbols, std::string &arg,
+                               const char *fname, const char *instr) {
+    if (!symbols.contains(arg)) {
+        throw std::runtime_error(
+            std::format("Error parsing {} in function {}."
+                        "Use of an undefined operand {} found.\n",
+                        instr, fname, arg));
+    }
+}
+
 template <typename T> static inline T GetJsonValue(sjp::Json json) {
     if constexpr (std::is_same_v<int, T>) {
         return static_cast<int>(json.Get<double>().value());
@@ -64,7 +74,6 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
 
     auto args = instr.Get("args").value();
     assert(args.Size() == argSize && "Invalid args size in MakeInstruction\n");
-
     auto instr_ptr = std::make_unique<T>();
     auto dest = instr.Get("dest")->Get<std::string>().value();
     auto type_str = instr.Get("type")->Get<std::string>().value();
@@ -81,12 +90,7 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
     }
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
-        if (!symbols.contains(arg)) {
-            throw std::runtime_error(std::format(
-                "Error parsing ArithmeticInstruction in function {}."
-                "Use of an undefined operand {} found.\n",
-                func->GetName(), arg));
-        }
+        CheckSymbol(symbols, arg, func->GetName().c_str(), "MakeInstruction");
         instr_ptr->SetOperand(symbols[arg], i + 1);
     }
     func->AddInstructions(std::move(instr_ptr));
@@ -120,9 +124,7 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     assert(labels.Size() == 2 && "Label size != 2 in BranchInstruction\n");
     auto args = instr.Get("args").value();
     assert(args.Size() == 1 && "Argument size != 1 in BranchInstruction\n");
-
     auto instr_ptr = std::make_unique<BranchInstruction>();
-
     for (size_t i : std::views::iota(0UL, labels.Size())) {
         auto lbl = labels.Get(i)->Get<std::string>().value();
         if (!symbols.contains(lbl)) {
@@ -134,14 +136,8 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
             instr_ptr->SetOperand(symbols[lbl], i);
         }
     }
-
     auto arg = args.Get(0)->Get<std::string>().value();
-    if (!symbols.contains(arg)) {
-        throw std::runtime_error(
-            std::format("Error parsing BranchInstruction in function {}."
-                        "Use of an undefined operand {} found.\n",
-                        func->GetName(), arg));
-    }
+    CheckSymbol(symbols, arg, func->GetName().c_str(), "BranchInstruction");
     instr_ptr->SetOperand(symbols[arg], 2);
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -174,12 +170,7 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
     auto args = instr.Get("args").value();
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
-        if (!symbols.contains(arg)) {
-            throw std::runtime_error(
-                std::format("Error parsing CallInstruction in function {}."
-                            "Use of an undefined operand {} found.\n",
-                            func->GetName(), arg));
-        }
+        CheckSymbol(symbols, arg, func->GetName().c_str(), "CallInstruction");
         instr_ptr->SetOperand(symbols[arg], i + 1);
     }
     func->AddInstructions(std::move(instr_ptr));
@@ -193,12 +184,7 @@ std::unique_ptr<Function> MakeRetInstruction(std::unique_ptr<Function> func,
     assert(args.Size() == 1 && "More than one return value specified\n");
     auto instr_ptr = std::make_unique<RetInstruction>();
     auto arg = args.Get(0)->Get<std::string>().value();
-    if (!symbols.contains(arg)) {
-        throw std::runtime_error(
-            std::format("Error parsing RetInstruction in function {}."
-                        "Use of an undefined return-value {} found.\n",
-                        func->GetName(), arg));
-    }
+    CheckSymbol(symbols, arg, func->GetName().c_str(), "RetInstruction");
     instr_ptr->SetOperand(symbols[arg], 0);
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -233,12 +219,7 @@ std::unique_ptr<Function> MakeAllocInstruction(std::unique_ptr<Function> func,
     auto args = instr.Get("args").value();
     assert(args.Size() == 1 && "Invaid argument size in AllocInstruction\n");
     auto arg = args.Get(0)->Get<std::string>().value();
-    if (!symbols.contains(arg)) {
-        throw std::runtime_error(
-            std::format("Error parsing AllocInstruction in function {}."
-                        "Use of an undefined operand {} found.\n",
-                        func->GetName(), arg));
-    }
+    CheckSymbol(symbols, arg, func->GetName().c_str(), "AllocInstruction");
     instr_ptr->SetOperand(symbols[arg], 1);
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -250,12 +231,7 @@ std::unique_ptr<Function> MakeFreeInstruction(std::unique_ptr<Function> func,
     auto args = instr.Get("args").value();
     assert(args.Size() == 1 && "Invaid argument size in FreeInstruction\n");
     auto arg = args.Get(0)->Get<std::string>().value();
-    if (!symbols.contains(arg)) {
-        throw std::runtime_error(
-            std::format("Error parsing FreeInstruction in function {}."
-                        "Use of an undefined operand {} found.\n",
-                        func->GetName(), arg));
-    }
+    CheckSymbol(symbols, arg, func->GetName().c_str(), "FreeInstruction");
     auto instr_ptr = std::make_unique<FreeInstruction>();
     instr_ptr->SetOperand(symbols[arg], 0);
     func->AddInstructions(std::move(instr_ptr));
@@ -290,12 +266,7 @@ std::unique_ptr<Function> MakeLoadInstruction(std::unique_ptr<Function> func,
     auto args = instr.Get("args");
     assert(args->Size() == 1 && "Invalid args size in LoadInstruction\n");
     auto arg = args->Get(0)->Get<std::string>().value();
-    if (!symbols.contains(arg)) {
-        throw std::runtime_error(
-            std::format("Error parsing LoadInstruction in function {}."
-                        "Use of an undefined operand {} found.\n",
-                        func->GetName(), arg));
-    }
+    CheckSymbol(symbols, arg, func->GetName().c_str(), "LoadInstruction");
     instr_ptr->SetOperand(symbols[arg], 1);
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -309,12 +280,7 @@ std::unique_ptr<Function> MakeStoreInstruction(std::unique_ptr<Function> func,
     auto instr_ptr = std::make_unique<StoreInstruction>();
     for (size_t i : std::views::iota(0UL, args->Size())) {
         auto arg = args->Get(i)->Get<std::string>().value();
-        if (!symbols.contains(arg)) {
-            throw std::runtime_error(
-                std::format("Error parsing StoreInstruction in function {}."
-                            "Use of an undefined operand {} found.\n",
-                            func->GetName(), arg));
-        }
+        CheckSymbol(symbols, arg, func->GetName().c_str(), "StoreInstruction");
         instr_ptr->SetOperand(symbols[arg], i);
     }
     func->AddInstructions(std::move(instr_ptr));
@@ -355,12 +321,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
     auto instr_ptr = std::make_unique<PrintInstruction>();
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
-        if (!symbols.contains(arg)) {
-            throw std::runtime_error(
-                std::format("Error parsing PrintInstruction in function {}."
-                            "Use of an undefined operand {} found.\n",
-                            func->GetName(), arg));
-        }
+        CheckSymbol(symbols, arg, func->GetName().c_str(), "PrintInstruction");
         instr_ptr->SetOperand(symbols[arg], i);
     }
     func->AddInstructions(std::move(instr_ptr));

@@ -1,0 +1,707 @@
+{
+  "functions": [
+    {
+      "args": [
+        {
+          "name": "size",
+          "type": "int"
+        },
+        {
+          "name": "iskernel",
+          "type": "bool"
+        }
+      ],
+      "instrs": [
+        {
+          "args": [
+            "size"
+          ],
+          "dest": "arr",
+          "op": "alloc",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "dest": "v0",
+          "op": "const",
+          "type": "float",
+          "value": 0.0
+        },
+        {
+          "args": [
+            "iskernel"
+          ],
+          "labels": [
+            "set.val.is.kernel",
+            "set.val.is.not.kernel"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "set.val.is.kernel"
+        },
+        {
+          "dest": "kernelval",
+          "op": "const",
+          "type": "float",
+          "value": 0.3
+        },
+        {
+          "args": [
+            "v0",
+            "kernelval"
+          ],
+          "dest": "v0",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "continue"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "set.val.is.not.kernel"
+        },
+        {
+          "dest": "arrval",
+          "op": "const",
+          "type": "float",
+          "value": 60.0
+        },
+        {
+          "args": [
+            "v0",
+            "arrval"
+          ],
+          "dest": "v0",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "label": "continue"
+        },
+        {
+          "dest": "i",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "dest": "one",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "arr"
+          ],
+          "dest": "arrptr",
+          "op": "id",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "label": "for.cond"
+        },
+        {
+          "args": [
+            "i",
+            "size"
+          ],
+          "dest": "cond",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "cond"
+          ],
+          "labels": [
+            "for.body",
+            "return"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "for.body"
+        },
+        {
+          "args": [
+            "arrptr",
+            "v0"
+          ],
+          "op": "store"
+        },
+        {
+          "label": "for.end"
+        },
+        {
+          "args": [
+            "i",
+            "one"
+          ],
+          "dest": "i",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "arrptr",
+            "one"
+          ],
+          "dest": "arrptr",
+          "op": "ptradd",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "labels": [
+            "for.cond"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "return"
+        },
+        {
+          "args": [
+            "arr"
+          ],
+          "op": "ret"
+        }
+      ],
+      "name": "genarray",
+      "type": {
+        "ptr": "float"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "kernel",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "name": "kernelsize",
+          "type": "int"
+        },
+        {
+          "name": "array",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "name": "arraysize",
+          "type": "int"
+        }
+      ],
+      "instrs": [
+        {
+          "dest": "zero",
+          "op": "const",
+          "type": "float",
+          "value": 0.0
+        },
+        {
+          "dest": "one",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "arraysize",
+            "kernelsize"
+          ],
+          "dest": "t",
+          "op": "sub",
+          "type": "int"
+        },
+        {
+          "args": [
+            "t",
+            "one"
+          ],
+          "dest": "outputsize",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "outputsize"
+          ],
+          "dest": "output",
+          "op": "alloc",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "output"
+          ],
+          "dest": "outputptr",
+          "op": "id",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "dest": "i",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "label": "outer.for.cond"
+        },
+        {
+          "args": [
+            "i",
+            "outputsize"
+          ],
+          "dest": "cond",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "cond"
+          ],
+          "labels": [
+            "outer.for.body",
+            "return"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "outer.for.body"
+        },
+        {
+          "args": [
+            "outputptr",
+            "zero"
+          ],
+          "op": "store"
+        },
+        {
+          "dest": "j",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "args": [
+            "kernel"
+          ],
+          "dest": "kernelptr",
+          "op": "id",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "label": "inner.for.cond"
+        },
+        {
+          "args": [
+            "j",
+            "kernelsize"
+          ],
+          "dest": "condinner",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "condinner"
+          ],
+          "labels": [
+            "inner.for.body",
+            "outer.for.end"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "inner.for.body"
+        },
+        {
+          "args": [
+            "i",
+            "j"
+          ],
+          "dest": "arrindex",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "array",
+            "arrindex"
+          ],
+          "dest": "arrptr",
+          "op": "ptradd",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "arrptr"
+          ],
+          "dest": "arrvalue",
+          "op": "load",
+          "type": "float"
+        },
+        {
+          "args": [
+            "kernelptr"
+          ],
+          "dest": "kernelvalue",
+          "op": "load",
+          "type": "float"
+        },
+        {
+          "args": [
+            "outputptr"
+          ],
+          "dest": "currvalue",
+          "op": "load",
+          "type": "float"
+        },
+        {
+          "args": [
+            "arrvalue",
+            "kernelvalue"
+          ],
+          "dest": "incrvalue",
+          "op": "fmul",
+          "type": "float"
+        },
+        {
+          "args": [
+            "currvalue",
+            "incrvalue"
+          ],
+          "dest": "storevalue",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "outputptr",
+            "storevalue"
+          ],
+          "op": "store"
+        },
+        {
+          "label": "inner.for.end"
+        },
+        {
+          "args": [
+            "j",
+            "one"
+          ],
+          "dest": "j",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "kernelptr",
+            "one"
+          ],
+          "dest": "kernelptr",
+          "op": "ptradd",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "labels": [
+            "inner.for.cond"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "outer.for.end"
+        },
+        {
+          "args": [
+            "i",
+            "one"
+          ],
+          "dest": "i",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "outputptr",
+            "one"
+          ],
+          "dest": "outputptr",
+          "op": "ptradd",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "labels": [
+            "outer.for.cond"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "return"
+        },
+        {
+          "args": [
+            "output"
+          ],
+          "op": "ret"
+        }
+      ],
+      "name": "convolve",
+      "type": {
+        "ptr": "float"
+      }
+    },
+    {
+      "args": [
+        {
+          "name": "out",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "name": "kernelsize",
+          "type": "int"
+        },
+        {
+          "name": "arraysize",
+          "type": "int"
+        }
+      ],
+      "instrs": [
+        {
+          "dest": "one",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "arraysize",
+            "kernelsize"
+          ],
+          "dest": "t",
+          "op": "sub",
+          "type": "int"
+        },
+        {
+          "args": [
+            "t",
+            "one"
+          ],
+          "dest": "outputsize",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "dest": "i",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "label": "for.cond"
+        },
+        {
+          "args": [
+            "i",
+            "outputsize"
+          ],
+          "dest": "cond",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "cond"
+          ],
+          "labels": [
+            "for.body",
+            "return"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "for.body"
+        },
+        {
+          "args": [
+            "out",
+            "i"
+          ],
+          "dest": "loc",
+          "op": "ptradd",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "loc"
+          ],
+          "dest": "val",
+          "op": "load",
+          "type": "float"
+        },
+        {
+          "args": [
+            "val"
+          ],
+          "op": "print"
+        },
+        {
+          "label": "for.end"
+        },
+        {
+          "args": [
+            "i",
+            "one"
+          ],
+          "dest": "i",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "labels": [
+            "for.cond"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "return"
+        },
+        {
+          "op": "ret"
+        }
+      ],
+      "name": "printoutput"
+    },
+    {
+      "instrs": [
+        {
+          "dest": "t",
+          "op": "const",
+          "type": "bool",
+          "value": true
+        },
+        {
+          "dest": "f",
+          "op": "const",
+          "type": "bool",
+          "value": false
+        },
+        {
+          "dest": "kernelsize",
+          "op": "const",
+          "type": "int",
+          "value": 3
+        },
+        {
+          "dest": "arraysize",
+          "op": "const",
+          "type": "int",
+          "value": 7
+        },
+        {
+          "args": [
+            "kernelsize",
+            "t"
+          ],
+          "dest": "kernel",
+          "funcs": [
+            "genarray"
+          ],
+          "op": "call",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "arraysize",
+            "f"
+          ],
+          "dest": "array",
+          "funcs": [
+            "genarray"
+          ],
+          "op": "call",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "kernel",
+            "kernelsize",
+            "array",
+            "arraysize"
+          ],
+          "dest": "output",
+          "funcs": [
+            "convolve"
+          ],
+          "op": "call",
+          "type": {
+            "ptr": "float"
+          }
+        },
+        {
+          "args": [
+            "output",
+            "kernelsize",
+            "arraysize"
+          ],
+          "funcs": [
+            "printoutput"
+          ],
+          "op": "call"
+        },
+        {
+          "args": [
+            "kernel"
+          ],
+          "op": "free"
+        },
+        {
+          "args": [
+            "array"
+          ],
+          "op": "free"
+        },
+        {
+          "args": [
+            "output"
+          ],
+          "op": "free"
+        }
+      ],
+      "name": "main"
+    }
+  ]
+}
