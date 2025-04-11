@@ -73,3 +73,11 @@ TEST(ParserTest, ParseRiemann) {
     READ_RESULT("../tests/bril/riemann.bril")
     EXPECT_EQ(output.str(), testp.str());
 }
+
+TEST(ParserTest, ParseMem) {
+    READ_PROGRAM("../tests/bril/mem.json")
+    EXPECT_EQ(program->GetSize(), 1);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/mem.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}

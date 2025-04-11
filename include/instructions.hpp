@@ -182,6 +182,31 @@ class RetInstruction final : public UnaryInstruction {
     void Dump(std::ostream &out = std::cout) override;
 };
 
+// Memory Instructions
+class AllocInstruction : public BinaryInstruction {
+  public:
+    AllocInstruction() : BinaryInstruction(OpCode::ALLOC) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FreeInstruction : public UnaryInstruction {
+  public:
+    FreeInstruction() : UnaryInstruction(OpCode::FREE) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class LoadInstruction : public BinaryInstruction {
+  public:
+    LoadInstruction() : BinaryInstruction(OpCode::LOAD) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class StoreInstruction : public BinaryInstruction {
+  public:
+    StoreInstruction() : BinaryInstruction(OpCode::STORE) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
 // Miscellaneous Instructions
 class IdInstruction final : public BinaryInstruction {
   public:

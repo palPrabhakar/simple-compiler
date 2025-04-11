@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <string>
+#include <vector>
 
 namespace sc {
 
@@ -10,6 +11,7 @@ enum class DataType {
     INT,
     BOOL,
     FLOAT,
+    PTR,
     LABEL,
     VOID
 };
@@ -38,6 +40,31 @@ class OperandBase {
 class RegOperand : public OperandBase {
   public:
     RegOperand(DataType type, std::string name) : OperandBase(type, name) {}
+};
+
+class PtrOperand : public RegOperand {
+  public:
+    PtrOperand(std::string name) : RegOperand(DataType::PTR, name) {}
+    void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
+
+    std::string GetPtrType() {
+        std::string type;
+        type += "ptr<";
+        int count = 1;
+        for (auto t : ptr_chain) {
+            if (t == DataType::PTR) {
+                ++count;
+                type += "ptr<";
+            } else {
+                type += GetStrDataType(t);
+            }
+        }
+        type += std::string(count, '>');
+        return type;
+    }
+
+  private:
+    std::vector<DataType> ptr_chain;
 };
 
 class LabelOperand : public OperandBase {

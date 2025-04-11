@@ -3,6 +3,7 @@
 #include <cassert>
 #include <iostream>
 #include <ranges>
+#include <sstream>
 #include <unordered_map>
 
 #define PRINT_HELPER3(name)                                                    \
@@ -121,6 +122,48 @@ void RetInstruction::Dump(std::ostream &out) {
     out << "ret " << operands[0]->GetName() << ";\n";
 }
 
+// Memory Instructions
+void AllocInstruction::Dump(std::ostream &out) {
+    out << operands[0]->GetName() << ": "
+        << static_cast<PtrOperand *>(operands[0])->GetPtrType() << " = alloc "
+        << operands[1]->GetName() << ";\n";
+}
+
+void FreeInstruction::Dump(std::ostream &out) {
+    out << "free " << operands[0]->GetName() << ";\n";
+}
+
+void LoadInstruction::Dump(std::ostream &out) {
+    out << operands[0]->GetName() << ": ";
+    if (operands[0]->GetType() == DataType::PTR) {
+        out << static_cast<PtrOperand *>(operands[0])->GetPtrType();
+    } else {
+        out << GetStrDataType(operands[0]->GetType());
+    }
+    out << " = load " << operands[1]->GetName() << ";\n";
+}
+
+void StoreInstruction::Dump(std::ostream &out) {
+    out << "store";
+    for (size_t i : std::views::iota(0UL, operands.size())) {
+        out << " " << operands[i]->GetName();
+    }
+    out << ";\n";
+}
+
+// Floating-Point Arithmetic Instructions
+void FAddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fadd) }
+void FMulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fmul) }
+void FSubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fsub) }
+void FDivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fdiv) }
+
+// Floating-Point Comparsion Instructions
+void FEqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(feq) }
+void FLtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(flt) }
+void FGtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fgt) }
+void FLeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fle) }
+void FGeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fge) }
+
 // Miscellaneous Instructions
 void IdInstruction::Dump(std::ostream &out) { PRINT_HELPER2(id) }
 
@@ -161,18 +204,4 @@ void NopInstruction::Dump(std::ostream &out) { out << "nop;\n"; }
 void LabelInstruction::Dump(std::ostream &out) {
     out << "." << operands[0]->GetName() << ":\n";
 }
-
-// Floating-Point Arithmetic Instructions
-void FAddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fadd) }
-void FMulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fmul) }
-void FSubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fsub) }
-void FDivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fdiv) }
-
-// Floating-Point Comparsion Instructions
-void FEqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(feq) }
-void FLtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(flt) }
-void FGtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fgt) }
-void FLeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fle) }
-void FGeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fge) }
-
 } // namespace sc
