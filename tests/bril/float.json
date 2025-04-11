@@ -42,13 +42,19 @@
           "dest": "v5",
           "op": "const",
           "type": "float",
-          "value": 1.0
+          "value": 1
         },
         {
           "dest": "v6",
           "op": "const",
           "type": "float",
           "value": 1000000.0
+        },
+        {
+          "dest": "v7",
+          "op": "const",
+          "type": "float",
+          "value": 1e-06
         },
         {
           "dest": "v8",

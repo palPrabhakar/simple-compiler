@@ -76,28 +76,24 @@ class TernaryInstruction : public InstructionBase {
 class AddInstruction final : public TernaryInstruction {
   public:
     AddInstruction() : TernaryInstruction(OpCode::ADD) {}
-
     void Dump(std::ostream &out = std::cout) override;
 };
 
 class MulInstruction final : public TernaryInstruction {
   public:
     MulInstruction() : TernaryInstruction(OpCode::MUL) {}
-
     void Dump(std::ostream &out = std::cout) override;
 };
 
 class SubInstruction final : public TernaryInstruction {
   public:
     SubInstruction() : TernaryInstruction(OpCode::SUB) {}
-
     void Dump(std::ostream &out = std::cout) override;
 };
 
 class DivInstruction final : public TernaryInstruction {
   public:
     DivInstruction() : TernaryInstruction(OpCode::DIV) {}
-
     void Dump(std::ostream &out = std::cout) override;
 };
 
@@ -209,7 +205,6 @@ class PrintInstruction final : public InstructionBase {
 class NopInstruction final : public InstructionBase {
   public:
     NopInstruction() : InstructionBase(OpCode::NOP) {}
-
     void Dump(std::ostream &out = std::cout) override;
 };
 
@@ -219,4 +214,59 @@ class LabelInstruction final : public UnaryInstruction {
     void Dump(std::ostream &out = std::cout) override;
 };
 
+// Floating-Point Arithmetic Instructions
+class FAddInstruction final : public TernaryInstruction {
+  public:
+    FAddInstruction() : TernaryInstruction(OpCode::FADD) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FMulInstruction final : public TernaryInstruction {
+  public:
+    FMulInstruction() : TernaryInstruction(OpCode::FMUL) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FSubInstruction final : public TernaryInstruction {
+  public:
+    FSubInstruction() : TernaryInstruction(OpCode::FSUB) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FDivInstruction final : public TernaryInstruction {
+  public:
+    FDivInstruction() : TernaryInstruction(OpCode::FDIV) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+// Floating-Pointi Comparison Instructions
+class FEqInstruction final : public TernaryInstruction {
+  public:
+    FEqInstruction() : TernaryInstruction(OpCode::FEQ) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FLtInstruction final : public TernaryInstruction {
+  public:
+    FLtInstruction() : TernaryInstruction(OpCode::FLT) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FGtInstruction final : public TernaryInstruction {
+  public:
+    FGtInstruction() : TernaryInstruction(OpCode::FGT) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FLeInstruction final : public TernaryInstruction {
+  public:
+    FLeInstruction() : TernaryInstruction(OpCode::FLE) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class FGeInstruction final : public TernaryInstruction {
+  public:
+    FGeInstruction() : TernaryInstruction(OpCode::FGE) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
 } // namespace sc

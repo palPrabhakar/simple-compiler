@@ -135,9 +135,10 @@ void ConstInstruction::Dump(std::ostream &out) {
         auto int_src = static_cast<ImmedOperand<int> *>(src);
         out << int_src->GetValue();
     } break;
-    case DataType::FLOAT:
-        assert(false && "todo float\n");
-        break;
+    case DataType::FLOAT: {
+        auto float_src = static_cast<ImmedOperand<double> *>(src);
+        out << float_src->GetValue();
+    } break;
     case DataType::BOOL: {
         auto bool_src = static_cast<ImmedOperand<bool> *>(src);
         out << (bool_src->GetValue() ? "true" : "false");
@@ -160,5 +161,18 @@ void NopInstruction::Dump(std::ostream &out) { out << "nop;\n"; }
 void LabelInstruction::Dump(std::ostream &out) {
     out << "." << operands[0]->GetName() << ":\n";
 }
+
+// Floating-Point Arithmetic Instructions
+void FAddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fadd) }
+void FMulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fmul) }
+void FSubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fsub) }
+void FDivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fdiv) }
+
+// Floating-Point Comparsion Instructions
+void FEqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(feq) }
+void FLtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(flt) }
+void FGtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fgt) }
+void FLeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fle) }
+void FGeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fge) }
 
 } // namespace sc

@@ -57,3 +57,19 @@ TEST(ParserTest, ParseEuclid) {
     READ_RESULT("../tests/bril/euclid.bril")
     EXPECT_EQ(output.str(), testp.str());
 }
+
+TEST(ParserTest, ParseFloat) {
+    READ_PROGRAM("../tests/bril/float.json")
+    EXPECT_EQ(program->GetSize(), 1);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/float.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}
+
+TEST(ParserTest, ParseRiemann) {
+    READ_PROGRAM("../tests/bril/riemann.json")
+    EXPECT_EQ(program->GetSize(), 5);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/riemann.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}

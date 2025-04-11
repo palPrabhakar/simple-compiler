@@ -361,24 +361,28 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         assert(false && "todo ptradd\n");
     // Floating Instructions
     case OpCode::FADD:
-        assert(false && "todo fadd\n");
+        return MakeInstruction<FAddInstruction>(std::move(func), instr,
+                                                symbols);
     case OpCode::FMUL:
-        assert(false && "todo fmul");
+        return MakeInstruction<FMulInstruction>(std::move(func), instr,
+                                                symbols);
     case OpCode::FSUB:
-        assert(false && "todo fsub\n");
+        return MakeInstruction<FSubInstruction>(std::move(func), instr,
+                                                symbols);
     case OpCode::FDIV:
-        assert(false && "todo fdiv\n");
+        return MakeInstruction<FDivInstruction>(std::move(func), instr,
+                                                symbols);
     // Floating Comparisons
     case OpCode::FEQ:
-        assert(false && "todo feq\n");
+        return MakeInstruction<FEqInstruction>(std::move(func), instr, symbols);
     case OpCode::FLT:
-        assert(false && "todo flt");
+        return MakeInstruction<FLtInstruction>(std::move(func), instr, symbols);
     case OpCode::FLE:
-        assert(false && "todo fle\n");
+        return MakeInstruction<FLeInstruction>(std::move(func), instr, symbols);
     case OpCode::FGT:
-        assert(false && "todo fgt\n");
+        return MakeInstruction<FGtInstruction>(std::move(func), instr, symbols);
     case OpCode::FGE:
-        assert(false && "todo fge\n");
+        return MakeInstruction<FGeInstruction>(std::move(func), instr, symbols);
     // Miscellaneous Instructions
     case OpCode::ID:
         return MakeInstruction<IdInstruction, 1>(std::move(func), instr,
