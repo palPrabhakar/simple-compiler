@@ -49,3 +49,11 @@ TEST(ParserTest, ParseBitwiseOps) {
     READ_RESULT("../tests/bril/bitwise-ops.bril")
     EXPECT_EQ(output.str(), testp.str());
 }
+
+TEST(ParserTest, ParseEuclid) {
+    READ_PROGRAM("../tests/bril/euclid.json")
+    EXPECT_EQ(program->GetSize(), 3);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/euclid.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}
