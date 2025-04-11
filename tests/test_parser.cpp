@@ -11,10 +11,16 @@
 
 #define READ_PROGRAM(x)                                                        \
     std::ifstream ifs(x);                                                      \
-    std::stringstream output;                                                  \
     auto json_parser = sjp::Parser(ifs);                                       \
     auto data = json_parser.Parse();                                           \
     auto program = sc::ParseProgram(data);
+
+#define DUMP_PROGRAM                                                           \
+    std::stringstream output;                                                  \
+    for (size_t i = 0; i < program->GetSize(); ++i) {                          \
+        auto &func = program->GetFunction(i);                                  \
+        func->Dump(output);                                                    \
+    }
 
 namespace sc {
 std::unique_ptr<Program> ParseProgram(sjp::Json);
@@ -22,27 +28,24 @@ std::unique_ptr<Program> ParseProgram(sjp::Json);
 
 TEST(ParserTest, ParseAdd) {
     READ_PROGRAM("../tests/bril/add.json")
-
     EXPECT_EQ(program->GetSize(), 1);
-    auto &func = program->GetFunction(0);
-    func->Dump(output);
-
+    DUMP_PROGRAM
     READ_RESULT("../tests/bril/add.bril")
-
     EXPECT_EQ(output.str(), testp.str());
 }
 
 TEST(ParserTest, ParseAckermann) {
     READ_PROGRAM("../tests/bril/ackermann.json")
-
     EXPECT_EQ(program->GetSize(), 2);
-    auto &func0 = program->GetFunction(0);
-    auto &func1 = program->GetFunction(1);
-    func0->Dump(output);
-    output << "\n";
-    func1->Dump(output);
-
+    DUMP_PROGRAM
     READ_RESULT("../tests/bril/ackermann.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}
 
+TEST(ParserTest, ParseBitwiseOps) {
+    READ_PROGRAM("../tests/bril/bitwise-ops.json")
+    EXPECT_EQ(program->GetSize(), 6);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/bitwise-ops.bril")
     EXPECT_EQ(output.str(), testp.str());
 }

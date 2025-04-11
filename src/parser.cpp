@@ -143,7 +143,7 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
                                              sym_tbl &symbols) {
     auto labels = instr.Get("labels").value();
     assert(labels.Size() == 1 && "Label size != 1 in JmpInstruction\n");
-    auto instr_ptr = std::make_unique<BranchInstruction>();
+    auto instr_ptr = std::make_unique<JmpInstruction>();
     auto lbl = labels.Get(0)->Get<std::string>().value();
     if (!symbols.contains(lbl)) {
         auto operand = std::make_unique<LabelOperand>(lbl);
@@ -153,6 +153,7 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
     } else {
         instr_ptr->SetOperand(symbols[lbl], 0);
     }
+    func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 
@@ -325,9 +326,9 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
     // Logic Instructions
     case OpCode::AND:
-        return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
+        return MakeInstruction<AndInstruction>(std::move(func), instr, symbols);
     case OpCode::OR:
-        return MakeInstruction<GeInstruction>(std::move(func), instr, symbols);
+        return MakeInstruction<OrInstruction>(std::move(func), instr, symbols);
     case OpCode::NOT:
         return MakeInstruction<NotInstruction, 1>(std::move(func), instr,
                                                   symbols);

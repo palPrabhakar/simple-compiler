@@ -20,7 +20,6 @@
   t2: int = call @ack m1 t1;
   ret t2;
 }
-
 @main(m: int, n: int) {
   tmp: int = call @ack m n;
   print tmp;
