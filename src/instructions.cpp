@@ -2,7 +2,24 @@
 #include "opcodes.hpp"
 #include <cassert>
 #include <iostream>
+#include <ranges>
 #include <unordered_map>
+
+#define PRINT_HELPER3(name)                                                    \
+    auto dest = operands[0];                                                   \
+    auto src0 = operands[1];                                                   \
+    auto src1 = operands[2];                                                   \
+    auto type = GetStrDataType(dest->GetType());                               \
+    out << dest->GetName() << ":"                                              \
+        << " " << type << " = " #name " " << src0->GetName() << " "            \
+        << src1->GetName() << ";\n";
+
+#define PRINT_HELPER2(name)                                                    \
+    auto dest = operands[0];                                                   \
+    auto src0 = operands[1];                                                   \
+    auto type = GetStrDataType(dest->GetType());                               \
+    out << dest->GetName() << ":"                                              \
+        << " " << type << " = " #name " " << src0->GetName() << ";\n";
 
 namespace sc {
 // clang-format off
@@ -59,6 +76,89 @@ OpCode GetOpCodeFromStr(std::string op_code) {
     assert(str_to_opcodes.contains(op_code) &&
            "GetOpCodeFromStr: Invalid opcode str\n");
     return str_to_opcodes.at(op_code);
+}
+
+// Arithmetic Instructions
+void AddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(add) }
+void MulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(mul) }
+void SubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(sub) }
+void DivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(div) }
+
+// Comparsion Instructions
+void EqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(eq) }
+void LtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(lt) }
+void GtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(gt) }
+void LeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(le) }
+void GeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(ge) }
+
+// Logic Instructions
+// clang-format off
+void AndInstruction::Dump(std::ostream &out) { PRINT_HELPER3(and) }
+void OrInstruction::Dump(std::ostream &out) { PRINT_HELPER3(or) }
+void NotInstruction::Dump(std::ostream &out) { PRINT_HELPER2(not) }
+// clang-format on
+
+// Control Instructions
+void JmpInstruction::Dump(std::ostream &out) {
+    out << "jmp ." << operands[0]->GetName() << ";\n";
+}
+
+void BranchInstruction::Dump(std::ostream &out) {
+    out << "br " << operands[2]->GetName() << " ." << operands[0]->GetName()
+        << " ." << operands[1]->GetName() << ";\n";
+}
+
+void CallInstruction::Dump(std::ostream &out) {
+    out << operands[0]->GetName() << ":"
+        << " " << GetStrDataType(operands[0]->GetType()) << " = call @" << func;
+    for (size_t i : std::views::iota(1UL, operands.size())) {
+        out << " " << operands[i]->GetName();
+    }
+    out << ";\n";
+}
+
+void RetInstruction::Dump(std::ostream &out) {
+    out << "ret " << operands[0]->GetName() << ";\n";
+}
+
+// Miscellaneous Instructions
+void IdInstruction::Dump(std::ostream &out) { PRINT_HELPER2(id) }
+
+void ConstInstruction::Dump(std::ostream &out) {
+    auto dest = operands[0];
+    auto src = operands[1];
+    auto type = GetStrDataType(dest->GetType());
+    out << dest->GetName() << ":"
+        << " " << type << " = const ";
+    switch (src->GetType()) {
+    case DataType::INT: {
+        auto int_src = static_cast<ImmedOperand<int> *>(src);
+        out << int_src->GetValue();
+    } break;
+    case DataType::FLOAT:
+        assert(false && "todo float\n");
+        break;
+    case DataType::BOOL: {
+        auto bool_src = static_cast<ImmedOperand<bool> *>(src);
+        out << (bool_src->GetValue() ? "true" : "false");
+    } break;
+    default:
+        assert(false);
+    }
+    out << ";\n";
+}
+
+void PrintInstruction::Dump(std::ostream &out) {
+    out << "print";
+    for (auto op : operands) {
+        out << " " << op->GetName();
+    }
+    out << ";\n";
+}
+void NopInstruction::Dump(std::ostream &out) { out << "nop;\n"; }
+
+void LabelInstruction::Dump(std::ostream &out) {
+    out << "." << operands[0]->GetName() << ":\n";
 }
 
 } // namespace sc

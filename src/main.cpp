@@ -2,6 +2,7 @@
 #include "program.hpp"
 #include <fstream>
 #include <iostream>
+#include <ranges>
 
 namespace sc {
 std::unique_ptr<Program> ParseProgram(sjp::Json);
@@ -15,8 +16,8 @@ int main(int argc, char *argv[]) {
     auto json_parser = sjp::Parser(ifs);
     auto data = json_parser.Parse();
     auto program = sc::ParseProgram(data);
-    for(size_t i = 0; i < program->GetSize(); ++i) {
-        auto &func = program->GetFunction(i);
+    for (size_t i : std::views::iota(0UL, program->GetSize())) {
+        auto func = program->GetFunction(i);
         func->Dump();
     }
     return 0;

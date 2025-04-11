@@ -29,8 +29,9 @@ class Function {
 
     std::string GetName() const { return name; }
 
-    std::unique_ptr<InstructionBase> &GetInstruction(size_t idx) {
-        return instructions[idx];
+    // non-owning pointer
+    InstructionBase *GetInstruction(size_t idx) {
+        return instructions[idx].get();
     }
 
     OperandBase *GetOperand(size_t idx) { return operands[idx].get(); }

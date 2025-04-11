@@ -7,6 +7,7 @@
 #include <format>
 #include <memory>
 #include <optional>
+#include <ranges>
 #include <stdexcept>
 #include <string>
 #include <unordered_map>
@@ -27,7 +28,7 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
                                          sjp::Json &args, sym_tbl &symbols) {
     // TODO:
     // Set register number
-    for (size_t i = 0; i < args.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, args.Size())) {
         auto jop = args.Get(i).value();
         std::string name = jop.Get("name")->Get<std::string>().value();
         std::string type = jop.Get("type")->Get<std::string>().value();
@@ -124,7 +125,7 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(dest_oprnd.get(), 0);
         func->AddOperand(std::move(dest_oprnd));
     }
-    for (size_t i = 0; i < args.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
             throw std::runtime_error(std::format(
@@ -167,7 +168,7 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
 
     auto instr_ptr = std::make_unique<BranchInstruction>();
 
-    for (size_t i = 0; i < labels.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, labels.Size())) {
         auto lbl = labels.Get(i)->Get<std::string>().value();
         if (!symbols.contains(lbl)) {
             auto operand = std::make_unique<LabelOperand>(lbl);
@@ -216,7 +217,7 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
     }
 
     auto args = instr.Get("args").value();
-    for (size_t i = 0; i < args.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
             throw std::runtime_error(
@@ -257,7 +258,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
         return func;
 
     auto instr_ptr = std::make_unique<PrintInstruction>();
-    for (size_t i = 0; i < args.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
         if (!symbols.contains(arg)) {
             throw std::runtime_error(
@@ -398,7 +399,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
-    for (size_t i = 0; i < instrs.Size(); ++i) {
+    for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr, symbols);
     }
@@ -408,8 +409,9 @@ std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
 std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
     sym_tbl symbols;
     DataType type = DataType::VOID;
-    if(jfunc.Get("type").has_value()) {
-      type = GetDataTypeFromStr(jfunc.Get("type")->Get<std::string>().value());
+    if (jfunc.Get("type").has_value()) {
+        type =
+            GetDataTypeFromStr(jfunc.Get("type")->Get<std::string>().value());
     }
     auto func = std::make_unique<Function>(
         jfunc.Get("name")->Get<std::string>().value(), type);
@@ -431,7 +433,7 @@ std::unique_ptr<Program> ParseProgram(sjp::Json jprogram) {
     auto program = std::make_unique<Program>();
     try {
         auto functions = jprogram.Get("functions");
-        for (size_t i = 0; i < functions->Size(); ++i) {
+        for (size_t i : std::views::iota(0UL, functions->Size())) {
             program->AddFunction(ParseFunction(functions->Get(i).value()));
         }
     } catch (std::bad_optional_access &err) {

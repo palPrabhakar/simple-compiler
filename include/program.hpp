@@ -7,17 +7,13 @@
 namespace sc {
 class Program {
   public:
+    ~Program() = default;
     void AddFunction(std::unique_ptr<Function> func) {
         functions.push_back(std::move(func));
     }
-
-    ~Program() = default;
-
     size_t GetSize() const { return functions.size(); }
-
-    std::unique_ptr<Function>& GetFunction(size_t idx) {
-        return functions[idx];
-    }
+    // non-owning pointer
+    Function *GetFunction(size_t idx) { return functions[idx].get(); }
 
   private:
     std::vector<std::unique_ptr<Function>> functions;
