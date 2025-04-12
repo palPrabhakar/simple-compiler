@@ -81,3 +81,11 @@ TEST(ParserTest, ParseMem) {
     READ_RESULT("../tests/bril/mem.bril")
     EXPECT_EQ(output.str(), testp.str());
 }
+
+TEST(ParserTest, Parse1dConv) {
+    READ_PROGRAM("../tests/bril/1dconv.json")
+    EXPECT_EQ(program->GetSize(), 4);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/1dconv.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}

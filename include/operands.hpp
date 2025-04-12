@@ -19,13 +19,13 @@ enum class DataType {
 
 DataType GetDataTypeFromStr(std::string);
 std::string GetStrDataType(DataType);
+std::string GetPtrType(const std::vector<DataType> &ptr_chain);
 
 class OperandBase {
   public:
     virtual ~OperandBase() = default;
-
+    std::string GetStrType() const;
     DataType GetType() const { return type; }
-
     std::string GetName() const { return name; }
 
   protected:
@@ -46,22 +46,7 @@ class PtrOperand : public RegOperand {
   public:
     PtrOperand(std::string name) : RegOperand(DataType::PTR, name) {}
     void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
-
-    std::string GetPtrType() {
-        std::string type;
-        type += "ptr<";
-        int count = 1;
-        for (auto t : ptr_chain) {
-            if (t == DataType::PTR) {
-                ++count;
-                type += "ptr<";
-            } else {
-                type += GetStrDataType(t);
-            }
-        }
-        type += std::string(count, '>');
-        return type;
-    }
+    const std::vector<DataType> &GetPtrChain() const { return ptr_chain; }
 
   private:
     std::vector<DataType> ptr_chain;

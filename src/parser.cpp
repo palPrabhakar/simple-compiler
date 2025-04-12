@@ -20,7 +20,7 @@ static inline void CheckSymbol(sym_tbl &symbols, std::string &arg,
                                const char *fname, const char *instr) {
     if (!symbols.contains(arg)) {
         throw std::runtime_error(
-            std::format("Error parsing {} in function {}."
+            std::format("Error parsing {} in function {}. "
                         "Use of an undefined operand {} found.\n",
                         instr, fname, arg));
     }
@@ -34,6 +34,24 @@ template <typename T> static inline T GetJsonValue(sjp::Json json) {
     }
 }
 
+static std::unique_ptr<PtrOperand> MakePtrOperand(std::string name,
+                                                  sjp::Json &data) {
+    auto operand = std::make_unique<PtrOperand>(name);
+    auto jtype = data.Get("type").value();
+    do {
+        auto type = jtype.Get("ptr");
+        if (type->type == sjp::JsonType::jobject) {
+            operand->AppendPtrChain(DataType::PTR);
+        } else {
+            operand->AppendPtrChain(
+                GetDataTypeFromStr(type->Get<std::string>().value()));
+            break;
+        }
+        jtype = type.value();
+    } while (true);
+    return operand;
+}
+
 template <typename T, DataType type>
 static std::unique_ptr<Function>
 BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
@@ -44,54 +62,63 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
     auto dest = instr.Get("dest")->Get<std::string>().value();
     if (tbl.contains(dest)) {
         // dest already exists
-        instr_ptr->SetOperand(tbl[dest], 0);
+        instr_ptr->SetOperand(tbl[dest]);
     } else {
         // create new dest reg operand
         auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
         tbl[dest] = dest_oprnd.get();
-        instr_ptr->SetOperand(dest_oprnd.get(), 0);
+        instr_ptr->SetOperand(dest_oprnd.get());
         func->AddOperand(std::move(dest_oprnd));
     }
     std::string sym_name = "_$K_" + type_str + "_" + std::to_string(value);
     if (tbl.contains(sym_name)) {
         // Const already exists
-        instr_ptr->SetOperand(tbl[sym_name], 1);
+        instr_ptr->SetOperand(tbl[sym_name]);
     } else {
         // Create new Immed Operand
         auto src_oprnd =
             std::make_unique<ImmedOperand<T>>(type, sym_name, value);
         tbl[sym_name] = src_oprnd.get();
-        instr_ptr->SetOperand(src_oprnd.get(), 1);
+        instr_ptr->SetOperand(src_oprnd.get());
         func->AddOperand(std::move(src_oprnd));
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 
-template <typename T, size_t argSize = 2>
+template <typename T, bool isDest = true>
 std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
                                           sjp::Json &instr, sym_tbl &symbols) {
 
     auto args = instr.Get("args").value();
-    assert(args.Size() == argSize && "Invalid args size in MakeInstruction\n");
     auto instr_ptr = std::make_unique<T>();
-    auto dest = instr.Get("dest")->Get<std::string>().value();
-    auto type_str = instr.Get("type")->Get<std::string>().value();
-    DataType type = GetDataTypeFromStr(type_str);
-    if (symbols.contains(dest)) {
-        // dest already exists
-        instr_ptr->SetOperand(symbols[dest], 0);
-    } else {
-        // create new dest reg operand
-        auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
-        symbols[dest] = dest_oprnd.get();
-        instr_ptr->SetOperand(dest_oprnd.get(), 0);
-        func->AddOperand(std::move(dest_oprnd));
+
+    if constexpr (isDest) {
+        auto dest = instr.Get("dest")->Get<std::string>().value();
+        if (symbols.contains(dest)) {
+            // dest already exists
+            instr_ptr->SetOperand(symbols[dest]);
+        } else {
+            // create new dest reg operand
+            std::unique_ptr<OperandBase> dest_oprnd = nullptr;
+            if (instr.Get("type")->type == sjp::JsonType::jobject) {
+                dest_oprnd = MakePtrOperand(dest, instr);
+            } else {
+                std::string type =
+                    instr.Get("type")->Get<std::string>().value();
+                dest_oprnd = std::make_unique<RegOperand>(
+                    GetDataTypeFromStr(type), dest);
+            }
+            symbols[dest] = dest_oprnd.get();
+            instr_ptr->SetOperand(dest_oprnd.get());
+            func->AddOperand(std::move(dest_oprnd));
+        }
     }
+
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
         CheckSymbol(symbols, arg, func->GetName().c_str(), "MakeInstruction");
-        instr_ptr->SetOperand(symbols[arg], i + 1);
+        instr_ptr->SetOperand(symbols[arg]);
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -105,13 +132,13 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
     assert(labels.Size() == 1 && "Label size != 1 in JmpInstruction\n");
     auto instr_ptr = std::make_unique<JmpInstruction>();
     auto lbl = labels.Get(0)->Get<std::string>().value();
-    if (!symbols.contains(lbl)) {
+    if (symbols.contains(lbl)) {
+        instr_ptr->SetOperand(symbols[lbl]);
+    } else {
         auto operand = std::make_unique<LabelOperand>(lbl);
         symbols[lbl] = operand.get();
-        instr_ptr->SetOperand(operand.get(), 0);
+        instr_ptr->SetOperand(operand.get());
         func->AddOperand(std::move(operand));
-    } else {
-        instr_ptr->SetOperand(symbols[lbl], 0);
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -127,18 +154,18 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     auto instr_ptr = std::make_unique<BranchInstruction>();
     for (size_t i : std::views::iota(0UL, labels.Size())) {
         auto lbl = labels.Get(i)->Get<std::string>().value();
-        if (!symbols.contains(lbl)) {
+        if (symbols.contains(lbl)) {
+            instr_ptr->SetOperand(symbols[lbl]);
+        } else {
             auto operand = std::make_unique<LabelOperand>(lbl);
             symbols[lbl] = operand.get();
-            instr_ptr->SetOperand(operand.get(), i);
+            instr_ptr->SetOperand(operand.get());
             func->AddOperand(std::move(operand));
-        } else {
-            instr_ptr->SetOperand(symbols[lbl], i);
         }
     }
     auto arg = args.Get(0)->Get<std::string>().value();
     CheckSymbol(symbols, arg, func->GetName().c_str(), "BranchInstruction");
-    instr_ptr->SetOperand(symbols[arg], 2);
+    instr_ptr->SetOperand(symbols[arg]);
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }
@@ -149,82 +176,39 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
     auto jfuncs = instr.Get("funcs").value();
     assert(jfuncs.Size() == 1 &&
            "More than one function specified in CallInstruction\n");
-    auto instr_ptr = std::make_unique<CallInstruction>();
-    instr_ptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
 
-    // first do dest, since first argument
-    auto dest = instr.Get("dest")->Get<std::string>().value();
-    if (symbols.contains(dest)) {
-        // dest already exists
-        instr_ptr->SetOperand(symbols[dest], 0);
+    bool has_dest = instr.Get("type").has_value();
+    if (has_dest) {
+        func = MakeInstruction<CallInstruction, true>(std::move(func), instr,
+                                                      symbols);
     } else {
-        // create new dest reg operand
-        DataType type =
-            GetDataTypeFromStr(instr.Get("type")->Get<std::string>().value());
-        auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
-        symbols[dest] = dest_oprnd.get();
-        instr_ptr->SetOperand(dest_oprnd.get(), 0);
-        func->AddOperand(std::move(dest_oprnd));
+        func = MakeInstruction<CallInstruction, false>(std::move(func), instr,
+                                                       symbols);
     }
 
-    auto args = instr.Get("args").value();
-    for (size_t i : std::views::iota(0UL, args.Size())) {
-        auto arg = args.Get(i)->Get<std::string>().value();
-        CheckSymbol(symbols, arg, func->GetName().c_str(), "CallInstruction");
-        instr_ptr->SetOperand(symbols[arg], i + 1);
-    }
-    func->AddInstructions(std::move(instr_ptr));
+    auto fptr = static_cast<CallInstruction *>(
+        func->GetInstruction(func->GetInstructionSize() - 1));
+    fptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
+    fptr->SetRetVal(has_dest);
     return func;
 }
 
 std::unique_ptr<Function> MakeRetInstruction(std::unique_ptr<Function> func,
                                              sjp::Json &instr,
                                              sym_tbl &symbols) {
-    auto args = instr.Get("args").value();
-    assert(args.Size() == 1 && "More than one return value specified\n");
     auto instr_ptr = std::make_unique<RetInstruction>();
-    auto arg = args.Get(0)->Get<std::string>().value();
-    CheckSymbol(symbols, arg, func->GetName().c_str(), "RetInstruction");
-    instr_ptr->SetOperand(symbols[arg], 0);
+    if (instr.Get("args").has_value()) {
+        auto args = instr.Get("args").value();
+        assert(args.Size() == 1 && "More than one return value specified\n");
+        auto arg = args.Get(0)->Get<std::string>().value();
+        CheckSymbol(symbols, arg, func->GetName().c_str(), "RetInstruction");
+        instr_ptr->SetOperand(symbols[arg]);
+    }
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }
 
 // Memory Instructions
-std::unique_ptr<Function> MakeAllocInstruction(std::unique_ptr<Function> func,
-                                               sjp::Json &instr,
-                                               sym_tbl &symbols) {
-    auto instr_ptr = std::make_unique<AllocInstruction>();
-    auto dest = instr.Get("dest")->Get<std::string>().value();
-    if (symbols.contains(dest)) {
-        instr_ptr->SetOperand(symbols[dest], 0);
-    } else {
-        auto operand = std::make_unique<PtrOperand>(dest);
-        auto jtype = instr.Get("type").value();
-        do {
-            auto type = jtype.Get("ptr");
-            if (type->type == sjp::JsonType::jobject) {
-                operand->AppendPtrChain(DataType::PTR);
-            } else {
-                operand->AppendPtrChain(
-                    GetDataTypeFromStr(type->Get<std::string>().value()));
-                break;
-            }
-            jtype = type.value();
-        } while (true);
-        symbols[dest] = operand.get();
-        instr_ptr->SetOperand(operand.get(), 0);
-        func->AddOperand(std::move(operand));
-    }
-    auto args = instr.Get("args").value();
-    assert(args.Size() == 1 && "Invaid argument size in AllocInstruction\n");
-    auto arg = args.Get(0)->Get<std::string>().value();
-    CheckSymbol(symbols, arg, func->GetName().c_str(), "AllocInstruction");
-    instr_ptr->SetOperand(symbols[arg], 1);
-    func->AddInstructions(std::move(instr_ptr));
-    return func;
-}
-
 std::unique_ptr<Function> MakeFreeInstruction(std::unique_ptr<Function> func,
                                               sjp::Json &instr,
                                               sym_tbl &symbols) {
@@ -233,41 +217,7 @@ std::unique_ptr<Function> MakeFreeInstruction(std::unique_ptr<Function> func,
     auto arg = args.Get(0)->Get<std::string>().value();
     CheckSymbol(symbols, arg, func->GetName().c_str(), "FreeInstruction");
     auto instr_ptr = std::make_unique<FreeInstruction>();
-    instr_ptr->SetOperand(symbols[arg], 0);
-    func->AddInstructions(std::move(instr_ptr));
-    return func;
-}
-
-std::unique_ptr<Function> MakeLoadInstruction(std::unique_ptr<Function> func,
-                                              sjp::Json &instr,
-                                              sym_tbl &symbols) {
-    auto instr_ptr = std::make_unique<LoadInstruction>();
-    auto dest = instr.Get("dest")->Get<std::string>().value();
-    if (symbols.contains(dest)) {
-        instr_ptr->SetOperand(symbols[dest], 0);
-    } else {
-        auto operand = std::make_unique<PtrOperand>(dest);
-        auto jtype = instr.Get("type").value();
-        do {
-            auto type = jtype.Get("ptr");
-            if (type->type == sjp::JsonType::jobject) {
-                operand->AppendPtrChain(DataType::PTR);
-            } else {
-                operand->AppendPtrChain(
-                    GetDataTypeFromStr(type->Get<std::string>().value()));
-                break;
-            }
-            jtype = type.value();
-        } while (true);
-        symbols[dest] = operand.get();
-        instr_ptr->SetOperand(operand.get(), 0);
-        func->AddOperand(std::move(operand));
-    }
-    auto args = instr.Get("args");
-    assert(args->Size() == 1 && "Invalid args size in LoadInstruction\n");
-    auto arg = args->Get(0)->Get<std::string>().value();
-    CheckSymbol(symbols, arg, func->GetName().c_str(), "LoadInstruction");
-    instr_ptr->SetOperand(symbols[arg], 1);
+    instr_ptr->SetOperand(symbols[arg]);
     func->AddInstructions(std::move(instr_ptr));
     return func;
 }
@@ -281,7 +231,7 @@ std::unique_ptr<Function> MakeStoreInstruction(std::unique_ptr<Function> func,
     for (size_t i : std::views::iota(0UL, args->Size())) {
         auto arg = args->Get(i)->Get<std::string>().value();
         CheckSymbol(symbols, arg, func->GetName().c_str(), "StoreInstruction");
-        instr_ptr->SetOperand(symbols[arg], i);
+        instr_ptr->SetOperand(symbols[arg]);
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -322,7 +272,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto arg = args.Get(i)->Get<std::string>().value();
         CheckSymbol(symbols, arg, func->GetName().c_str(), "PrintInstruction");
-        instr_ptr->SetOperand(symbols[arg], i);
+        instr_ptr->SetOperand(symbols[arg]);
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -333,13 +283,13 @@ std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
                                                sym_tbl &symbols) {
     auto lbl = instr.Get("label")->Get<std::string>().value();
     auto instr_ptr = std::make_unique<LabelInstruction>();
-    if (!symbols.contains(lbl)) {
+    if (symbols.contains(lbl)) {
+        instr_ptr->SetOperand(symbols[lbl]);
+    } else {
         auto operand = std::make_unique<LabelOperand>(lbl);
         symbols[lbl] = operand.get();
-        instr_ptr->SetOperand(operand.get(), 0);
+        instr_ptr->SetOperand(operand.get());
         func->AddOperand(std::move(operand));
-    } else {
-        instr_ptr->SetOperand(symbols[lbl], 0);
     }
     func->AddInstructions(std::move(instr_ptr));
     return func;
@@ -388,8 +338,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::OR:
         return MakeInstruction<OrInstruction>(std::move(func), instr, symbols);
     case OpCode::NOT:
-        return MakeInstruction<NotInstruction, 1>(std::move(func), instr,
-                                                  symbols);
+        return MakeInstruction<NotInstruction>(std::move(func), instr, symbols);
     // Control Instructions
     case OpCode::JMP:
         return MakeJmpInstruction(std::move(func), instr, symbols);
@@ -407,15 +356,18 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         assert(false && "todo get\n");
     // Memory Instructions
     case OpCode::ALLOC:
-        return MakeAllocInstruction(std::move(func), instr, symbols);
+        return MakeInstruction<AllocInstruction>(std::move(func), instr,
+                                                 symbols);
     case OpCode::FREE:
         return MakeFreeInstruction(std::move(func), instr, symbols);
     case OpCode::LOAD:
-        return MakeLoadInstruction(std::move(func), instr, symbols);
+        return MakeInstruction<LoadInstruction>(std::move(func), instr,
+                                                symbols);
     case OpCode::STORE:
         return MakeStoreInstruction(std::move(func), instr, symbols);
     case OpCode::PTRADD:
-        assert(false && "todo ptradd\n");
+        return MakeInstruction<PtraddInstruction>(std::move(func), instr,
+                                                  symbols);
     // Floating Instructions
     case OpCode::FADD:
         return MakeInstruction<FAddInstruction>(std::move(func), instr,
@@ -442,8 +394,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakeInstruction<FGeInstruction>(std::move(func), instr, symbols);
     // Miscellaneous Instructions
     case OpCode::ID:
-        return MakeInstruction<IdInstruction, 1>(std::move(func), instr,
-                                                 symbols);
+        return MakeInstruction<IdInstruction>(std::move(func), instr, symbols);
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:
@@ -474,15 +425,21 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto jop = args.Get(i).value();
         std::string name = jop.Get("name")->Get<std::string>().value();
-        std::string type = jop.Get("type")->Get<std::string>().value();
         if (symbols.contains(name)) {
             throw std::runtime_error(
                 std::format("Error parsing arguments of function {}. "
                             "Redeclaration of argument name {}\n",
                             func->GetName(), name));
         }
-        auto operand =
-            std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
+
+        std::unique_ptr<OperandBase> operand = nullptr;
+        if (jop.Get("type")->type == sjp::JsonType::jobject) {
+            operand = MakePtrOperand(name, jop);
+        } else {
+            std::string type = jop.Get("type")->Get<std::string>().value();
+            operand =
+                std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
+        }
         func->AddArgs(operand.get());
         symbols[name] = operand.get();
         func->AddOperand(std::move(operand));
@@ -492,13 +449,33 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
     sym_tbl symbols;
-    DataType type = DataType::VOID;
+    std::unique_ptr<Function> func = nullptr;
+    auto fn_name = jfunc.Get("name")->Get<std::string>().value();
     if (jfunc.Get("type").has_value()) {
-        type =
-            GetDataTypeFromStr(jfunc.Get("type")->Get<std::string>().value());
+        if (jfunc.Get("type")->type == sjp::JsonType::jobject) {
+            func = std::make_unique<PtrFunction>(fn_name);
+            auto jtype = jfunc.Get("type").value();
+            do {
+                auto type = jtype.Get("ptr");
+                if (type->type == sjp::JsonType::jobject) {
+                    static_cast<PtrFunction *>(func.get())
+                        ->AppendPtrChain(DataType::PTR);
+                } else {
+                    static_cast<PtrFunction *>(func.get())
+                        ->AppendPtrChain(GetDataTypeFromStr(
+                            type->Get<std::string>().value()));
+                    break;
+                }
+                jtype = type.value();
+            } while (true);
+        } else {
+            auto type = GetDataTypeFromStr(
+                jfunc.Get("type")->Get<std::string>().value());
+            func = std::make_unique<Function>(fn_name, type);
+        }
+    } else {
+        func = std::make_unique<Function>(fn_name, DataType::VOID);
     }
-    auto func = std::make_unique<Function>(
-        jfunc.Get("name")->Get<std::string>().value(), type);
     auto args = jfunc.Get("args");
     if (args != std::nullopt) {
         func = ParseArguments(std::move(func), args.value(), symbols);
@@ -515,13 +492,9 @@ std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
 
 std::unique_ptr<Program> ParseProgram(sjp::Json jprogram) {
     auto program = std::make_unique<Program>();
-    try {
-        auto functions = jprogram.Get("functions");
-        for (size_t i : std::views::iota(0UL, functions->Size())) {
-            program->AddFunction(ParseFunction(functions->Get(i).value()));
-        }
-    } catch (std::bad_optional_access &err) {
-        throw std::runtime_error("Unable to Parse Bril Progam\n");
+    auto functions = jprogram.Get("functions");
+    for (size_t i : std::views::iota(0UL, functions->Size())) {
+        program->AddFunction(ParseFunction(functions->Get(i).value()));
     }
     return program;
 }

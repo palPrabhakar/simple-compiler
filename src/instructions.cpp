@@ -1,26 +1,20 @@
 #include "instructions.hpp"
 #include "opcodes.hpp"
+#include "operands.hpp"
 #include <cassert>
 #include <iostream>
 #include <ranges>
-#include <sstream>
 #include <unordered_map>
 
 #define PRINT_HELPER3(name)                                                    \
-    auto dest = operands[0];                                                   \
-    auto src0 = operands[1];                                                   \
-    auto src1 = operands[2];                                                   \
-    auto type = GetStrDataType(dest->GetType());                               \
-    out << dest->GetName() << ":"                                              \
-        << " " << type << " = " #name " " << src0->GetName() << " "            \
-        << src1->GetName() << ";\n";
+    out << operands[0]->GetName() << ":"                                       \
+        << " " << operands[0]->GetStrType() << " = " #name " "                 \
+        << operands[1]->GetName() << " " << operands[2]->GetName() << ";\n";
 
 #define PRINT_HELPER2(name)                                                    \
-    auto dest = operands[0];                                                   \
-    auto src0 = operands[1];                                                   \
-    auto type = GetStrDataType(dest->GetType());                               \
-    out << dest->GetName() << ":"                                              \
-        << " " << type << " = " #name " " << src0->GetName() << ";\n";
+    out << operands[0]->GetName() << ":"                                       \
+        << " " << operands[0]->GetStrType() << " = " #name " "                 \
+        << operands[1]->GetName() << ";\n";
 
 namespace sc {
 // clang-format off
@@ -110,23 +104,30 @@ void BranchInstruction::Dump(std::ostream &out) {
 }
 
 void CallInstruction::Dump(std::ostream &out) {
-    out << operands[0]->GetName() << ":"
-        << " " << GetStrDataType(operands[0]->GetType()) << " = call @" << func;
-    for (size_t i : std::views::iota(1UL, operands.size())) {
+    if (ret_val) {
+        out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
+            << " = ";
+    }
+    out << "call @" << func;
+    for (size_t i :
+         std::views::iota(static_cast<size_t>(ret_val), operands.size())) {
         out << " " << operands[i]->GetName();
     }
     out << ";\n";
 }
 
 void RetInstruction::Dump(std::ostream &out) {
-    out << "ret " << operands[0]->GetName() << ";\n";
+    out << "ret";
+    if (operands.size()) {
+        out << " " << operands[0]->GetName();
+    }
+    out << ";\n";
 }
 
 // Memory Instructions
 void AllocInstruction::Dump(std::ostream &out) {
-    out << operands[0]->GetName() << ": "
-        << static_cast<PtrOperand *>(operands[0])->GetPtrType() << " = alloc "
-        << operands[1]->GetName() << ";\n";
+    out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
+        << " = alloc " << operands[1]->GetName() << ";\n";
 }
 
 void FreeInstruction::Dump(std::ostream &out) {
@@ -134,13 +135,8 @@ void FreeInstruction::Dump(std::ostream &out) {
 }
 
 void LoadInstruction::Dump(std::ostream &out) {
-    out << operands[0]->GetName() << ": ";
-    if (operands[0]->GetType() == DataType::PTR) {
-        out << static_cast<PtrOperand *>(operands[0])->GetPtrType();
-    } else {
-        out << GetStrDataType(operands[0]->GetType());
-    }
-    out << " = load " << operands[1]->GetName() << ";\n";
+    out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
+        << " = load " << operands[1]->GetName() << ";\n";
 }
 
 void StoreInstruction::Dump(std::ostream &out) {
@@ -150,6 +146,8 @@ void StoreInstruction::Dump(std::ostream &out) {
     }
     out << ";\n";
 }
+
+void PtraddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(ptradd) }
 
 // Floating-Point Arithmetic Instructions
 void FAddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fadd) }
@@ -170,7 +168,7 @@ void IdInstruction::Dump(std::ostream &out) { PRINT_HELPER2(id) }
 void ConstInstruction::Dump(std::ostream &out) {
     auto dest = operands[0];
     auto src = operands[1];
-    auto type = GetStrDataType(dest->GetType());
+    auto type = dest->GetStrType();
     out << dest->GetName() << ":"
         << " " << type << " = const ";
     switch (src->GetType()) {

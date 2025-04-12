@@ -15,13 +15,14 @@ class InstructionBase {
     virtual ~InstructionBase() = default;
     virtual void Dump(std::ostream &out = std::cout) = 0;
     OpCode GetOpCode() const { return opcode; }
+    size_t GetOperandSize() const { return operands.size(); }
 
-    virtual void SetOperand(OperandBase *oprnd, size_t idx) {
-        if (idx < operands.size()) {
-            operands[idx] = std::move(oprnd);
-        } else {
-            operands.push_back(std::move(oprnd));
-        }
+    void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
+
+    void SetOperand(OperandBase *oprnd, size_t idx) {
+        assert(idx < operands.size() &&
+               "idx out of bounds InstructionBase::SetOperands\n");
+        operands[idx] = oprnd;
     }
 
     OperandBase *GetOperand(size_t idx) {
@@ -41,35 +42,18 @@ class UnaryInstruction : public InstructionBase {
   public:
     UnaryInstruction(OpCode opcode) : InstructionBase(opcode) {}
     virtual void Dump(std::ostream &out = std::cout) override = 0;
-
-    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
-        assert(idx == 0 && "UnaryInstruction::SetOperand invalid index\n");
-        InstructionBase::SetOperand(std::move(oprnd), 0);
-    }
 };
 
 class BinaryInstruction : public InstructionBase {
   public:
     BinaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
     virtual void Dump(std::ostream &out = std::cout) override = 0;
-
-    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
-        assert((idx == 0 || idx == 1) &&
-               "BinaryInstruction::SetOperand invalid index\n");
-        InstructionBase::SetOperand(std::move(oprnd), idx);
-    }
 };
 
 class TernaryInstruction : public InstructionBase {
   public:
     TernaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
     virtual void Dump(std::ostream &out = std::cout) override = 0;
-
-    virtual void SetOperand(OperandBase *oprnd, size_t idx) override {
-        assert((idx == 0 || idx == 1 || idx == 2) &&
-               "BinaryInstruction::SetOperand invalid index\n");
-        InstructionBase::SetOperand(std::move(oprnd), idx);
-    }
 };
 
 // Arithmetic Instructions
@@ -170,10 +154,13 @@ class CallInstruction final : public InstructionBase {
     CallInstruction() : InstructionBase(OpCode::CALL) {}
     void Dump(std::ostream &out = std::cout) override;
     void SetFuncName(std::string fname) { func = fname; }
+    void SetRetVal(bool val) { ret_val = val; }
     std::string GetFuncName() const { return func; }
+    bool GetRetVal() const { return ret_val; }
 
   private:
     std::string func;
+    bool ret_val;
 };
 
 class RetInstruction final : public UnaryInstruction {
@@ -204,6 +191,12 @@ class LoadInstruction : public BinaryInstruction {
 class StoreInstruction : public BinaryInstruction {
   public:
     StoreInstruction() : BinaryInstruction(OpCode::STORE) {}
+    void Dump(std::ostream &out = std::cout) override;
+};
+
+class PtraddInstruction : public TernaryInstruction {
+  public:
+    PtraddInstruction() : TernaryInstruction(OpCode::PTRADD) {}
     void Dump(std::ostream &out = std::cout) override;
 };
 

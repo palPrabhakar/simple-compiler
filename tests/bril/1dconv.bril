@@ -1,13 +1,13 @@
-@genarray(size : int, iskernel : bool) : ptr<float> {
+@genarray(size: int, iskernel: bool): ptr<float> {
   arr: ptr<float> = alloc size;
-  v0: float = const 0.0;
+  v0: float = const 0;
   br iskernel .set.val.is.kernel .set.val.is.not.kernel;
 .set.val.is.kernel:
   kernelval: float = const 0.3;
   v0: float = fadd v0 kernelval;
   jmp .continue;
 .set.val.is.not.kernel:
-  arrval: float = const 60.0;
+  arrval: float = const 60;
   v0: float = fadd v0 arrval;
 .continue:
   i: int = const 0;
@@ -25,8 +25,8 @@
 .return:
   ret arr;
 }
-@convolve(kernel: ptr<float>, kernelsize: int, array: ptr<float>, arraysize: int) : ptr<float> {
-  zero: float = const 0.0;
+@convolve(kernel: ptr<float>, kernelsize: int, array: ptr<float>, arraysize: int): ptr<float> {
+  zero: float = const 0;
   one: int = const 1;
   t: int = sub arraysize kernelsize;
   outputsize: int = add t one;
@@ -37,7 +37,7 @@
   cond: bool = lt i outputsize;
   br cond .outer.for.body .return;
 .outer.for.body:
-  store outputptr zero; # init array value to 0
+  store outputptr zero;
   j: int = const 0;
   kernelptr: ptr<float> = id kernel;
 .inner.for.cond:
