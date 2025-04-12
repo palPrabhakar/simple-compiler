@@ -74,36 +74,36 @@ OpCode GetOpCodeFromStr(std::string op_code) {
 }
 
 // Arithmetic Instructions
-void AddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(add) }
-void MulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(mul) }
-void SubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(sub) }
-void DivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(div) }
+void AddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(add) }
+void MulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(mul) }
+void SubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(sub) }
+void DivInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(div) }
 
 // Comparsion Instructions
-void EqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(eq) }
-void LtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(lt) }
-void GtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(gt) }
-void LeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(le) }
-void GeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(ge) }
+void EqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(eq) }
+void LtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(lt) }
+void GtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(gt) }
+void LeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(le) }
+void GeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(ge) }
 
 // Logic Instructions
 // clang-format off
-void AndInstruction::Dump(std::ostream &out) { PRINT_HELPER3(and) }
-void OrInstruction::Dump(std::ostream &out) { PRINT_HELPER3(or) }
-void NotInstruction::Dump(std::ostream &out) { PRINT_HELPER2(not) }
+void AndInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(and) }
+void OrInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(or) }
+void NotInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(not) }
 // clang-format on
 
 // Control Instructions
-void JmpInstruction::Dump(std::ostream &out) {
+void JmpInstruction::Dump(std::ostream &out) const {
     out << "jmp ." << operands[0]->GetName() << ";\n";
 }
 
-void BranchInstruction::Dump(std::ostream &out) {
+void BranchInstruction::Dump(std::ostream &out) const {
     out << "br " << operands[2]->GetName() << " ." << operands[0]->GetName()
         << " ." << operands[1]->GetName() << ";\n";
 }
 
-void CallInstruction::Dump(std::ostream &out) {
+void CallInstruction::Dump(std::ostream &out) const {
     if (ret_val) {
         out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
             << " = ";
@@ -116,7 +116,7 @@ void CallInstruction::Dump(std::ostream &out) {
     out << ";\n";
 }
 
-void RetInstruction::Dump(std::ostream &out) {
+void RetInstruction::Dump(std::ostream &out) const {
     out << "ret";
     if (operands.size()) {
         out << " " << operands[0]->GetName();
@@ -125,21 +125,21 @@ void RetInstruction::Dump(std::ostream &out) {
 }
 
 // Memory Instructions
-void AllocInstruction::Dump(std::ostream &out) {
+void AllocInstruction::Dump(std::ostream &out) const {
     out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
         << " = alloc " << operands[1]->GetName() << ";\n";
 }
 
-void FreeInstruction::Dump(std::ostream &out) {
+void FreeInstruction::Dump(std::ostream &out) const {
     out << "free " << operands[0]->GetName() << ";\n";
 }
 
-void LoadInstruction::Dump(std::ostream &out) {
+void LoadInstruction::Dump(std::ostream &out) const {
     out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
         << " = load " << operands[1]->GetName() << ";\n";
 }
 
-void StoreInstruction::Dump(std::ostream &out) {
+void StoreInstruction::Dump(std::ostream &out) const {
     out << "store";
     for (size_t i : std::views::iota(0UL, operands.size())) {
         out << " " << operands[i]->GetName();
@@ -147,25 +147,25 @@ void StoreInstruction::Dump(std::ostream &out) {
     out << ";\n";
 }
 
-void PtraddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(ptradd) }
+void PtraddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(ptradd) }
 
 // Floating-Point Arithmetic Instructions
-void FAddInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fadd) }
-void FMulInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fmul) }
-void FSubInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fsub) }
-void FDivInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fdiv) }
+void FAddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fadd) }
+void FMulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fmul) }
+void FSubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fsub) }
+void FDivInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fdiv) }
 
 // Floating-Point Comparsion Instructions
-void FEqInstruction::Dump(std::ostream &out) { PRINT_HELPER3(feq) }
-void FLtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(flt) }
-void FGtInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fgt) }
-void FLeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fle) }
-void FGeInstruction::Dump(std::ostream &out) { PRINT_HELPER3(fge) }
+void FEqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(feq) }
+void FLtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(flt) }
+void FGtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fgt) }
+void FLeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fle) }
+void FGeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fge) }
 
 // Miscellaneous Instructions
-void IdInstruction::Dump(std::ostream &out) { PRINT_HELPER2(id) }
+void IdInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(id) }
 
-void ConstInstruction::Dump(std::ostream &out) {
+void ConstInstruction::Dump(std::ostream &out) const {
     auto dest = operands[0];
     auto src = operands[1];
     auto type = dest->GetStrType();
@@ -190,16 +190,16 @@ void ConstInstruction::Dump(std::ostream &out) {
     out << ";\n";
 }
 
-void PrintInstruction::Dump(std::ostream &out) {
+void PrintInstruction::Dump(std::ostream &out) const {
     out << "print";
     for (auto op : operands) {
         out << " " << op->GetName();
     }
     out << ";\n";
 }
-void NopInstruction::Dump(std::ostream &out) { out << "nop;\n"; }
+void NopInstruction::Dump(std::ostream &out) const { out << "nop;\n"; }
 
-void LabelInstruction::Dump(std::ostream &out) {
+void LabelInstruction::Dump(std::ostream &out) const {
     out << "." << operands[0]->GetName() << ":\n";
 }
 } // namespace sc
