@@ -200,38 +200,6 @@ class PtraddInstruction : public TernaryInstruction {
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-// Miscellaneous Instructions
-class IdInstruction final : public BinaryInstruction {
-  public:
-    IdInstruction() : BinaryInstruction(OpCode::ID) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
-class ConstInstruction final : public BinaryInstruction {
-    // Src is ImmedOperand
-  public:
-    ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
-class PrintInstruction final : public InstructionBase {
-  public:
-    PrintInstruction() : InstructionBase(OpCode::PRINT) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
-class NopInstruction final : public InstructionBase {
-  public:
-    NopInstruction() : InstructionBase(OpCode::NOP) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
-class LabelInstruction final : public UnaryInstruction {
-  public:
-    LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
 // Floating-Point Arithmetic Instructions
 class FAddInstruction final : public TernaryInstruction {
   public:
@@ -285,6 +253,38 @@ class FLeInstruction final : public TernaryInstruction {
 class FGeInstruction final : public TernaryInstruction {
   public:
     FGeInstruction() : TernaryInstruction(OpCode::FGE) {}
+    void Dump(std::ostream &out = std::cout) const override;
+};
+
+// Miscellaneous Instructions
+class IdInstruction final : public BinaryInstruction {
+  public:
+    IdInstruction() : BinaryInstruction(OpCode::ID) {}
+    void Dump(std::ostream &out = std::cout) const override;
+};
+
+class ConstInstruction final : public BinaryInstruction {
+    // Src is ImmedOperand
+  public:
+    ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
+    void Dump(std::ostream &out = std::cout) const override;
+};
+
+class PrintInstruction final : public InstructionBase {
+  public:
+    PrintInstruction() : InstructionBase(OpCode::PRINT) {}
+    void Dump(std::ostream &out = std::cout) const override;
+};
+
+class LabelInstruction final : public UnaryInstruction {
+    public:
+        LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
+        void Dump(std::ostream &out = std::cout) const override;
+};
+
+class NopInstruction final : public InstructionBase {
+  public:
+    NopInstruction() : InstructionBase(OpCode::NOP) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 } // namespace sc

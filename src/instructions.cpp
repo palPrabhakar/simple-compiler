@@ -197,9 +197,10 @@ void PrintInstruction::Dump(std::ostream &out) const {
     }
     out << ";\n";
 }
-void NopInstruction::Dump(std::ostream &out) const { out << "nop;\n"; }
 
 void LabelInstruction::Dump(std::ostream &out) const {
     out << "." << operands[0]->GetName() << ":\n";
 }
+
+void NopInstruction::Dump(std::ostream &out) const { out << "nop;\n"; }
 } // namespace sc

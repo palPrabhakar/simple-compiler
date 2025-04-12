@@ -86,14 +86,14 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
     return func;
 }
 
-template <typename T, bool isDest = true>
+template <typename T, bool is_dest = true>
 std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
                                           sjp::Json &instr, sym_tbl &symbols) {
 
     auto args = instr.Get("args").value();
     auto instr_ptr = std::make_unique<T>();
 
-    if constexpr (isDest) {
+    if constexpr (is_dest) {
         auto dest = instr.Get("dest")->Get<std::string>().value();
         if (symbols.contains(dest)) {
             // dest already exists
@@ -401,12 +401,15 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakePrintInstruction(std::move(func), instr, symbols);
     case OpCode::LABEL:
         return MakeLabelInstruction(std::move(func), instr, symbols);
-    case OpCode::NOP:
-        assert(false && "todo nop\n");
+    case OpCode::NOP: {
+        auto instr_ptr = std::make_unique<NopInstruction>();
+        func->AddInstructions(std::move(instr_ptr));
+        return func;
+    }
     default:
         assert(false && "Invalid opcode\n");
     }
-    return nullptr;
+    return func;
 }
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
