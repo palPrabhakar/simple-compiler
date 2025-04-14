@@ -34,22 +34,20 @@ template <typename T> static inline T GetJsonValue(sjp::Json json) {
     }
 }
 
-static std::unique_ptr<PtrOperand> MakePtrOperand(std::string name,
-                                                  sjp::Json &data) {
-    auto operand = std::make_unique<PtrOperand>(name);
+template <typename T> static T ParsePtrType(T t, sjp::Json &data) {
     auto jtype = data.Get("type").value();
     do {
         auto type = jtype.Get("ptr");
         if (type->type == sjp::JsonType::jobject) {
-            operand->AppendPtrChain(DataType::PTR);
+            t->AppendPtrChain(DataType::PTR);
         } else {
-            operand->AppendPtrChain(
+            t->AppendPtrChain(
                 GetDataTypeFromStr(type->Get<std::string>().value()));
             break;
         }
         jtype = type.value();
     } while (true);
-    return operand;
+    return std::move(t);
 }
 
 template <typename T, DataType type>
@@ -103,7 +101,9 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
             // create new dest reg operand
             std::unique_ptr<OperandBase> dest_oprnd = nullptr;
             if (instr.Get("type")->type == sjp::JsonType::jobject) {
-                dest_oprnd = MakePtrOperand(dest, instr);
+                // dest_oprnd = MakePtrOperand(dest, instr);
+                dest_oprnd =
+                    ParsePtrType(std::make_unique<PtrOperand>(dest), instr);
             } else {
                 std::string type =
                     instr.Get("type")->Get<std::string>().value();
@@ -453,7 +453,7 @@ std::unique_ptr<Function> ParseArguments(std::unique_ptr<Function> func,
 
         std::unique_ptr<OperandBase> operand = nullptr;
         if (jop.Get("type")->type == sjp::JsonType::jobject) {
-            operand = MakePtrOperand(name, jop);
+            operand = ParsePtrType(std::make_unique<PtrOperand>(name), jop);
         } else {
             std::string type = jop.Get("type")->Get<std::string>().value();
             operand =
@@ -472,21 +472,7 @@ std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
     auto fn_name = jfunc.Get("name")->Get<std::string>().value();
     if (jfunc.Get("type").has_value()) {
         if (jfunc.Get("type")->type == sjp::JsonType::jobject) {
-            func = std::make_unique<PtrFunction>(fn_name);
-            auto jtype = jfunc.Get("type").value();
-            do {
-                auto type = jtype.Get("ptr");
-                if (type->type == sjp::JsonType::jobject) {
-                    static_cast<PtrFunction *>(func.get())
-                        ->AppendPtrChain(DataType::PTR);
-                } else {
-                    static_cast<PtrFunction *>(func.get())
-                        ->AppendPtrChain(GetDataTypeFromStr(
-                            type->Get<std::string>().value()));
-                    break;
-                }
-                jtype = type.value();
-            } while (true);
+            func = ParsePtrType(std::make_unique<PtrFunction>(fn_name), jfunc);
         } else {
             auto type = GetDataTypeFromStr(
                 jfunc.Get("type")->Get<std::string>().value());
@@ -500,11 +486,6 @@ std::unique_ptr<Function> ParseFunction(sjp::Json jfunc) {
         func = ParseArguments(std::move(func), args.value(), symbols);
     }
     auto instrs = jfunc.Get("instrs");
-    if (instrs == std::nullopt || instrs->Size() == 0) {
-        throw std::runtime_error(std::format("Error parsing function {}. "
-                                             "No valid instructions found.\n",
-                                             func->GetName()));
-    }
     func = ParseBody(std::move(func), instrs.value(), symbols);
     return func;
 }
