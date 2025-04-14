@@ -1,4 +1,5 @@
 @ack(m: int, n: int): int {
+.entry:
   zero: int = const 0;
   one: int = const 1;
   cond_m: bool = eq m zero;
@@ -21,6 +22,7 @@
   ret t2;
 }
 @main(m: int, n: int) {
+.entry:
   tmp: int = call @ack m n;
   print tmp;
 }

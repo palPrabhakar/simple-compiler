@@ -15,7 +15,6 @@ int main(int argc, char *argv[]) {
     std::ifstream ifs(argv[1]);
     auto json_parser = sjp::Parser(ifs);
     auto data = json_parser.Parse();
-    // data.Dump();
     auto program = sc::ParseProgram(data);
     for (size_t i : std::views::iota(0UL, program->GetSize())) {
         auto func = program->GetFunction(i);

@@ -1,4 +1,5 @@
 @main {
+.entry:
   v0: int = const 23789216;
   x: int = id v0;
   v1: int = const 1748698766;
@@ -12,6 +13,7 @@
   v5: int = const 0;
 }
 @mod(r: int, s: int): int {
+.entry:
   v0: int = id r;
   v1: int = id r;
   v2: int = id s;
@@ -24,6 +26,7 @@
   ret v7;
 }
 @gcd(a: int, b: int): int {
+.entry:
   v0: int = const 0;
   zero: int = id v0;
   v1: int = id b;

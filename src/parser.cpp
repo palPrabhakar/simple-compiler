@@ -429,7 +429,10 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
+    auto lbl = sjp::Json();
+    lbl.InsertOrUpdate("label", "entry");
     func->AddBlock(std::make_unique<Block>("entry"));
+    func = MakeLabelInstruction(std::move(func), lbl, symbols);
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr, symbols);

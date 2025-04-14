@@ -1,4 +1,5 @@
 @main {
+.entry:
   v0: float = const 1.1;
   v1: float = const 0.02;
   v2: float = const 0.3;

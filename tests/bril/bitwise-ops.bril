@@ -1,4 +1,5 @@
 @mod2(a: int): bool {
+.entry:
   two: int = const 2;
   tmp: int = div a two;
   tmp2: int = mul tmp two;
@@ -8,6 +9,7 @@
   ret ans;
 }
 @loop_subroutine(a: int, b: int, c: bool): int {
+.entry:
   i: int = const 0;
   n: int = const 63;
   one: int = const 1;
@@ -38,22 +40,26 @@
   ret ans;
 }
 @OR(a: int, b: int): int {
+.entry:
   oper: bool = const true;
   v1: int = call @loop_subroutine a b oper;
   ret v1;
 }
 @AND(a: int, b: int): int {
+.entry:
   oper: bool = const false;
   v1: int = call @loop_subroutine a b oper;
   ret v1;
 }
 @XOR(a: int, b: int): int {
+.entry:
   and_val: int = call @AND a b;
   or_val: int = call @OR a b;
   ans: int = sub or_val and_val;
   ret ans;
 }
 @main(a: int, b: int, c: int) {
+.entry:
   one: int = const 1;
   zero: int = const 0;
   sel: int = sub c one;
