@@ -18,7 +18,7 @@
 #define DUMP_PROGRAM                                                           \
     std::stringstream output;                                                  \
     for (size_t i = 0; i < program->GetSize(); ++i) {                          \
-        auto func = program->GetFunction(i);                                  \
+        auto func = program->GetFunction(i);                                   \
         func->Dump(output);                                                    \
     }
 

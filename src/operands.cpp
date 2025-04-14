@@ -1,6 +1,5 @@
-#include "operands.hpp"
+#include "operand.hpp"
 #include <cassert>
-#include <iostream>
 
 namespace sc {
 DataType GetDataTypeFromStr(std::string type_str) {

@@ -1,8 +1,8 @@
 #include "function.hpp"
-#include "instructions.hpp"
+#include "instruction.hpp"
 #include "json.hpp"
 #include "opcodes.hpp"
-#include "operands.hpp"
+#include "operand.hpp"
 #include "program.hpp"
 #include <format>
 #include <memory>
@@ -82,7 +82,8 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(src_oprnd.get());
         func->AddOperand(std::move(src_oprnd));
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -120,7 +121,8 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "MakeInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -140,7 +142,8 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(operand.get());
         func->AddOperand(std::move(operand));
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -166,7 +169,8 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     auto arg = args.Get(0)->Get<std::string>().value();
     CheckSymbol(symbols, arg, func->GetName().c_str(), "BranchInstruction");
     instr_ptr->SetOperand(symbols[arg]);
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -186,10 +190,11 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
                                                        symbols);
     }
 
-    auto fptr = static_cast<CallInstruction *>(
-        func->GetInstruction(func->GetInstructionSize() - 1));
-    fptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
-    fptr->SetRetVal(has_dest);
+    auto block = func->GetBlock(func->GetBlockSize() - 1);
+    auto iptr = static_cast<CallInstruction *>(
+        block->GetInstruction(block->GetInstructionSize() - 1));
+    iptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
+    iptr->SetRetVal(has_dest);
     return func;
 }
 
@@ -204,7 +209,8 @@ std::unique_ptr<Function> MakeRetInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "RetInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -218,7 +224,8 @@ std::unique_ptr<Function> MakeFreeInstruction(std::unique_ptr<Function> func,
     CheckSymbol(symbols, arg, func->GetName().c_str(), "FreeInstruction");
     auto instr_ptr = std::make_unique<FreeInstruction>();
     instr_ptr->SetOperand(symbols[arg]);
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -233,7 +240,8 @@ std::unique_ptr<Function> MakeStoreInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "StoreInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -274,7 +282,8 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "PrintInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -291,7 +300,9 @@ std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(operand.get());
         func->AddOperand(std::move(operand));
     }
-    func->AddInstructions(std::move(instr_ptr));
+    func->AddBlock(std::make_unique<Block>(lbl));
+    func->GetBlock(func->GetBlockSize() - 1)
+        ->AddInstruction(std::move(instr_ptr));
     return func;
 }
 
@@ -341,13 +352,15 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakeInstruction<NotInstruction>(std::move(func), instr, symbols);
     // Control Instructions
     case OpCode::JMP:
+        // End block
         return MakeJmpInstruction(std::move(func), instr, symbols);
-        break;
     case OpCode::BR:
+        // End block
         return MakeBranchInstruction(std::move(func), instr, symbols);
     case OpCode::CALL:
         return MakeCallInstruction(std::move(func), instr, symbols);
     case OpCode::RET:
+        // End block
         return MakeRetInstruction(std::move(func), instr, symbols);
     // SSA Instructions
     case OpCode::SET:
@@ -400,10 +413,12 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
     case OpCode::LABEL:
+        // Make new block
         return MakeLabelInstruction(std::move(func), instr, symbols);
     case OpCode::NOP: {
         auto instr_ptr = std::make_unique<NopInstruction>();
-        func->AddInstructions(std::move(instr_ptr));
+        func->GetBlock(func->GetBlockSize() - 1)
+            ->AddInstruction(std::move(instr_ptr));
         return func;
     }
     default:
@@ -414,6 +429,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
+    func->AddBlock(std::make_unique<Block>("entry"));
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr, symbols);

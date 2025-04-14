@@ -1,6 +1,6 @@
 #pragma once
 #include "opcodes.hpp"
-#include "operands.hpp"
+#include "operand.hpp"
 #include <cassert>
 #include <iostream>
 #include <ostream>
