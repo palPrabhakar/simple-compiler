@@ -133,6 +133,8 @@ class NotInstruction final : public BinaryInstruction {
 
 // Control Instruction
 class JmpInstruction final : public UnaryInstruction {
+    // output_label = f(input_label)
+    // Changes PC by some offset
   public:
     JmpInstruction() : UnaryInstruction(OpCode::JMP) {}
     void Dump(std::ostream &out = std::cout) const override;
@@ -142,6 +144,8 @@ class BranchInstruction final : public TernaryInstruction {
     // One source and two destinations
     // Source - RegOperand
     // Dest - LabelOperand
+    // output_label = f(cond, input_label{0, 1})
+    // Changes PC by some offset
   public:
     BranchInstruction() : TernaryInstruction(OpCode::BR) {}
     void Dump(std::ostream &out = std::cout) const override;
@@ -277,9 +281,11 @@ class PrintInstruction final : public InstructionBase {
 };
 
 class LabelInstruction final : public UnaryInstruction {
-    public:
-        LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
-        void Dump(std::ostream &out = std::cout) const override;
+    // ouput_label = f(input_label)
+    // Doesn't change the PC
+  public:
+    LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
+    void Dump(std::ostream &out = std::cout) const override;
 };
 
 class NopInstruction final : public InstructionBase {

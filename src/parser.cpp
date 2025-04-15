@@ -47,7 +47,7 @@ template <typename T> static T ParsePtrType(T t, sjp::Json &data) {
         }
         jtype = type.value();
     } while (true);
-    return std::move(t);
+    return t;
 }
 
 template <typename T, DataType type>
@@ -431,7 +431,6 @@ std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
     auto lbl = sjp::Json();
     lbl.InsertOrUpdate("label", "entry");
-    func->AddBlock(std::make_unique<Block>("entry"));
     func = MakeLabelInstruction(std::move(func), lbl, symbols);
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();

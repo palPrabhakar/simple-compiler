@@ -24,8 +24,6 @@ class Function {
         blocks.push_back(std::move(block));
     }
 
-    void Dump(std::ostream &out = std::cout);
-
     std::string GetName() const { return name; }
 
     OperandBase *GetOperand(size_t idx) { return operands[idx].get(); }
@@ -44,7 +42,11 @@ class Function {
         return blocks[idx].get();
     }
 
+    void Dump(std::ostream &out = std::cout);
     virtual std::string GetStrRetType() const;
+    void BuildCFG();
+    void DumpBlocks(std::ostream &out = std::cout);
+    void DumpCFG(std::ostream &out = std::cout);
 
   protected:
     std::vector<std::unique_ptr<Block>> blocks;
@@ -52,6 +54,10 @@ class Function {
     std::vector<OperandBase *> args;
     std::string name;
     DataType ret_type;
+
+  private:
+    void FixIR();
+    void AddUniqueExitBlock(std::vector<Block *> rb);
 };
 
 class PtrFunction : public Function {
@@ -64,5 +70,4 @@ class PtrFunction : public Function {
   private:
     std::vector<DataType> ptr_chain;
 };
-
 } // namespace sc

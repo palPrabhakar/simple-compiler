@@ -18,6 +18,8 @@ int main(int argc, char *argv[]) {
     auto program = sc::ParseProgram(data);
     for (size_t i : std::views::iota(0UL, program->GetSize())) {
         auto func = program->GetFunction(i);
+        func->BuildCFG();
+        func->DumpCFG();
         func->Dump();
     }
     return 0;

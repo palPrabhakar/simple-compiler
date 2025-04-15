@@ -55,6 +55,13 @@ class PtrOperand : public RegOperand {
 class LabelOperand : public OperandBase {
   public:
     LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
+
+    void SetBlockIdx(const size_t idx) { block_idx = idx; }
+
+    size_t GetBlockIdx() const { return block_idx; }
+
+  private:
+    size_t block_idx;
 };
 
 template <typename T> class ImmedOperand : public OperandBase {
