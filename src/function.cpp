@@ -53,6 +53,14 @@ void Function::FixIR() {
     if (rb.size() > 1) {
         AddUniqueExitBlock(std::move(rb));
     }
+
+    auto &block = blocks[blocks.size() - 1];
+    if (block->GetInstruction(block->GetInstructionSize() - 1)->GetOpCode() !=
+        OpCode::RET) {
+        assert(ret_type == DataType::VOID &&
+               "Non-void with non-return last instruction.\n");
+        block->AddInstruction(std::make_unique<RetInstruction>());
+    }
 }
 
 void Function::AddUniqueExitBlock(std::vector<Block *> rb) {
@@ -121,7 +129,6 @@ void Function::BuildCFG() {
             blocks[idx]->AddSuccessor(blocks[si].get());
         }
     };
-    std::vector<size_t> ret_blocks;
     for (size_t i : std::views::iota(0UL, blocks.size())) {
         auto instr =
             blocks[i]->GetInstruction(blocks[i]->GetInstructionSize() - 1);
@@ -133,17 +140,16 @@ void Function::BuildCFG() {
             add_successor(instr, i, 0, 2);
             break;
         case OpCode::RET:
-            assert(blocks[i]->GetSuccessorSize() == 0 &&
-                   "Invalid CFG successor found\n");
-            ret_blocks.push_back(i);
+            assert(i == blocks.size() - 1 &&
+                   "Function::BuildCFG - ret instruction found befor last "
+                   "block\n");
             break;
         default:
-            assert("Invaid Opcode BuildCFG\n");
+            assert(i + 1 < blocks.size() &&
+                   "Function::BuildCFG - Last block should end with ret "
+                   "instruction \n");
+            blocks[i]->AddSuccessor(blocks[i + 1].get());
         }
-    }
-    if (ret_blocks.size() > 1) {
-        // Add unique exit block if necessary
-        // AddUniqueExitBlock(std::move(ret_blocks));
     }
 }
 void Function::DumpBlocks(std::ostream &out) {
