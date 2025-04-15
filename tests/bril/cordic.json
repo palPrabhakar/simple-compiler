@@ -1,0 +1,1859 @@
+{
+  "functions": [
+    {
+      "args": [
+        {
+          "name": "theta",
+          "type": "float"
+        }
+      ],
+      "instrs": [
+        {
+          "args": [
+            "theta"
+          ],
+          "dest": "v0",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v0"
+          ],
+          "dest": "x",
+          "funcs": [
+            "cordic"
+          ],
+          "op": "call",
+          "type": "float"
+        },
+        {
+          "args": [
+            "x"
+          ],
+          "dest": "x",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "x"
+          ],
+          "dest": "v1",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v1"
+          ],
+          "op": "print"
+        },
+        {
+          "dest": "v2",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        }
+      ],
+      "name": "main"
+    },
+    {
+      "args": [
+        {
+          "name": "theta",
+          "type": "float"
+        }
+      ],
+      "instrs": [
+        {
+          "dest": "v0",
+          "op": "const",
+          "type": "float",
+          "value": 0.7853981633974483
+        },
+        {
+          "args": [
+            "v0"
+          ],
+          "dest": "cstab0",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v1",
+          "op": "const",
+          "type": "float",
+          "value": 0.4636476090008061
+        },
+        {
+          "args": [
+            "v1"
+          ],
+          "dest": "cstab1",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v2",
+          "op": "const",
+          "type": "float",
+          "value": 0.24497866312686414
+        },
+        {
+          "args": [
+            "v2"
+          ],
+          "dest": "cstab2",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v3",
+          "op": "const",
+          "type": "float",
+          "value": 0.12435499454676144
+        },
+        {
+          "args": [
+            "v3"
+          ],
+          "dest": "cstab3",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v4",
+          "op": "const",
+          "type": "float",
+          "value": 0.06241880999595735
+        },
+        {
+          "args": [
+            "v4"
+          ],
+          "dest": "cstab4",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v5",
+          "op": "const",
+          "type": "float",
+          "value": 0.031239833430268277
+        },
+        {
+          "args": [
+            "v5"
+          ],
+          "dest": "cstab5",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v6",
+          "op": "const",
+          "type": "float",
+          "value": 0.015623728620476831
+        },
+        {
+          "args": [
+            "v6"
+          ],
+          "dest": "cstab6",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v7",
+          "op": "const",
+          "type": "float",
+          "value": 0.007812341060101111
+        },
+        {
+          "args": [
+            "v7"
+          ],
+          "dest": "cstab7",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v8",
+          "op": "const",
+          "type": "float",
+          "value": 0
+        },
+        {
+          "args": [
+            "v8"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v9",
+          "op": "const",
+          "type": "float",
+          "value": 0
+        },
+        {
+          "args": [
+            "v9"
+          ],
+          "dest": "lsin",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v10",
+          "op": "const",
+          "type": "float",
+          "value": 0.6072529350088812
+        },
+        {
+          "args": [
+            "v10"
+          ],
+          "dest": "lcos",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v11",
+          "op": "const",
+          "type": "float",
+          "value": 1
+        },
+        {
+          "args": [
+            "v11"
+          ],
+          "dest": "divisor",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v13",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "args": [
+            "v13"
+          ],
+          "dest": "i",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "label": "for.cond.12"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v14",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v15",
+          "op": "const",
+          "type": "int",
+          "value": 8
+        },
+        {
+          "args": [
+            "v14",
+            "v15"
+          ],
+          "dest": "v16",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v16"
+          ],
+          "labels": [
+            "for.body.12",
+            "for.end.12"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "for.body.12"
+        },
+        {
+          "args": [
+            "theta"
+          ],
+          "dest": "v17",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v18",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v17",
+            "v18"
+          ],
+          "dest": "v19",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "dest": "v20",
+          "op": "const",
+          "type": "float",
+          "value": 0
+        },
+        {
+          "args": [
+            "v19",
+            "v20"
+          ],
+          "dest": "v21",
+          "op": "fgt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v21"
+          ],
+          "dest": "clockwise",
+          "op": "id",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "lsin"
+          ],
+          "dest": "v22",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "divisor"
+          ],
+          "dest": "v23",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v22",
+            "v23"
+          ],
+          "dest": "v24",
+          "op": "fdiv",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v24"
+          ],
+          "dest": "sine_shifted",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "lcos"
+          ],
+          "dest": "v25",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "divisor"
+          ],
+          "dest": "v26",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v25",
+            "v26"
+          ],
+          "dest": "v27",
+          "op": "fdiv",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v27"
+          ],
+          "dest": "cosine_shifted",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "divisor"
+          ],
+          "dest": "v28",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "dest": "v29",
+          "op": "const",
+          "type": "float",
+          "value": 2
+        },
+        {
+          "args": [
+            "v28",
+            "v29"
+          ],
+          "dest": "v30",
+          "op": "fmul",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v30"
+          ],
+          "dest": "divisor",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "clockwise"
+          ],
+          "dest": "v32",
+          "op": "id",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v32"
+          ],
+          "labels": [
+            "then.31",
+            "else.31"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.31"
+        },
+        {
+          "args": [
+            "lsin"
+          ],
+          "dest": "v33",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cosine_shifted"
+          ],
+          "dest": "v34",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v33",
+            "v34"
+          ],
+          "dest": "v35",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v35"
+          ],
+          "dest": "lsin",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "lcos"
+          ],
+          "dest": "v36",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "sine_shifted"
+          ],
+          "dest": "v37",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v36",
+            "v37"
+          ],
+          "dest": "v38",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v38"
+          ],
+          "dest": "lcos",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v40",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v41",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "args": [
+            "v40",
+            "v41"
+          ],
+          "dest": "v42",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v42"
+          ],
+          "labels": [
+            "then.39",
+            "else.39"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.39"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v43",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab0"
+          ],
+          "dest": "v44",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v43",
+            "v44"
+          ],
+          "dest": "v45",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v45"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.39"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.39"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v47",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v48",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "v47",
+            "v48"
+          ],
+          "dest": "v49",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v49"
+          ],
+          "labels": [
+            "then.46",
+            "else.46"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.46"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v50",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab1"
+          ],
+          "dest": "v51",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v50",
+            "v51"
+          ],
+          "dest": "v52",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v52"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.46"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.46"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v54",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v55",
+          "op": "const",
+          "type": "int",
+          "value": 2
+        },
+        {
+          "args": [
+            "v54",
+            "v55"
+          ],
+          "dest": "v56",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v56"
+          ],
+          "labels": [
+            "then.53",
+            "else.53"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.53"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v57",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab2"
+          ],
+          "dest": "v58",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v57",
+            "v58"
+          ],
+          "dest": "v59",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v59"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.53"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.53"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v61",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v62",
+          "op": "const",
+          "type": "int",
+          "value": 3
+        },
+        {
+          "args": [
+            "v61",
+            "v62"
+          ],
+          "dest": "v63",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v63"
+          ],
+          "labels": [
+            "then.60",
+            "else.60"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.60"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v64",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab3"
+          ],
+          "dest": "v65",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v64",
+            "v65"
+          ],
+          "dest": "v66",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v66"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.60"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.60"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v68",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v69",
+          "op": "const",
+          "type": "int",
+          "value": 4
+        },
+        {
+          "args": [
+            "v68",
+            "v69"
+          ],
+          "dest": "v70",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v70"
+          ],
+          "labels": [
+            "then.67",
+            "else.67"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.67"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v71",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab4"
+          ],
+          "dest": "v72",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v71",
+            "v72"
+          ],
+          "dest": "v73",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v73"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.67"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.67"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v75",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v76",
+          "op": "const",
+          "type": "int",
+          "value": 5
+        },
+        {
+          "args": [
+            "v75",
+            "v76"
+          ],
+          "dest": "v77",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v77"
+          ],
+          "labels": [
+            "then.74",
+            "else.74"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.74"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v78",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab5"
+          ],
+          "dest": "v79",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v78",
+            "v79"
+          ],
+          "dest": "v80",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v80"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.74"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.74"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v82",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v83",
+          "op": "const",
+          "type": "int",
+          "value": 6
+        },
+        {
+          "args": [
+            "v82",
+            "v83"
+          ],
+          "dest": "v84",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v84"
+          ],
+          "labels": [
+            "then.81",
+            "else.81"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.81"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v85",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab6"
+          ],
+          "dest": "v86",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v85",
+            "v86"
+          ],
+          "dest": "v87",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v87"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.81"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.81"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v88",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab7"
+          ],
+          "dest": "v89",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v88",
+            "v89"
+          ],
+          "dest": "v90",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v90"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "label": "endif.81"
+        },
+        {
+          "label": "endif.74"
+        },
+        {
+          "label": "endif.67"
+        },
+        {
+          "label": "endif.60"
+        },
+        {
+          "label": "endif.53"
+        },
+        {
+          "label": "endif.46"
+        },
+        {
+          "label": "endif.39"
+        },
+        {
+          "labels": [
+            "endif.31"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.31"
+        },
+        {
+          "args": [
+            "lsin"
+          ],
+          "dest": "v91",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cosine_shifted"
+          ],
+          "dest": "v92",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v91",
+            "v92"
+          ],
+          "dest": "v93",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v93"
+          ],
+          "dest": "lsin",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "lcos"
+          ],
+          "dest": "v94",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "sine_shifted"
+          ],
+          "dest": "v95",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v94",
+            "v95"
+          ],
+          "dest": "v96",
+          "op": "fadd",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v96"
+          ],
+          "dest": "lcos",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v98",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v99",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "args": [
+            "v98",
+            "v99"
+          ],
+          "dest": "v100",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v100"
+          ],
+          "labels": [
+            "then.97",
+            "else.97"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.97"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v101",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab0"
+          ],
+          "dest": "v102",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v101",
+            "v102"
+          ],
+          "dest": "v103",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v103"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.97"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.97"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v105",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v106",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "v105",
+            "v106"
+          ],
+          "dest": "v107",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v107"
+          ],
+          "labels": [
+            "then.104",
+            "else.104"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.104"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v108",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab1"
+          ],
+          "dest": "v109",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v108",
+            "v109"
+          ],
+          "dest": "v110",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v110"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.104"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.104"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v112",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v113",
+          "op": "const",
+          "type": "int",
+          "value": 2
+        },
+        {
+          "args": [
+            "v112",
+            "v113"
+          ],
+          "dest": "v114",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v114"
+          ],
+          "labels": [
+            "then.111",
+            "else.111"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.111"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v115",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab2"
+          ],
+          "dest": "v116",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v115",
+            "v116"
+          ],
+          "dest": "v117",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v117"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.111"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.111"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v119",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v120",
+          "op": "const",
+          "type": "int",
+          "value": 3
+        },
+        {
+          "args": [
+            "v119",
+            "v120"
+          ],
+          "dest": "v121",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v121"
+          ],
+          "labels": [
+            "then.118",
+            "else.118"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.118"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v122",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab3"
+          ],
+          "dest": "v123",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v122",
+            "v123"
+          ],
+          "dest": "v124",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v124"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.118"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.118"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v126",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v127",
+          "op": "const",
+          "type": "int",
+          "value": 4
+        },
+        {
+          "args": [
+            "v126",
+            "v127"
+          ],
+          "dest": "v128",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v128"
+          ],
+          "labels": [
+            "then.125",
+            "else.125"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.125"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v129",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab4"
+          ],
+          "dest": "v130",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v129",
+            "v130"
+          ],
+          "dest": "v131",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v131"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.125"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.125"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v133",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v134",
+          "op": "const",
+          "type": "int",
+          "value": 5
+        },
+        {
+          "args": [
+            "v133",
+            "v134"
+          ],
+          "dest": "v135",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v135"
+          ],
+          "labels": [
+            "then.132",
+            "else.132"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.132"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v136",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab5"
+          ],
+          "dest": "v137",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v136",
+            "v137"
+          ],
+          "dest": "v138",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v138"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.132"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.132"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v140",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v141",
+          "op": "const",
+          "type": "int",
+          "value": 6
+        },
+        {
+          "args": [
+            "v140",
+            "v141"
+          ],
+          "dest": "v142",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "v142"
+          ],
+          "labels": [
+            "then.139",
+            "else.139"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "then.139"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v143",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab6"
+          ],
+          "dest": "v144",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v143",
+            "v144"
+          ],
+          "dest": "v145",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v145"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "labels": [
+            "endif.139"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "else.139"
+        },
+        {
+          "args": [
+            "gamma"
+          ],
+          "dest": "v146",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "cstab7"
+          ],
+          "dest": "v147",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v146",
+            "v147"
+          ],
+          "dest": "v148",
+          "op": "fsub",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v148"
+          ],
+          "dest": "gamma",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "label": "endif.139"
+        },
+        {
+          "label": "endif.132"
+        },
+        {
+          "label": "endif.125"
+        },
+        {
+          "label": "endif.118"
+        },
+        {
+          "label": "endif.111"
+        },
+        {
+          "label": "endif.104"
+        },
+        {
+          "label": "endif.97"
+        },
+        {
+          "label": "endif.31"
+        },
+        {
+          "args": [
+            "i"
+          ],
+          "dest": "v149",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "dest": "v150",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "args": [
+            "v149",
+            "v150"
+          ],
+          "dest": "v151",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "v151"
+          ],
+          "dest": "i",
+          "op": "id",
+          "type": "int"
+        },
+        {
+          "labels": [
+            "for.cond.12"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "for.end.12"
+        },
+        {
+          "args": [
+            "lsin"
+          ],
+          "dest": "v152",
+          "op": "id",
+          "type": "float"
+        },
+        {
+          "args": [
+            "v152"
+          ],
+          "op": "ret"
+        }
+      ],
+      "name": "cordic",
+      "type": "float"
+    }
+  ]
+}
