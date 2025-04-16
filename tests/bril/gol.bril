@@ -1,4 +1,4 @@
-# Given n and a seed. 
+# Given n and a seed.
 # Will generate an nxn matrix with random values using seed.
 # Will print the randomly generated matrix. (13, index, value)
 # Print the number 3 as a separator.
@@ -9,11 +9,11 @@
     one: int = const 1;
     rng: ptr<int> = alloc one;
     store rng seed;
-    
+
     msize: int = mul n n;
     arr: ptr<int> = call @rand_array msize rng;
     call @print_array msize arr;
-    
+
     print id;
 
     #call @test_neighbors msize n arr;
@@ -80,7 +80,7 @@
 
 @test_neighbors(msize: int, n: int, board: ptr<int>) {
     id: int = const 223;
-    i: int = const 0; 
+    i: int = const 0;
     one: int = const 1;
 .comparison:
     exit: bool = ge i msize;
@@ -97,30 +97,31 @@
 }
 
 @alive(msize: int, n: int, i: int, board: ptr<int>): int {
+#0
     id: int = const 7;
     zero: int = const 0;
     one: int = const 1;
     sum: int = const 0;
     skip: bool = lt i n;
     br skip .d .a;
-.a:
+.a: #1
     pos: int = sub i n;
     loc: int = const 1;
     #print id loc pos;
     curr: ptr<int> = ptradd board pos;
     cval: int = load curr;
     sum: int = add sum cval;
-    
+
     modulo: int = call @mod pos n;
     lw: bool = eq modulo zero;
     br lw .a.bis .b;
-.a.bis:
+.a.bis: #2
     pos: int = sub i n;
     modulo: int = call @mod pos n;
     modulo: int = add modulo one;
     rw: bool = eq modulo n;
     br rw .d .c;
-.b:
+.b: #3
     pos: int = sub i n;
     pos: int = sub pos one;
     loc: int = const 2;
@@ -130,7 +131,7 @@
     sum: int = add sum cval;
     jmp .a.bis;
 
-.c:
+.c: #4
     pos: int = sub i n;
     pos: int = add pos one;
     loc: int = const 3;
@@ -140,18 +141,18 @@
     sum: int = add sum cval;
     jmp .d;
 
-.d:
+.d: #5
     modulo: int = call @mod i n;
     lw: bool = eq modulo zero;
     br lw .d.bis .e;
 
-.d.bis:
+.d.bis: #6
     modulo: int = call @mod i n;
     modulo: int = add modulo one;
     rw: bool = eq modulo n;
     br rw .g .f;
 
-.e:
+.e: #7
     pos: int = sub i one;
     loc: int = const 4;
     #print id loc pos;
@@ -160,7 +161,7 @@
     sum: int = add sum cval;
     jmp .d.bis;
 
-.f:
+.f: #8
     pos: int = add i one;
     loc: int = const 5;
     #print id loc pos;
@@ -169,17 +170,17 @@
     sum: int = add sum cval;
     jmp .g;
 
-.g:
+.g: #9
     next_pos: int = add i n;
     exit: bool = ge next_pos msize;
     br exit .exit .g.bis;
 
-.g.bis:
+.g.bis: #10
     modulo: int = call @mod i n;
     lw: bool = eq modulo zero;
     br lw .h .g.bis2;
 
-.g.bis2:
+.g.bis2: #11
     pos: int = add i n;
     pos: int = sub pos one;
     loc: int = const 6;
@@ -189,7 +190,7 @@
     sum: int = add sum cval;
     jmp .h;
 
-.h:
+.h: #12
     pos: int = add i n;
     loc: int = const 7;
     curr: ptr<int> = ptradd board pos;
@@ -201,7 +202,7 @@
     rw: bool = eq modulo n;
     br rw .exit .i;
 
-.i:
+.i: #13
     pos: int = add i n;
     pos: int = add pos one;
     loc: int = const 8;
@@ -209,7 +210,7 @@
     cval: int = load curr;
     sum: int = add sum cval;
     jmp .exit;
-.exit:
+.exit: #14
     ret sum;
 
 }

@@ -23,7 +23,7 @@ class Block {
         instructions[idx] = std::move(instr);
     }
 
-    void AddSuccessor(Block *succ) { cfg_succ.push_back(succ); }
+    void AddSuccessor(Block *succ) { successors.push_back(succ); }
 
     InstructionBase *GetInstruction(size_t idx) {
         assert(idx < instructions.size() &&
@@ -35,9 +35,14 @@ class Block {
 
     size_t GetInstructionSize() { return instructions.size(); }
 
-    size_t GetSuccessorSize() { return cfg_succ.size(); }
+    size_t GetSuccessorSize() { return successors.size(); }
 
-    const std::vector<Block *> &GetSuccessors() const { return cfg_succ; }
+    Block *GetSuccessor(size_t idx) {
+        assert(idx < successors.size() &&
+               "Invalid index Block::GetSuccessor\n");
+        return successors[idx];
+    }
+    const std::vector<Block *> &GetSuccessors() const { return successors; }
 
     std::vector<instr_ptr>::iterator begin() { return instructions.begin(); }
 
@@ -61,7 +66,7 @@ class Block {
 
   private:
     std::vector<instr_ptr> instructions;
-    std::vector<Block *> cfg_succ; // cfg successors
+    std::vector<Block *> successors; // cfg successors
     std::string name;
 };
 } // namespace sc
