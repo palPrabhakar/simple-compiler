@@ -1,6 +1,8 @@
 #include "block.hpp"
+#include "cfg.hpp"
 #include "parser.hpp"
 #include "program.hpp"
+#include "transformer.hpp"
 #include <fstream>
 #include <gtest/gtest.h>
 
@@ -11,10 +13,9 @@
     auto program = sc::ParseProgram(data);
 
 #define BUILD_CFG                                                              \
-    for (size_t i = 0; i < program->GetSize(); ++i) {                          \
-        auto func = program->GetFunction(i);                                   \
-        func->BuildCFG();                                                      \
-    }
+    sc::EarlyIRTransformer ir_transformer;                                     \
+    program = ir_transformer.Transform(std::move(program));                    \
+    program = BuildCFG(std::move(program));
 
 #define CHECKER0(i)                                                            \
     block = func->GetBlock(i);                                                 \

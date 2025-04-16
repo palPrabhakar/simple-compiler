@@ -1,5 +1,6 @@
 #include "parser.hpp"
 #include "program.hpp"
+#include "transformer.hpp"
 #include <fstream>
 #include <iostream>
 #include <ranges>
@@ -16,11 +17,8 @@ int main(int argc, char *argv[]) {
     auto json_parser = sjp::Parser(ifs);
     auto data = json_parser.Parse();
     auto program = sc::ParseProgram(data);
-    for (size_t i : std::views::iota(0UL, program->GetSize())) {
-        auto func = program->GetFunction(i);
-        func->BuildCFG();
-        func->DumpCFG();
-        func->Dump();
-    }
+    auto ir_transformer = sc::EarlyIRTransformer();
+    program = ir_transformer.Transform(std::move(program));
+    program->Dump();
     return 0;
 }

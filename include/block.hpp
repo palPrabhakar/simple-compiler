@@ -15,6 +15,8 @@ class Block {
   public:
     Block(std::string _name) : name(_name) {}
 
+    void SetId(size_t id) { block_id = id; }
+
     void AddInstruction(instr_ptr instr) {
         instructions.push_back(std::move(instr));
     }
@@ -35,9 +37,11 @@ class Block {
 
     std::string GetName() const { return name; }
 
-    size_t GetInstructionSize() { return instructions.size(); }
+    size_t GetId() const { return block_id; }
 
-    size_t GetSuccessorSize() { return successors.size(); }
+    size_t GetInstructionSize() const { return instructions.size(); }
+
+    size_t GetSuccessorSize() const { return successors.size(); }
 
     Block *GetSuccessor(size_t idx) {
         assert(idx < successors.size() &&
@@ -70,5 +74,6 @@ class Block {
     std::vector<instr_ptr> instructions;
     std::vector<Block *> successors; // cfg successors
     std::string name;
+    size_t block_id;
 };
 } // namespace sc

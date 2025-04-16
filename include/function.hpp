@@ -31,13 +31,15 @@ class Function {
 
     std::string GetName() const { return name; }
 
+    DataType GetRetType() const { return ret_type; }
+
     OperandBase *GetOperand(size_t idx) { return operands[idx].get(); }
 
     OperandBase *GetArgs(size_t idx) { return args[idx]; }
 
-    size_t GetBlockSize() { return blocks.size(); }
+    size_t GetBlockSize() const { return blocks.size(); }
 
-    size_t GetOperandSize() { return operands.size(); }
+    size_t GetOperandSize() const { return operands.size(); }
 
     size_t GetArgsSize() { return args.size(); }
 
@@ -47,9 +49,8 @@ class Function {
         return blocks[idx].get();
     }
 
-    void Dump(std::ostream &out = std::cout);
     virtual std::string GetStrRetType() const;
-    void BuildCFG();
+    void Dump(std::ostream &out = std::cout);
     void DumpBlocks(std::ostream &out = std::cout);
     void DumpCFG(std::ostream &out = std::cout);
 
@@ -59,10 +60,6 @@ class Function {
     std::vector<OperandBase *> args;
     std::string name;
     DataType ret_type;
-
-  private:
-    void FixIR();
-    void AddUniqueExitBlock(std::vector<Block *> rb);
 };
 
 class PtrFunction : public Function {
