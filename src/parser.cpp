@@ -80,8 +80,7 @@ BuildConstInstruction(std::unique_ptr<Function> func, sjp::Json &instr,
         instr_ptr->SetOperand(src_oprnd.get());
         func->AddOperand(std::move(src_oprnd));
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -121,8 +120,7 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "MakeInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -142,8 +140,7 @@ std::unique_ptr<Function> MakeJmpInstruction(std::unique_ptr<Function> func,
         instr_ptr->SetOperand(operand.get());
         func->AddOperand(std::move(operand));
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -169,8 +166,7 @@ std::unique_ptr<Function> MakeBranchInstruction(std::unique_ptr<Function> func,
     auto arg = args.Get(0)->Get<std::string>().value();
     CheckSymbol(symbols, arg, func->GetName().c_str(), "BranchInstruction");
     instr_ptr->SetOperand(symbols[arg]);
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -190,9 +186,8 @@ std::unique_ptr<Function> MakeCallInstruction(std::unique_ptr<Function> func,
                                                        symbols);
     }
 
-    auto block = func->GetBlock(func->GetBlockSize() - 1);
-    auto iptr = static_cast<CallInstruction *>(
-        block->GetInstruction(block->GetInstructionSize() - 1));
+    auto block = LAST_BLK(func);
+    auto iptr = static_cast<CallInstruction *>(LAST_INSTR(block));
     iptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
     iptr->SetRetVal(has_dest);
     return func;
@@ -209,8 +204,7 @@ std::unique_ptr<Function> MakeRetInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "RetInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -224,8 +218,7 @@ std::unique_ptr<Function> MakeFreeInstruction(std::unique_ptr<Function> func,
     CheckSymbol(symbols, arg, func->GetName().c_str(), "FreeInstruction");
     auto instr_ptr = std::make_unique<FreeInstruction>();
     instr_ptr->SetOperand(symbols[arg]);
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -240,8 +233,7 @@ std::unique_ptr<Function> MakeStoreInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "StoreInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -282,8 +274,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
         CheckSymbol(symbols, arg, func->GetName().c_str(), "PrintInstruction");
         instr_ptr->SetOperand(symbols[arg]);
     }
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -301,8 +292,7 @@ std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
         func->AddOperand(std::move(operand));
     }
     func->AddBlock(std::make_unique<Block>(lbl));
-    func->GetBlock(func->GetBlockSize() - 1)
-        ->AddInstruction(std::move(instr_ptr));
+    APPEND_INSTR(func, instr_ptr);
     return func;
 }
 
@@ -417,8 +407,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakeLabelInstruction(std::move(func), instr, symbols);
     case OpCode::NOP: {
         auto instr_ptr = std::make_unique<NopInstruction>();
-        func->GetBlock(func->GetBlockSize() - 1)
-            ->AddInstruction(std::move(instr_ptr));
+        APPEND_INSTR(func, instr_ptr);
         return func;
     }
     default:

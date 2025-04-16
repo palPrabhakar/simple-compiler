@@ -9,6 +9,8 @@ namespace sc {
 
 using instr_ptr = std::unique_ptr<InstructionBase>;
 
+#define LAST_INSTR(block) block->GetInstruction(block->GetInstructionSize() - 1)
+
 class Block {
   public:
     Block(std::string _name) : name(_name) {}

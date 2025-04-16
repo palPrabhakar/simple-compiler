@@ -1,4 +1,5 @@
 #include "function.hpp"
+#include "block.hpp"
 #include "instruction.hpp"
 #include "opcodes.hpp"
 #include "operand.hpp"
@@ -43,8 +44,7 @@ void Function::FixIR() {
         assert(instr->GetOpCode() == OpCode::LABEL &&
                "LabelInstruction expected Function::FixLabels\n");
         static_cast<LabelOperand *>(instr->GetOperand(0))->SetBlockIdx(i);
-
-        instr = blocks[i]->GetInstruction(blocks[i]->GetInstructionSize() - 1);
+        instr = LAST_INSTR(blocks[i]);
         if (instr->GetOpCode() == OpCode::RET) {
             rb.push_back(blocks[i].get());
         }
@@ -55,8 +55,7 @@ void Function::FixIR() {
     }
 
     auto &block = blocks[blocks.size() - 1];
-    if (block->GetInstruction(block->GetInstructionSize() - 1)->GetOpCode() !=
-        OpCode::RET) {
+    if (LAST_INSTR(block)->GetOpCode() != OpCode::RET) {
         assert(ret_type == DataType::VOID &&
                "Non-void with non-return last instruction.\n");
         block->AddInstruction(std::make_unique<RetInstruction>());
@@ -95,7 +94,7 @@ void Function::AddUniqueExitBlock(std::vector<Block *> rb) {
     // modify the return block
     // delete ret instr and change with id and jmp instr
     for (auto *block : rb) {
-        auto ret_instr = block->GetInstruction(block->GetInstructionSize() - 1);
+        auto ret_instr = LAST_INSTR(block);
 
         auto jmp_instr = std::make_unique<JmpInstruction>();
         jmp_instr->SetOperand(lbl_op.get());
@@ -130,8 +129,7 @@ void Function::BuildCFG() {
         }
     };
     for (size_t i : std::views::iota(0UL, blocks.size())) {
-        auto instr =
-            blocks[i]->GetInstruction(blocks[i]->GetInstructionSize() - 1);
+        auto instr = LAST_INSTR(blocks[i]);
         switch (instr->GetOpCode()) {
         case OpCode::JMP:
             add_successor(instr, i, 0, 1);

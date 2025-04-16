@@ -8,6 +8,11 @@
 #include <vector>
 
 namespace sc {
+
+#define LAST_BLK(func) func->GetBlock(func->GetBlockSize() - 1)
+#define APPEND_INSTR(fun, instr)                                               \
+    LAST_BLK(func)->AddInstruction(std::move(instr))
+
 class Function {
   public:
     Function(std::string _name, DataType _ret_type)
