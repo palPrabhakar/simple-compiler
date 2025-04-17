@@ -29,6 +29,20 @@ class Block {
 
     void AddSuccessor(Block *succ) { successors.push_back(succ); }
 
+    void RemoveSuccessor(size_t idx) {
+        assert(idx < instructions.size() &&
+               "Invalid index Block::RemoveSuccessor\n");
+        successors.erase(successors.begin() + idx);
+    }
+
+    void AddPredecessor(Block *pred) { predecessors.push_back(pred); }
+
+    void RemovePredecessor(size_t idx) {
+        assert(idx < instructions.size() &&
+               "Invalid index Block::RemovePredecessor\n");
+        predecessors.erase(successors.begin() + idx);
+    }
+
     InstructionBase *GetInstruction(size_t idx) {
         assert(idx < instructions.size() &&
                "Invalid index Block::GetInstruction\n");
@@ -43,12 +57,23 @@ class Block {
 
     size_t GetSuccessorSize() const { return successors.size(); }
 
+    size_t GetPredecessorSize() const { return predecessors.size(); }
+
     Block *GetSuccessor(size_t idx) {
         assert(idx < successors.size() &&
                "Invalid index Block::GetSuccessor\n");
         return successors[idx];
     }
+
     const std::vector<Block *> &GetSuccessors() const { return successors; }
+
+    const std::vector<Block *> &GetPredecessors() const { return successors; }
+
+    Block *GetPredecessor(size_t idx) {
+        assert(idx < predecessors.size() &&
+               "Invalid index Block::GetPredecessor\n");
+        return predecessors[idx];
+    }
 
     std::vector<instr_ptr>::iterator begin() { return instructions.begin(); }
 
@@ -72,7 +97,8 @@ class Block {
 
   private:
     std::vector<instr_ptr> instructions;
-    std::vector<Block *> successors; // cfg successors
+    std::vector<Block *> successors;   // cfg successors
+    std::vector<Block *> predecessors; // cfg predecessors
     std::string name;
     size_t block_id;
 };

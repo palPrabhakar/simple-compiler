@@ -25,22 +25,23 @@ const std::vector<Block *> GetPostOrder(Function *func) {
 }
 
 static void BuildCFGImpl(Function *func) {
-    auto add_successor = [&func](InstructionBase *instr, size_t idx,
-                                 size_t start, size_t end) {
+    auto add_nodes = [func](InstructionBase *instr, size_t idx, size_t start,
+                            size_t end) {
         for (size_t i : std::views::iota(start, end)) {
             auto si = static_cast<LabelOperand *>(instr->GetOperand(i))
                           ->GetBlockIdx();
             func->GetBlock(idx)->AddSuccessor(func->GetBlock(si));
+            func->GetBlock(si)->AddPredecessor(func->GetBlock(idx));
         }
     };
     for (size_t i : std::views::iota(0UL, func->GetBlockSize())) {
         auto instr = LAST_INSTR(func->GetBlock(i));
         switch (instr->GetOpCode()) {
         case OpCode::JMP:
-            add_successor(instr, i, 0, 1);
+            add_nodes(instr, i, 0, 1);
             break;
         case OpCode::BR:
-            add_successor(instr, i, 0, 2);
+            add_nodes(instr, i, 0, 2);
             break;
         case OpCode::RET:
             assert(i == func->GetBlockSize() - 1 &&
@@ -48,10 +49,7 @@ static void BuildCFGImpl(Function *func) {
                    "block\n");
             break;
         default:
-            assert(i + 1 < func->GetBlockSize() &&
-                   "Function::BuildCFG - Last block should end with ret "
-                   "instruction \n");
-            func->GetBlock(i)->AddSuccessor(func->GetBlock(i + 1));
+            assert(false && "FunctionBuild::CFG - Unexpted opcode found\n");
         }
     }
 }

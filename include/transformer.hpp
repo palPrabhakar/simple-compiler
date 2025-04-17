@@ -1,6 +1,8 @@
 #pragma once
 
+#include "cfg.hpp"
 #include "program.hpp"
+#include <iostream>
 #include <memory>
 
 namespace sc {
@@ -12,12 +14,6 @@ class Transformer {
 
   protected:
     Transformer() = default;
-};
-
-class CFTransformer : public Transformer {
-  public:
-    std::unique_ptr<Program>
-    Transform(std::unique_ptr<Program> program) override;
 };
 
 class EarlyIRTransformer : public Transformer {
@@ -35,5 +31,29 @@ class EarlyIRTransformer : public Transformer {
     void FixIR(Function *func);
     void AddUniqueExitBlock(std::vector<Block *> rb, Function *func);
 };
+
+// class CFTransformer : public Transformer {
+//   public:
+//     std::unique_ptr<Program> Transform(std::unique_ptr<Program> program) {
+//         for (auto &f : *program) {
+//             traverse_order = GetPostOrder(f.get());
+//             if (traverse_order.size() != f->GetBlockSize()) {
+//                 std::cout << "Calling RemoveUnreachableCFNode\n";
+//                 RemoveUnreachableCFNode(f.get());
+//                 traverse_order = GetPostOrder(f.get());
+//             }
+//             while (Clean(f.get())) {
+//                 traverse_order = GetPostOrder(f.get());
+//             }
+//         }
+//         return program;
+//     }
+
+//   private:
+//     void RemoveUnreachableCFNode(Function *func);
+//     bool Clean(Function *func);
+//     void ReplaceBrWithJmp(Block *block);
+//     std::vector<Block *> traverse_order;
+// };
 
 } // namespace sc

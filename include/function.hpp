@@ -49,6 +49,8 @@ class Function {
         return blocks[idx].get();
     }
 
+    std::vector<std::unique_ptr<Block>> &GetBlocks() { return blocks; }
+
     virtual std::string GetStrRetType() const;
     void Dump(std::ostream &out = std::cout);
     void DumpBlocks(std::ostream &out = std::cout);
