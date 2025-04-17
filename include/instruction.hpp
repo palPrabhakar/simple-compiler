@@ -280,14 +280,6 @@ class PrintInstruction final : public InstructionBase {
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class LabelInstruction final : public UnaryInstruction {
-    // ouput_label = f(input_label)
-    // Doesn't change the PC
-  public:
-    LabelInstruction() : UnaryInstruction(OpCode::LABEL) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
 class NopInstruction final : public InstructionBase {
   public:
     NopInstruction() : InstructionBase(OpCode::NOP) {}

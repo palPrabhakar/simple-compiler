@@ -1,3 +1,4 @@
+#include "block.hpp"
 #include "function.hpp"
 #include "instruction.hpp"
 #include "json.hpp"
@@ -48,6 +49,26 @@ template <typename T> static T ParsePtrType(T t, sjp::Json &data) {
         jtype = type.value();
     } while (true);
     return t;
+}
+
+static std::unique_ptr<Function> MakeNewBlock(std::unique_ptr<Function> func,
+                                              std::string lbl,
+                                              sym_tbl &symbols) {
+    // add the label to the block
+    // add the block to the label
+    func->AddBlock(std::make_unique<Block>(lbl));
+    if (symbols.contains(lbl)) {
+        // label for this block already exist
+        LAST_BLK(func)->SetLabel(static_cast<LabelOperand *>(symbols[lbl]));
+        LAST_BLK(func)->GetLabel()->SetBlock(LAST_BLK(func));
+    } else {
+        auto operand = std::make_unique<LabelOperand>(lbl);
+        symbols[lbl] = operand.get();
+        LAST_BLK(func)->SetLabel(operand.get());
+        operand->SetBlock(LAST_BLK(func));
+        func->AddOperand(std::move(operand));
+    }
+    return func;
 }
 
 template <typename T, DataType type>
@@ -278,24 +299,6 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
     return func;
 }
 
-std::unique_ptr<Function> MakeLabelInstruction(std::unique_ptr<Function> func,
-                                               sjp::Json &instr,
-                                               sym_tbl &symbols) {
-    auto lbl = instr.Get("label")->Get<std::string>().value();
-    auto instr_ptr = std::make_unique<LabelInstruction>();
-    if (symbols.contains(lbl)) {
-        instr_ptr->SetOperand(symbols[lbl]);
-    } else {
-        auto operand = std::make_unique<LabelOperand>(lbl);
-        symbols[lbl] = operand.get();
-        instr_ptr->SetOperand(operand.get());
-        func->AddOperand(std::move(operand));
-    }
-    func->AddBlock(std::make_unique<Block>(lbl));
-    APPEND_INSTR(func, instr_ptr);
-    return func;
-}
-
 // Parse Functions
 std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
                                             sjp::Json &instr,
@@ -402,9 +405,11 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
         return MakeConstInstruction(std::move(func), instr, symbols);
     case OpCode::PRINT:
         return MakePrintInstruction(std::move(func), instr, symbols);
-    case OpCode::LABEL:
+    case OpCode::LABEL: {
         // Make new block
-        return MakeLabelInstruction(std::move(func), instr, symbols);
+        auto lbl = instr.Get("label")->Get<std::string>().value();
+        return MakeNewBlock(std::move(func), lbl, symbols);
+    };
     case OpCode::NOP: {
         auto instr_ptr = std::make_unique<NopInstruction>();
         APPEND_INSTR(func, instr_ptr);
@@ -418,9 +423,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
-    auto lbl = sjp::Json();
-    lbl.InsertOrUpdate("label", "entry");
-    func = MakeLabelInstruction(std::move(func), lbl, symbols);
+    func = MakeNewBlock(std::move(func), "entry", symbols);
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr, symbols);

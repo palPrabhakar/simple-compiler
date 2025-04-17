@@ -2,7 +2,7 @@
 
 #include "cfg.hpp"
 #include "program.hpp"
-#include <iostream>
+#include <cassert>
 #include <memory>
 
 namespace sc {

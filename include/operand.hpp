@@ -5,7 +5,6 @@
 #include <vector>
 
 namespace sc {
-
 // clang-format off
 enum class DataType {
     INT,
@@ -16,6 +15,8 @@ enum class DataType {
     VOID
 };
 // clang-format on
+
+class Block;
 
 DataType GetDataTypeFromStr(std::string);
 std::string GetStrDataType(DataType);
@@ -56,12 +57,12 @@ class LabelOperand : public OperandBase {
   public:
     LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
 
-    void SetBlockIdx(const size_t idx) { block_idx = idx; }
+    void SetBlock(Block *blk) { block = blk; }
 
-    size_t GetBlockIdx() const { return block_idx; }
+    Block *GetBlock() const { return block; }
 
   private:
-    size_t block_idx;
+    Block *block;
 };
 
 template <typename T> class ImmedOperand : public OperandBase {

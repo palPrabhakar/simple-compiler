@@ -1,9 +1,7 @@
 #include "function.hpp"
 #include "block.hpp"
 #include "instruction.hpp"
-#include "opcodes.hpp"
 #include "operand.hpp"
-#include <ranges>
 
 namespace sc {
 void Function::Dump(std::ostream &out) {
@@ -21,12 +19,9 @@ void Function::Dump(std::ostream &out) {
     }
     out << " {\n";
     for (auto &block : blocks) {
+        out << "." << block->GetName() << ":\n";
         for (auto &instr : *block) {
-            if (instr->GetOpCode() == OpCode::LABEL) {
-                instr->Dump(out);
-            } else {
-                instr->Dump(out << "  ");
-            }
+            instr->Dump(out << "  ");
         }
     }
     out << "}\n";

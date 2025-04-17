@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instruction.hpp"
+#include "operand.hpp"
 #include <memory>
 #include <string>
 #include <vector>
@@ -15,7 +16,7 @@ class Block {
   public:
     Block(std::string _name) : name(_name) {}
 
-    void SetId(size_t id) { block_id = id; }
+    void SetLabel(LabelOperand *lbl) { label = lbl; }
 
     void AddInstruction(instr_ptr instr) {
         instructions.push_back(std::move(instr));
@@ -51,7 +52,7 @@ class Block {
 
     std::string GetName() const { return name; }
 
-    size_t GetId() const { return block_id; }
+    LabelOperand *GetLabel() const { return label; }
 
     size_t GetInstructionSize() const { return instructions.size(); }
 
@@ -100,6 +101,6 @@ class Block {
     std::vector<Block *> successors;   // cfg successors
     std::vector<Block *> predecessors; // cfg predecessors
     std::string name;
-    size_t block_id;
+    LabelOperand *label = nullptr;
 };
 } // namespace sc
