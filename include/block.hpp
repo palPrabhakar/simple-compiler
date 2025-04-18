@@ -28,7 +28,23 @@ class Block {
         instructions[idx] = std::move(instr);
     }
 
+    void RemoveInstruction(size_t idx) {
+        assert(idx < instructions.size() &&
+               "idx out of bounds Block::RemoveInstruction\n");
+        instructions.erase(instructions.begin() + idx);
+    }
+
+    std::vector<instr_ptr> ReleaseInstructions() {
+        return std::move(instructions);
+    }
+
     void AddSuccessor(Block *succ) { successors.push_back(succ); }
+
+    void AddSuccessor(Block *succ, size_t idx) {
+        assert(idx < instructions.size() &&
+               "Invalid index Block::AddSuccessor\n");
+        successors[idx] = succ;
+    }
 
     void RemoveSuccessor(size_t idx) {
         assert(idx < instructions.size() &&

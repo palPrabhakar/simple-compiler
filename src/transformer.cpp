@@ -1,8 +1,11 @@
 #include "transformer.hpp"
 #include "block.hpp"
 #include "function.hpp"
+#include "instruction.hpp"
 #include "opcodes.hpp"
+#include "operand.hpp"
 #include <algorithm>
+#include <cassert>
 #include <ranges>
 #include <unordered_set>
 
@@ -84,7 +87,6 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
     // delete ret instr and change with id and jmp instr
     for (auto *block : rb) {
         auto ret_instr = LAST_INSTR(block);
-
         auto jmp_instr = std::make_unique<JmpInstruction>();
         jmp_instr->SetOperand(lbl_op.get());
 
@@ -107,47 +109,56 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
 }
 // EarlyIRTransformer End
 
-/*
 // CFTransformer Begin
-void CFTransformer::RemoveUnreachableCFNode(Function *func) {
-    std::unordered_set<Block *> reachable(traverse_order.cbegin(),
-                                          traverse_order.cend());
-    auto &blocks = func->GetBlocks();
-    // TODO: This needs fixing
-    // deleting blocks invalidates the every other block's index
-    // also, invalidates the label operands values
-    // instead of storing block index store block pointer
-    // get rid of label instr
-    blocks.erase(std::remove_if(blocks.begin(), blocks.end(),
-                                [&reachable](auto &block) {
-                                    return !reachable.contains(block.get());
-                                }),
-                 blocks.end());
+std::unique_ptr<Program>
+CFTransformer::Transform(std::unique_ptr<Program> program) {
+    for (auto &f : *program) {
+        std::cout << "Transform: " << f->GetName() << std::endl;
+        do {
+            traverse_order = GetPostOrder(f.get());
+        } while (Clean());
+
+        // Remove all unreachable nodes
+        traverse_order = GetPostOrder(f.get());
+        if (traverse_order.size() != f->GetBlockSize()) {
+            RemoveUnreachableCFNode(f.get());
+        }
+    }
+    return program;
 }
 
-bool CFTransformer::Clean(Function *func) {
-    (void)func;
+bool CFTransformer::Clean() {
     bool ret = false;
     for (auto *block : traverse_order) {
         auto instr = LAST_INSTR(block);
         if (instr->GetOpCode() == OpCode::BR &&
             instr->GetOperand(0) == instr->GetOperand(1)) {
+            std::cout << "ReplaceBrWithJmp: " << block->GetName() << std::endl;
             ReplaceBrWithJmp(block);
             ret = true;
         }
         if (instr->GetOpCode() == OpCode::JMP) {
-            if (block->GetInstructionSize() == 2) {
+            if (block->GetInstructionSize() == 1) {
                 // Empty block one label and one jmp
+                std::cout << "RemoveEmptyBlock: " << block->GetName()
+                          << std::endl;
+                RemoveEmptyBlock(block);
                 ret = true;
             }
-            auto *succ_blk = block->GetSuccessor(0);
-            if (succ_blk->GetPredecessorSize() == 1) {
+            // root node has no successor
+            auto *succ_blk =
+                block->GetSuccessorSize() ? block->GetSuccessor(0) : nullptr;
+            if (succ_blk && succ_blk->GetPredecessorSize() == 1) {
                 // combine current and next block
+                std::cout << "CombineBlocks: " << block->GetName() << std::endl;
+                CombineBlocks(block);
                 ret = true;
             }
-            if (succ_blk->GetInstructionSize() == 2 &&
+            if (succ_blk && succ_blk->GetInstructionSize() == 1 &&
                 LAST_INSTR(succ_blk)->GetOpCode() == OpCode::BR) {
                 // change block jmp with succ_blk br
+                std::cout << "HoistBranch: " << block->GetName() << std::endl;
+                HoistBranch(block);
                 ret = true;
             }
         }
@@ -175,7 +186,88 @@ void CFTransformer::ReplaceBrWithJmp(Block *block) {
         }
     }
 }
+
+void CFTransformer::RemoveEmptyBlock(Block *block) {
+    auto *succ_blk = block->GetSuccessor(0);
+    RemovePredecessorIf(succ_blk, block);
+
+    for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
+        auto pred_blk = block->GetPredecessor(i);
+        RemoveSuccessorIf(pred_blk, block);
+
+        auto lst_instr = LAST_INSTR(pred_blk);
+        if (lst_instr->GetOpCode() == OpCode::JMP) {
+            lst_instr->SetOperand(succ_blk->GetLabel(), 0);
+            pred_blk->AddSuccessor(succ_blk, 0);
+        } else {
+            assert(lst_instr->GetOpCode() == OpCode::BR);
+            if (static_cast<LabelOperand *>(lst_instr->GetOperand(0))
+                    ->GetBlock() == block) {
+                lst_instr->SetOperand(succ_blk->GetLabel(), 0);
+                pred_blk->AddSuccessor(succ_blk, 0);
+            }
+
+            if (static_cast<LabelOperand *>(lst_instr->GetOperand(1))
+                    ->GetBlock() == block) {
+                lst_instr->SetOperand(succ_blk->GetLabel(), 1);
+                pred_blk->AddSuccessor(succ_blk, 1);
+            }
+        }
+        succ_blk->AddPredecessor(pred_blk);
+    }
+}
+
+void CFTransformer::CombineBlocks(Block *block) {
+    // remove the jmp instruction from the block
+    block->RemoveInstruction(block->GetInstructionSize() - 1);
+
+    // Add succ blocks instr into current block
+    auto *succ_blk = block->GetSuccessor(0);
+    auto instructions = succ_blk->ReleaseInstructions();
+    for (size_t i : std::views::iota(0UL, instructions.size())) {
+        block->AddInstruction(std::move(instructions[i]));
+    }
+
+    block->RemoveSuccessor(0);
+
+    for (size_t i : std::views::iota(0UL, succ_blk->GetSuccessorSize())) {
+        block->AddSuccessor(succ_blk->GetSuccessor(i));
+    }
+}
+
+void CFTransformer::HoistBranch(Block *block) {
+    auto *succ_blk = block->GetSuccessor(0);
+    RemovePredecessorIf(succ_blk, block);
+    RemoveSuccessorIf(block, succ_blk);
+
+    auto *last_instr = LAST_INSTR(succ_blk);
+    auto br_instr = std::make_unique<BranchInstruction>();
+    for (size_t i : std::views::iota(0UL, 2UL)) {
+        auto *op = static_cast<LabelOperand *>(last_instr->GetOperand(i));
+        br_instr->SetOperand(op);
+        block->AddSuccessor(op->GetBlock());
+        op->GetBlock()->AddPredecessor(block);
+    }
+    br_instr->SetOperand(last_instr->GetOperand(2));
+
+    block->AddInstruction(std::move(br_instr), block->GetInstructionSize() - 1);
+}
+
+void CFTransformer::RemoveUnreachableCFNode(Function *func) {
+    std::unordered_set<Block *> reachable(traverse_order.cbegin(),
+                                          traverse_order.cend());
+    auto &blocks = func->GetBlocks();
+    blocks.erase(std::remove_if(blocks.begin(), blocks.end(),
+                                [&reachable](auto &block) {
+                                    if (!reachable.contains(block.get())) {
+                                        // TODO:
+                                        // erase the corresponding LabelOperand
+                                        return true;
+                                    }
+                                    return false;
+                                }),
+                 blocks.end());
+}
 // CFTransformer End
-*/
 
 } // namespace sc
