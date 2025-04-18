@@ -440,6 +440,7 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
 
 std::unique_ptr<Function> ParseBody(std::unique_ptr<Function> func,
                                     sjp::Json &instrs, sym_tbl &symbols) {
+    check = false;
     func = MakeNewBlock(std::move(func), "entry", symbols);
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
