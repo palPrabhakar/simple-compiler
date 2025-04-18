@@ -20,12 +20,12 @@ file(GLOB_RECURSE SOURCES "src/*.cpp")
 
 # Executable Target
 add_executable(sc ${SOURCES})
-target_compile_options(sc PRIVATE -Wall -Wextra -Wpedantic -O2 -g -std=c++23)
 target_include_directories(sc PRIVATE include/)
 target_link_libraries(sc sjp)
 
 # Enable Testing only in Debug mode
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    target_compile_options(sc PRIVATE -Wall -Wextra -Wpedantic -O0 -ggdb -std=c++23)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
     # Testing
     enable_testing()
@@ -46,4 +46,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 
     # Add a test that runs the test executable
     add_test(NAME unit_test COMMAND test_sc)
+else()
+    target_compile_options(sc PRIVATE -Wall -Wextra -Wpedantic -O2 -std=c++23)
 endif()

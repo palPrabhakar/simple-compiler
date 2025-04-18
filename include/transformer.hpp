@@ -48,11 +48,20 @@ class CFTransformer : public Transformer {
     void CombineBlocks(Block *block);
     void HoistBranch(Block *block);
 
+    void ReplacePredecessor(Block *block, Block *new_blk, Block *old_blk) {
+        for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
+            if (block->GetPredecessor(i) == old_blk) {
+                block->AddPredecessor(new_blk, i);
+                return;
+            }
+        }
+    }
+
     void RemovePredecessorIf(Block *block, Block *match) {
         for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
             if (block->GetPredecessor(i) == match) {
                 block->RemovePredecessor(i);
-                break;
+                return;
             }
         }
     }
@@ -61,6 +70,7 @@ class CFTransformer : public Transformer {
         for (size_t i : std::views::iota(0UL, block->GetSuccessorSize())) {
             if (block->GetSuccessor(i) == match) {
                 block->RemoveSuccessor(i);
+                return;
             }
         }
     }
