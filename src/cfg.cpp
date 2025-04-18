@@ -2,25 +2,30 @@
 #include <memory>
 #include <ranges>
 #include <stack>
+#include <unordered_set>
 
 namespace sc {
 const std::vector<Block *> GetPostOrder(Function *func) {
     std::vector<Block *> post_order;
-    // std::vector<bool> visited(func->GetBlockSize(), false);
-    // std::stack<Block *> st;
-    // st.push(func->GetBlock(0));
-    // while (!st.empty()) {
-    //     auto *block = st.top();
-    //     if (!visited[block->GetId()] && block->GetSuccessorSize() > 0) {
-    //         for (size_t i : std::views::iota(0UL, block->GetSuccessorSize())) {
-    //             st.push(block->GetSuccessor(i));
-    //         }
-    //         visited[block->GetId()] = true;
-    //     } else {
-    //         post_order.push_back(block);
-    //         st.pop();
-    //     }
-    // }
+    std::unordered_set<Block *> visited;
+    std::stack<Block *> st;
+    st.push(func->GetBlock(0));
+    while (!st.empty()) {
+        auto *block = st.top();
+        if (!visited.contains(block) && block->GetSuccessorSize() > 0) {
+            for (size_t i : std::views::iota(0UL, block->GetSuccessorSize()) |
+                                std::views::reverse) {
+                if (!visited.contains(block->GetSuccessor(i))) {
+                    st.push(block->GetSuccessor(i));
+                }
+            }
+            visited.insert(block);
+        } else {
+            post_order.push_back(block);
+            visited.insert(block);
+            st.pop();
+        }
+    }
     return post_order;
 }
 
@@ -28,7 +33,7 @@ static void BuildCFGImpl(Function *func) {
     auto add_nodes = [func](InstructionBase *instr, size_t idx, size_t start,
                             size_t end) {
         for (size_t i : std::views::iota(start, end)) {
-            auto jmp_blk =
+            auto *jmp_blk =
                 static_cast<LabelOperand *>(instr->GetOperand(i))->GetBlock();
             func->GetBlock(idx)->AddSuccessor(jmp_blk);
             jmp_blk->AddPredecessor(func->GetBlock(idx));
