@@ -3,7 +3,6 @@
 #include "transformer.hpp"
 #include <fstream>
 #include <iostream>
-#include <ranges>
 
 namespace sc {
 std::unique_ptr<Program> ParseProgram(sjp::Json);
@@ -19,6 +18,8 @@ int main(int argc, char *argv[]) {
     auto program = sc::ParseProgram(data);
     auto ir_transformer = sc::EarlyIRTransformer();
     program = ir_transformer.Transform(std::move(program));
+    // auto cf_transformer = sc::CFTransformer();
+    // program = cf_transformer.Transform(std::move(program));
     program->Dump();
     return 0;
 }

@@ -173,15 +173,15 @@ void ConstInstruction::Dump(std::ostream &out) const {
         << " " << type << " = const ";
     switch (src->GetType()) {
     case DataType::INT: {
-        auto int_src = static_cast<ImmedOperand<int> *>(src);
+        auto int_src = static_cast<ImmedOperand<ValType::INT> *>(src);
         out << int_src->GetValue();
     } break;
     case DataType::FLOAT: {
-        auto float_src = static_cast<ImmedOperand<double> *>(src);
+        auto float_src = static_cast<ImmedOperand<ValType::FLOAT> *>(src);
         out << float_src->GetValue();
     } break;
     case DataType::BOOL: {
-        auto bool_src = static_cast<ImmedOperand<bool> *>(src);
+        auto bool_src = static_cast<ImmedOperand<ValType::BOOL> *>(src);
         out << (bool_src->GetValue() ? "true" : "false");
     } break;
     default:

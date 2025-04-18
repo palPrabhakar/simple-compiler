@@ -16,6 +16,12 @@ enum class DataType {
 };
 // clang-format on
 
+namespace ValType {
+using INT = int64_t;
+using FLOAT = double;
+using BOOL = bool;
+}; // namespace ValType
+
 class Block;
 
 DataType GetDataTypeFromStr(std::string);

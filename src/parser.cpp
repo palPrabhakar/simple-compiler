@@ -15,7 +15,8 @@
 
 namespace sc {
 using sym_tbl = std::unordered_map<std::string, OperandBase *>;
-static OpCode opcode = OpCode::NOP;
+
+static bool check = false;
 
 static inline void CheckSymbol(sym_tbl &symbols, std::string &arg,
                                const char *fname, const char *instr) {
@@ -28,8 +29,8 @@ static inline void CheckSymbol(sym_tbl &symbols, std::string &arg,
 }
 
 template <typename T> static inline T GetJsonValue(sjp::Json json) {
-    if constexpr (std::is_same_v<int, T>) {
-        return static_cast<int>(json.Get<double>().value());
+    if constexpr (std::is_same_v<ValType::INT, T>) {
+        return static_cast<T>(json.Get<double>().value());
     } else {
         return json.Get<T>().value();
     }
@@ -266,13 +267,13 @@ std::unique_ptr<Function> MakeConstInstruction(std::unique_ptr<Function> func,
     DataType type = GetDataTypeFromStr(type_str);
     switch (type) {
     case DataType::INT:
-        return BuildConstInstruction<int, DataType::INT>(
+        return BuildConstInstruction<ValType::INT, DataType::INT>(
             std::move(func), instr, std::move(type_str), symbols);
     case DataType::FLOAT:
-        return BuildConstInstruction<double, DataType::FLOAT>(
+        return BuildConstInstruction<ValType::FLOAT, DataType::FLOAT>(
             std::move(func), instr, std::move(type_str), symbols);
     case DataType::BOOL:
-        return BuildConstInstruction<bool, DataType::BOOL>(
+        return BuildConstInstruction<ValType::BOOL, DataType::BOOL>(
             std::move(func), instr, std::move(type_str), symbols);
     default:
         assert(false && "Unexpected type found in MakeConstInstruction\n");
@@ -303,6 +304,7 @@ std::unique_ptr<Function> MakePrintInstruction(std::unique_ptr<Function> func,
 std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
                                             sjp::Json &instr,
                                             sym_tbl &symbols) {
+    OpCode opcode = OpCode::NOP;
     auto opcode_str = instr.Get("op");
     if (opcode_str == std::nullopt) {
         if (instr.Get("label") == std::nullopt) {
@@ -315,6 +317,17 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     } else {
         opcode = GetOpCodeFromStr(opcode_str->Get<std::string>().value());
     }
+
+    // If a br or jmp instr is processed then skip all instr until a label
+    // is found since it is not possible to get to these instructions.
+    // Since it is not possible to jmp to unnamed locations in bril[??]
+    if (check) {
+        check = opcode != OpCode::LABEL;
+        if (check) {
+            return func;
+        }
+    }
+
     switch (opcode) {
     // Arithmetic Instructions
     case OpCode::ADD:
@@ -344,12 +357,16 @@ std::unique_ptr<Function> ParseInstructions(std::unique_ptr<Function> func,
     case OpCode::NOT:
         return MakeInstruction<NotInstruction>(std::move(func), instr, symbols);
     // Control Instructions
-    case OpCode::JMP:
+    case OpCode::JMP: {
         // End block
+        check = true;
         return MakeJmpInstruction(std::move(func), instr, symbols);
-    case OpCode::BR:
+    }
+    case OpCode::BR: {
         // End block
+        check = true;
         return MakeBranchInstruction(std::move(func), instr, symbols);
+    }
     case OpCode::CALL:
         return MakeCallInstruction(std::move(func), instr, symbols);
     case OpCode::RET:

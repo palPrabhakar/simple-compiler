@@ -97,3 +97,11 @@ TEST(ParserTest, ParseAdler32) {
     READ_RESULT("../tests/bril/adler32.bril")
     EXPECT_EQ(output.str(), testp.str());
 }
+
+TEST(ParserTest, ParseGol) {
+    READ_PROGRAM("../tests/bril/gol.json")
+    EXPECT_EQ(program->GetSize(), 9);
+    DUMP_PROGRAM
+    READ_RESULT("../tests/bril/gol.bril")
+    EXPECT_EQ(output.str(), testp.str());
+}
