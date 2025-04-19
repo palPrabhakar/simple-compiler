@@ -65,12 +65,10 @@ def run_all(pipeline, files):
         try:
             return float(val)
         except ValueError:
-            print(val)
             return val
 
     results = {}
     for f in files:
-        print(f)
         try:
             out, err = run_test(pipeline, f, timeout)
             results[f] = [convert(r) for r in out.splitlines() if r.strip()]
@@ -88,7 +86,6 @@ def baseline(files):
 
 
 def transformer(files, expected):
-    print("transformer")
     pipeline = [
         "bril2json",
         "../build/sc",

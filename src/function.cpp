@@ -20,9 +20,7 @@ void Function::Dump(std::ostream &out) {
     out << " {\n";
     for (auto &block : blocks) {
         out << "." << block->GetName() << ":\n";
-        for (auto &instr : *block) {
-            instr->Dump(out << "  ");
-        }
+        block->Dump(out, "  ");
     }
     out << "}\n";
 }

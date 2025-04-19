@@ -21,12 +21,7 @@ class EarlyIRTransformer : public Transformer {
   public:
     EarlyIRTransformer() {}
     std::unique_ptr<Program>
-    Transform(std::unique_ptr<Program> program) override {
-        for (auto &f : *program) {
-            FixIR(f.get());
-        }
-        return program;
-    }
+    Transform(std::unique_ptr<Program> program) override;
 
   private:
     void FixIR(Function *func);

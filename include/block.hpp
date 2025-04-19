@@ -2,6 +2,7 @@
 
 #include "instruction.hpp"
 #include "operand.hpp"
+#include <iostream>
 #include <memory>
 #include <string>
 #include <vector>
@@ -89,6 +90,12 @@ class Block {
         assert(idx < predecessors.size() &&
                "Invalid index Block::GetPredecessor\n");
         return predecessors[idx];
+    }
+
+    void Dump(std::ostream &out = std::cout, std::string prefix = "") {
+        for (auto &i : instructions) {
+            i->Dump(out << prefix);
+        }
     }
 
     std::vector<instr_ptr>::iterator begin() { return instructions.begin(); }

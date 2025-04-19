@@ -6,6 +6,7 @@
 #include "operand.hpp"
 #include <algorithm>
 #include <cassert>
+#include <memory>
 #include <ranges>
 #include <unordered_set>
 
@@ -15,11 +16,27 @@ namespace sc {
 #undef PRINT_DEBUG
 
 // EarlyIRTransformer Begin
+std::unique_ptr<Program>
+EarlyIRTransformer::Transform(std::unique_ptr<Program> program) {
+    for (auto &f : *program) {
+#ifdef PRINT_DEBUG
+        std::cout << __PRETTY_FUNCTION__
+                  << "Processing function:  " << f->GetName() << "\n";
+#endif
+        FixIR(f.get());
+    }
+    return program;
+}
+
 void EarlyIRTransformer::FixIR(Function *func) {
     std::vector<Block *> rb;
     for (size_t i : std::views::iota(0UL, func->GetBlockSize()) |
                         std::views::take(func->GetBlockSize() - 1)) {
         auto *block = func->GetBlock(i);
+#ifdef PRINT_DEBUG
+        std::cout << __PRETTY_FUNCTION__
+                  << " Processing block:  " << block->GetName() << "\n";
+#endif
         if (block->GetInstructionSize()) {
             auto *instr = LAST_INSTR(block);
             if (instr->GetOpCode() == OpCode::RET) {
@@ -40,12 +57,17 @@ void EarlyIRTransformer::FixIR(Function *func) {
     }
 
     auto *block = LAST_BLK(func);
+#ifdef PRINT_DEBUG
+    std::cout << __PRETTY_FUNCTION__
+              << " Processing block:  " << block->GetName() << "\n";
+    block->Dump();
+#endif
     if (block->GetInstructionSize() &&
         LAST_INSTR(block)->GetOpCode() == OpCode::RET) {
         rb.push_back(block);
-    }
-
-    if (rb.size() == 0) {
+    } else {
+        // Empty last block found
+        // can only add a ret instr if function is void
         assert(func->GetRetType() == DataType::VOID &&
                "Non-void function with no return instruction.\n");
         block->AddInstruction(std::make_unique<RetInstruction>());

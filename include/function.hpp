@@ -17,7 +17,7 @@ class Function {
   public:
     Function(std::string _name, DataType _ret_type)
         : name(_name), ret_type(_ret_type) {}
-    ~Function() = default;
+    virtual ~Function() = default;
 
     void AddArgs(OperandBase *operand) { args.push_back(std::move(operand)); }
 
