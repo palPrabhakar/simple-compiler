@@ -104,9 +104,11 @@ def transformer(files, expected):
 
 
 def main():
-    core = Path("/home/pal/workspace/external-projects/bril/benchmarks/core/")
+    # path = Path("/home/pal/workspace/external-projects/bril/benchmarks/core/")
+    # path = Path("/home/pal/workspace/external-projects/bril/benchmarks/float/")
+    path = Path("/home/pal/workspace/external-projects/bril/benchmarks/mem/")
     # path = Path("bril/transformer/")
-    files = [str(f.resolve()) for f in core.glob("*.bril")]
+    files = [str(f.resolve()) for f in path.glob("*.bril")]
     results = baseline(files)
     transformer(files, results)
 

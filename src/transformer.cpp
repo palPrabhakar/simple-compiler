@@ -87,9 +87,9 @@ void EarlyIRTransformer::FixIR(Function *func) {
 void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
                                             Function *func) {
     // add new exit block
-    func->AddBlock(std::make_unique<Block>("exit"));
+    func->AddBlock(std::make_unique<Block>("__sc_exit__"));
     // create new lbl operand to store jmp dest
-    auto lbl_op = std::make_unique<LabelOperand>("exit");
+    auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__");
     lbl_op->SetBlock(LAST_BLK(func));
     LAST_BLK(func)->SetLabel(lbl_op.get());
 

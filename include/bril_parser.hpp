@@ -40,7 +40,6 @@ class BrilParser {
     FuncPtr MakeBranchInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeCallInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeConstInstruction(FuncPtr func, sjp::Json &instr);
-    FuncPtr MakePrintInstruction(FuncPtr func, sjp::Json &instr);
 
     template <typename T, bool has_dest = true, bool has_args = true,
               size_t args_size = T::OP_SIZE>

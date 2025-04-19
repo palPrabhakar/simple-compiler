@@ -133,17 +133,6 @@ FuncPtr BrilParser::MakeConstInstruction(FuncPtr func, sjp::Json &instr) {
     return func;
 }
 
-FuncPtr BrilParser::MakePrintInstruction(FuncPtr func, sjp::Json &instr) {
-    auto args = instr.Get("args").value();
-
-    // Nothing to print
-    if (args.Size() == 0)
-        return func;
-
-    return MakeInstruction<PrintInstruction, false, false>(std::move(func),
-                                                           instr);
-}
-
 // Parse Functions
 FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
     // Check opcode
@@ -258,7 +247,8 @@ FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
     case OpCode::CONST:
         return MakeConstInstruction(std::move(func), instr);
     case OpCode::PRINT:
-        return MakePrintInstruction(std::move(func), instr);
+        return MakeInstruction<PrintInstruction, false, false>(std::move(func),
+                                                               instr);
     case OpCode::LABEL: {
         // Make new block
         auto lbl = instr.Get("label")->Get<std::string>().value();
@@ -279,7 +269,7 @@ FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
 std::unique_ptr<Function> BrilParser::ParseBody(std::unique_ptr<Function> func,
                                                 sjp::Json &instrs) {
     check = false;
-    func = MakeNewBlock(std::move(func), "entry");
+    func = MakeNewBlock(std::move(func), "__sc_entry__");
     for (size_t i : std::views::iota(0UL, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr);
