@@ -82,14 +82,14 @@ def transformer(files, expected):
         "brilirs {args}",
     ]
     result = run_all(pipeline, files)
-    print(result)
     for f in files:
+        name = f.split('/')[-1]
         got = result[f]
         exp = expected[f]
         if got == exp:
-            print("Pass: {}".format(f))
+            print("Pass: {}".format(name))
         else:
-            print("Fail: {}. Expected: {} but found: {}".format(f, exp, got))
+            print("Fail: {}. Expected: {} but found: {}".format(name, exp, got))
 
 
 def main():

@@ -77,13 +77,13 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
     // only add operand if not void
     if (func->GetRetType() != DataType::VOID) {
         if (func->GetRetType() == DataType::PTR) {
-            ret_op = std::make_unique<PtrOperand>("__$rret__");
+            ret_op = std::make_unique<PtrOperand>("__rret__");
             for (auto dt : static_cast<PtrFunction *>(func)->GetPtrChain()) {
                 static_cast<PtrOperand *>(ret_op.get())->AppendPtrChain(dt);
             }
         } else {
             ret_op =
-                std::make_unique<RegOperand>(func->GetRetType(), "__$rret__");
+                std::make_unique<RegOperand>(func->GetRetType(), "__rret__");
         }
         ret_instr->SetOperand(ret_op.get());
     }
@@ -136,6 +136,10 @@ CFTransformer::Transform(std::unique_ptr<Program> program) {
 bool CFTransformer::Clean() {
     bool ret = false;
     for (auto *block : traverse_order) {
+#ifdef PRINT_DEBUG
+        std::cout << __PRETTY_FUNCTION__ << " Clean:  " << block->GetName()
+                  << "\n";
+#endif
         auto instr = LAST_INSTR(block);
         if (instr->GetOpCode() == OpCode::BR &&
             instr->GetOperand(0) == instr->GetOperand(1)) {
@@ -200,6 +204,10 @@ void CFTransformer::RemoveEmptyBlock(Block *block) {
     auto *succ_blk = block->GetSuccessor(0);
     RemovePredecessorIf(succ_blk, block);
 
+    // remove the successor since clean is
+    // implemented as a series of if's
+    RemoveSuccessorIf(block, succ_blk);
+
     for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
         auto pred_blk = block->GetPredecessor(i);
         auto lst_instr = LAST_INSTR(pred_blk);
@@ -221,6 +229,11 @@ void CFTransformer::RemoveEmptyBlock(Block *block) {
             }
         }
         succ_blk->AddPredecessor(pred_blk);
+    }
+
+    for (size_t i : std::views::iota(0UL, block->GetPredecessorSize()) |
+                        std::views::reverse) {
+        block->RemovePredecessor(i);
     }
 }
 

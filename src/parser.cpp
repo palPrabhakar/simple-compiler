@@ -110,7 +110,6 @@ template <typename T, bool is_dest = true>
 std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
                                           sjp::Json &instr, sym_tbl &symbols) {
 
-    auto args = instr.Get("args").value();
     auto instr_ptr = std::make_unique<T>();
 
     if constexpr (is_dest) {
@@ -137,10 +136,14 @@ std::unique_ptr<Function> MakeInstruction(std::unique_ptr<Function> func,
         }
     }
 
-    for (size_t i : std::views::iota(0UL, args.Size())) {
-        auto arg = args.Get(i)->Get<std::string>().value();
-        CheckSymbol(symbols, arg, func->GetName().c_str(), "MakeInstruction");
-        instr_ptr->SetOperand(symbols[arg]);
+    if (instr.Get("args").has_value()) {
+        auto args = instr.Get("args").value();
+        for (size_t i : std::views::iota(0UL, args.Size())) {
+            auto arg = args.Get(i)->Get<std::string>().value();
+            CheckSymbol(symbols, arg, func->GetName().c_str(),
+                        "MakeInstruction");
+            instr_ptr->SetOperand(symbols[arg]);
+        }
     }
     APPEND_INSTR(func, instr_ptr);
     return func;
