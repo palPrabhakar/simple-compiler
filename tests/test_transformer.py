@@ -56,11 +56,24 @@ def run_test(pipeline, fn, timeout):
 
 
 def run_all(pipeline, files):
+    def convert(val):
+        if val.lower() == "true":
+            return True
+        elif val.lower() == "false":
+            return False
+
+        try:
+            return float(val)
+        except ValueError:
+            print(val)
+            return val
+
     results = {}
     for f in files:
+        print(f)
         try:
             out, err = run_test(pipeline, f, timeout)
-            results[f] = [float(r) for r in out.splitlines() if r.strip()]
+            results[f] = [convert(r) for r in out.splitlines() if r.strip()]
         except subprocess.TimeoutExpired:
             results[f] = 'fail'
     return results
@@ -75,6 +88,7 @@ def baseline(files):
 
 
 def transformer(files, expected):
+    print("transformer")
     pipeline = [
         "bril2json",
         "../build/sc",
@@ -82,19 +96,20 @@ def transformer(files, expected):
         "brilirs {args}",
     ]
     result = run_all(pipeline, files)
-    print(result)
     for f in files:
+        name = f.split('/')[-1]
         got = result[f]
         exp = expected[f]
         if got == exp:
-            print("Pass: {}".format(f))
+            print("Pass: {}".format(name))
         else:
-            print("Fail: {}. Expected: {} but found: {}".format(f, exp, got))
+            print("Fail: {}. Expected: {} but found: {}".format(name, exp, got))
 
 
 def main():
-    path = Path("bril/transformer/")
-    files = [str(f.resolve()) for f in path.glob("*.bril")]
+    core = Path("/home/pal/workspace/external-projects/bril/benchmarks/core/")
+    # path = Path("bril/transformer/")
+    files = [str(f.resolve()) for f in core.glob("*.bril")]
     results = baseline(files)
     transformer(files, results)
 
