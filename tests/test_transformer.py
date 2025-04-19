@@ -100,14 +100,16 @@ def transformer(files, expected):
         if got == exp:
             print("Pass: {}".format(name))
         else:
-            print("Fail: {}. Expected: {} but found: {}".format(name, exp, got))
+            # print("Fail: {}. Expected: {} but found: {}".format(name, exp, got))
+            print("Fail: {}".format(name))
 
 
 def main():
+    # path = Path("bril/transformer/")
     # path = Path("/home/pal/workspace/external-projects/bril/benchmarks/core/")
     # path = Path("/home/pal/workspace/external-projects/bril/benchmarks/float/")
-    path = Path("/home/pal/workspace/external-projects/bril/benchmarks/mem/")
-    # path = Path("bril/transformer/")
+    # path = Path("/home/pal/workspace/external-projects/bril/benchmarks/mem/")
+    path = Path("/home/pal/workspace/external-projects/bril/benchmarks/mixed/")
     files = [str(f.resolve()) for f in path.glob("*.bril")]
     results = baseline(files)
     transformer(files, results)

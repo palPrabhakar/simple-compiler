@@ -39,11 +39,6 @@ static const std::unordered_map<std::string, OpCode> str_to_opcodes = {
     {"br", OpCode::BR},
     {"call", OpCode::CALL},
     {"ret", OpCode::RET},
-    // Miscellaneous
-    {"id", OpCode::ID},
-    {"print", OpCode::PRINT},
-    {"const", OpCode::CONST},
-    {"nop", OpCode::NOP},
     // SSA
     {"get", OpCode::GET},
     {"set", OpCode::SET},
@@ -63,11 +58,17 @@ static const std::unordered_map<std::string, OpCode> str_to_opcodes = {
     {"flt", OpCode::FLT},
     {"fle", OpCode::FLE},
     {"fgt", OpCode::FGT},
-    {"fge", OpCode::FGE}
+    {"fge", OpCode::FGE},
+    // Miscellaneous
+    {"id", OpCode::ID},
+    {"const", OpCode::CONST},
+    {"print", OpCode::PRINT},
+    {"nop", OpCode::NOP},
 };
 // clang-format on
 
 OpCode GetOpCodeFromStr(std::string op_code) {
+    std::cout << op_code << std::endl;
     assert(str_to_opcodes.contains(op_code) &&
            "GetOpCodeFromStr: Invalid opcode str\n");
     return str_to_opcodes.at(op_code);
