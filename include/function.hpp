@@ -45,7 +45,7 @@ class Function {
 
     // Non-owning pointer
     Block *GetBlock(size_t idx) {
-        assert(idx < blocks.size() && "Invalid index Function::GetBlock\n");
+        assert(idx < blocks.size());
         return blocks[idx].get();
     }
 

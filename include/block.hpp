@@ -23,30 +23,45 @@ class Block {
     }
 
     void AddInstruction(instr_ptr instr, size_t idx) {
-        assert(idx < instructions.size() &&
-               "idx out of bounds Block::AddInstruction\n");
+        assert(idx < instructions.size());
         instructions[idx] = std::move(instr);
+    }
+
+    void RemoveInstruction(size_t idx) {
+        assert(idx < instructions.size());
+        instructions.erase(instructions.begin() + idx);
+    }
+
+    std::vector<instr_ptr> ReleaseInstructions() {
+        return std::move(instructions);
     }
 
     void AddSuccessor(Block *succ) { successors.push_back(succ); }
 
+    void AddSuccessor(Block *succ, size_t idx) {
+        assert(idx < successors.size());
+        successors[idx] = succ;
+    }
+
     void RemoveSuccessor(size_t idx) {
-        assert(idx < instructions.size() &&
-               "Invalid index Block::RemoveSuccessor\n");
+        assert(idx < successors.size());
         successors.erase(successors.begin() + idx);
     }
 
     void AddPredecessor(Block *pred) { predecessors.push_back(pred); }
 
+    void AddPredecessor(Block *pred, size_t idx) {
+        assert(idx < predecessors.size());
+        predecessors[idx] = pred;
+    }
+
     void RemovePredecessor(size_t idx) {
-        assert(idx < instructions.size() &&
-               "Invalid index Block::RemovePredecessor\n");
-        predecessors.erase(successors.begin() + idx);
+        assert(idx < predecessors.size());
+        predecessors.erase(predecessors.begin() + idx);
     }
 
     InstructionBase *GetInstruction(size_t idx) {
-        assert(idx < instructions.size() &&
-               "Invalid index Block::GetInstruction\n");
+        assert(idx < instructions.size());
         return instructions[idx].get();
     }
 

@@ -4,6 +4,7 @@
 #include "program.hpp"
 #include <cassert>
 #include <memory>
+#include <ranges>
 
 namespace sc {
 class Transformer {
@@ -32,28 +33,47 @@ class EarlyIRTransformer : public Transformer {
     void AddUniqueExitBlock(std::vector<Block *> rb, Function *func);
 };
 
-// class CFTransformer : public Transformer {
-//   public:
-//     std::unique_ptr<Program> Transform(std::unique_ptr<Program> program) {
-//         for (auto &f : *program) {
-//             traverse_order = GetPostOrder(f.get());
-//             if (traverse_order.size() != f->GetBlockSize()) {
-//                 std::cout << "Calling RemoveUnreachableCFNode\n";
-//                 RemoveUnreachableCFNode(f.get());
-//                 traverse_order = GetPostOrder(f.get());
-//             }
-//             while (Clean(f.get())) {
-//                 traverse_order = GetPostOrder(f.get());
-//             }
-//         }
-//         return program;
-//     }
+class CFTransformer : public Transformer {
+  public:
+    std::unique_ptr<Program>
+    Transform(std::unique_ptr<Program> program) override;
 
-//   private:
-//     void RemoveUnreachableCFNode(Function *func);
-//     bool Clean(Function *func);
-//     void ReplaceBrWithJmp(Block *block);
-//     std::vector<Block *> traverse_order;
-// };
+  private:
+    std::vector<Block *> traverse_order;
+
+    void RemoveUnreachableCFNode(Function *func);
+    bool Clean();
+    void ReplaceBrWithJmp(Block *block);
+    void RemoveEmptyBlock(Block *block);
+    void CombineBlocks(Block *block);
+    void HoistBranch(Block *block);
+
+    void ReplacePredecessor(Block *block, Block *new_blk, Block *old_blk) {
+        for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
+            if (block->GetPredecessor(i) == old_blk) {
+                block->AddPredecessor(new_blk, i);
+                return;
+            }
+        }
+    }
+
+    void RemovePredecessorIf(Block *block, Block *match) {
+        for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
+            if (block->GetPredecessor(i) == match) {
+                block->RemovePredecessor(i);
+                return;
+            }
+        }
+    }
+
+    void RemoveSuccessorIf(Block *block, Block *match) {
+        for (size_t i : std::views::iota(0UL, block->GetSuccessorSize())) {
+            if (block->GetSuccessor(i) == match) {
+                block->RemoveSuccessor(i);
+                return;
+            }
+        }
+    }
+};
 
 } // namespace sc

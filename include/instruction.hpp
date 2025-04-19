@@ -20,8 +20,7 @@ class InstructionBase {
     void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
 
     void SetOperand(OperandBase *oprnd, size_t idx) {
-        assert(idx < operands.size() &&
-               "idx out of bounds InstructionBase::SetOperands\n");
+        assert(idx < operands.size());
         operands[idx] = oprnd;
     }
 
