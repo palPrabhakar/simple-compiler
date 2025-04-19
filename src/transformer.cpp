@@ -11,6 +11,7 @@
 
 namespace sc {
 
+// #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
 // EarlyIRTransformer Begin
@@ -120,6 +121,9 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
 std::unique_ptr<Program>
 CFTransformer::Transform(std::unique_ptr<Program> program) {
     for (auto &f : *program) {
+#ifdef PRINT_DEBUG
+        std::cout << __PRETTY_FUNCTION__ << " Clean:  " << f->GetName() << "\n";
+#endif
         do {
             traverse_order = GetPostOrder(f.get());
         } while (Clean());
@@ -147,7 +151,11 @@ bool CFTransformer::Clean() {
             ret = true;
         }
         if (instr->GetOpCode() == OpCode::JMP) {
-            if (block->GetInstructionSize() == 1) {
+            // Do not remove the block if it's the entry block
+            // unique entry block! Otherwise there won't be an
+            // unique exit block in reverse CFG
+            if (block->GetInstructionSize() == 1 &&
+                block->GetPredecessorSize()) {
                 // Empty block one label and one jmp
                 RemoveEmptyBlock(block);
                 ret = true;
