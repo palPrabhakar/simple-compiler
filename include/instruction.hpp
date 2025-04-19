@@ -29,6 +29,8 @@ class InstructionBase {
         return operands[idx];
     }
 
+    static constexpr size_t OP_SIZE = 0;
+
   protected:
     InstructionBase(OpCode _opcode) : opcode(_opcode) {}
     std::vector<OperandBase *> operands; // non-owning pointers
@@ -41,18 +43,21 @@ class UnaryInstruction : public InstructionBase {
   public:
     UnaryInstruction(OpCode opcode) : InstructionBase(opcode) {}
     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 class BinaryInstruction : public InstructionBase {
   public:
     BinaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class TernaryInstruction : public InstructionBase {
   public:
     TernaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+    static constexpr size_t OP_SIZE = 3;
 };
 
 // Arithmetic Instructions
@@ -60,24 +65,28 @@ class AddInstruction final : public TernaryInstruction {
   public:
     AddInstruction() : TernaryInstruction(OpCode::ADD) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class MulInstruction final : public TernaryInstruction {
   public:
     MulInstruction() : TernaryInstruction(OpCode::MUL) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class SubInstruction final : public TernaryInstruction {
   public:
     SubInstruction() : TernaryInstruction(OpCode::SUB) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class DivInstruction final : public TernaryInstruction {
   public:
     DivInstruction() : TernaryInstruction(OpCode::DIV) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 // Comparison Instructions
@@ -85,30 +94,35 @@ class EqInstruction final : public TernaryInstruction {
   public:
     EqInstruction() : TernaryInstruction(OpCode::EQ) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class LtInstruction final : public TernaryInstruction {
   public:
     LtInstruction() : TernaryInstruction(OpCode::LT) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class GtInstruction final : public TernaryInstruction {
   public:
     GtInstruction() : TernaryInstruction(OpCode::GT) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class LeInstruction final : public TernaryInstruction {
   public:
     LeInstruction() : TernaryInstruction(OpCode::LE) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class GeInstruction final : public TernaryInstruction {
   public:
     GeInstruction() : TernaryInstruction(OpCode::GE) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 // Logic Instructions
@@ -116,18 +130,21 @@ class AndInstruction final : public TernaryInstruction {
   public:
     AndInstruction() : TernaryInstruction(OpCode::AND) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class OrInstruction final : public TernaryInstruction {
   public:
     OrInstruction() : TernaryInstruction(OpCode::OR) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class NotInstruction final : public BinaryInstruction {
   public:
     NotInstruction() : BinaryInstruction(OpCode::NOT) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 // Control Instruction
@@ -177,6 +194,7 @@ class AllocInstruction : public BinaryInstruction {
   public:
     AllocInstruction() : BinaryInstruction(OpCode::ALLOC) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 class FreeInstruction : public UnaryInstruction {
@@ -189,6 +207,7 @@ class LoadInstruction : public BinaryInstruction {
   public:
     LoadInstruction() : BinaryInstruction(OpCode::LOAD) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 class StoreInstruction : public BinaryInstruction {
@@ -201,6 +220,7 @@ class PtraddInstruction : public TernaryInstruction {
   public:
     PtraddInstruction() : TernaryInstruction(OpCode::PTRADD) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Point Arithmetic Instructions
@@ -208,24 +228,28 @@ class FAddInstruction final : public TernaryInstruction {
   public:
     FAddInstruction() : TernaryInstruction(OpCode::FADD) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FMulInstruction final : public TernaryInstruction {
   public:
     FMulInstruction() : TernaryInstruction(OpCode::FMUL) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FSubInstruction final : public TernaryInstruction {
   public:
     FSubInstruction() : TernaryInstruction(OpCode::FSUB) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FDivInstruction final : public TernaryInstruction {
   public:
     FDivInstruction() : TernaryInstruction(OpCode::FDIV) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Pointi Comparison Instructions
@@ -233,30 +257,35 @@ class FEqInstruction final : public TernaryInstruction {
   public:
     FEqInstruction() : TernaryInstruction(OpCode::FEQ) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FLtInstruction final : public TernaryInstruction {
   public:
     FLtInstruction() : TernaryInstruction(OpCode::FLT) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FGtInstruction final : public TernaryInstruction {
   public:
     FGtInstruction() : TernaryInstruction(OpCode::FGT) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FLeInstruction final : public TernaryInstruction {
   public:
     FLeInstruction() : TernaryInstruction(OpCode::FLE) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 class FGeInstruction final : public TernaryInstruction {
   public:
     FGeInstruction() : TernaryInstruction(OpCode::FGE) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
 };
 
 // Miscellaneous Instructions
@@ -264,6 +293,7 @@ class IdInstruction final : public BinaryInstruction {
   public:
     IdInstruction() : BinaryInstruction(OpCode::ID) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 class ConstInstruction final : public BinaryInstruction {

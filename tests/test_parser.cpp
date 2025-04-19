@@ -1,4 +1,4 @@
-#include "parser.hpp"
+#include "bril_parser.hpp"
 #include "program.hpp"
 #include <fstream>
 #include <gtest/gtest.h>
@@ -11,9 +11,8 @@
 
 #define READ_PROGRAM(x)                                                        \
     std::ifstream ifs(x);                                                      \
-    auto json_parser = sjp::Parser(ifs);                                       \
-    auto data = json_parser.Parse();                                           \
-    auto program = sc::ParseProgram(data);
+    auto parser = sc::BrilParser(ifs);                                         \
+    auto program = parser.ParseProgram();
 
 #define DUMP_PROGRAM                                                           \
     std::stringstream output;                                                  \

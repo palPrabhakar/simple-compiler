@@ -1,3 +1,4 @@
+#include "bril_parser.hpp"
 #include "cfg.hpp"
 #include "parser.hpp"
 #include "program.hpp"
@@ -12,14 +13,12 @@ std::unique_ptr<Program> ParseProgram(sjp::Json);
 int main(int argc, char *argv[]) {
     std::unique_ptr<sc::Program> program;
     if (argc < 2) {
-        auto json_parser = sjp::Parser(std::cin);
-        auto data = json_parser.Parse();
-        program = sc::ParseProgram(data);
+        auto parser = sc::BrilParser(std::cin);
+        program = parser.ParseProgram();
     } else {
         std::ifstream ifs(argv[1]);
-        auto json_parser = sjp::Parser(ifs);
-        auto data = json_parser.Parse();
-        program = sc::ParseProgram(data);
+        auto parser = sc::BrilParser(ifs);
+        program = parser.ParseProgram();
     }
     auto ir_transformer = sc::EarlyIRTransformer();
     program = ir_transformer.Transform(std::move(program));
