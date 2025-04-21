@@ -1,5 +1,5 @@
 @main {
-.entry:
+.__sc_entry__:
   a: float = const 2;
   b: float = const 10;
   n: float = const 8;
@@ -11,12 +11,12 @@
   print right;
 }
 @square_function(x: float): float {
-.entry:
+.__sc_entry__:
   square: float = fmul x x;
   ret square;
 }
 @left_riemann(a: float, b: float, n: float): float {
-.entry:
+.__sc_entry__:
   zero: float = const 0;
   one: float = const 1;
   negative_one: float = fsub zero one;
@@ -39,7 +39,7 @@
   ret sum;
 }
 @right_riemann(a: float, b: float, n: float): float {
-.entry:
+.__sc_entry__:
   zero: float = const 0;
   one: float = const 1;
   diff: float = fsub b a;
@@ -61,7 +61,7 @@
   ret sum;
 }
 @midpoint_riemann(a: float, b: float, n: float): float {
-.entry:
+.__sc_entry__:
   zero: float = const 0;
   one: float = const 1;
   negative_one: float = fsub zero one;

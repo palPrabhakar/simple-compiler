@@ -68,7 +68,6 @@ static const std::unordered_map<std::string, OpCode> str_to_opcodes = {
 // clang-format on
 
 OpCode GetOpCodeFromStr(std::string op_code) {
-    std::cout << op_code << std::endl;
     assert(str_to_opcodes.contains(op_code) &&
            "GetOpCodeFromStr: Invalid opcode str\n");
     return str_to_opcodes.at(op_code);

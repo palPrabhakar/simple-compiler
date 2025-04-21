@@ -1,5 +1,5 @@
 @main(n: int, seed: int) {
-.entry:
+.__sc_entry__:
   id: int = const 3;
   one: int = const 1;
   rng: ptr<int> = alloc one;
@@ -16,7 +16,7 @@
   free dest;
 }
 @next_board(msize: int, n: int, board: ptr<int>, dest: ptr<int>) {
-.entry:
+.__sc_entry__:
   zero: int = const 0;
   one: int = const 1;
   i: int = const 0;
@@ -35,7 +35,7 @@
 .exit:
 }
 @next_cell(x: int, neighbors: int): int {
-.entry:
+.__sc_entry__:
   one: int = const 1;
   two: int = const 2;
   three: int = const 3;
@@ -61,7 +61,7 @@
   ret res;
 }
 @test_neighbors(msize: int, n: int, board: ptr<int>) {
-.entry:
+.__sc_entry__:
   id: int = const 223;
   i: int = const 0;
   one: int = const 1;
@@ -76,7 +76,7 @@
 .exit:
 }
 @alive(msize: int, n: int, i: int, board: ptr<int>): int {
-.entry:
+.__sc_entry__:
   id: int = const 7;
   zero: int = const 0;
   one: int = const 1;
@@ -175,7 +175,7 @@
   ret sum;
 }
 @rand(seq: ptr<int>, max: int): int {
-.entry:
+.__sc_entry__:
   a: int = const 1588635695;
   c: int = const 0;
   m: int = const 4294967291;
@@ -188,7 +188,7 @@
   ret val;
 }
 @rand_array(n: int, rng: ptr<int>): ptr<int> {
-.entry:
+.__sc_entry__:
   one: int = const 1;
   two: int = const 2;
   i: int = const 0;
@@ -206,7 +206,7 @@
   ret arr;
 }
 @print_array(n: int, arr: ptr<int>) {
-.entry:
+.__sc_entry__:
   zero: int = const 0;
   one: int = const 1;
   i: int = const 0;
@@ -224,7 +224,7 @@
 .exit:
 }
 @mod(a: int, b: int): int {
-.entry:
+.__sc_entry__:
   quotient: int = div a b;
   whole: int = mul quotient b;
   remainder: int = sub a whole;

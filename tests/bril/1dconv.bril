@@ -1,5 +1,5 @@
 @genarray(size: int, iskernel: bool): ptr<float> {
-.entry:
+.__sc_entry__:
   arr: ptr<float> = alloc size;
   v0: float = const 0;
   br iskernel .set.val.is.kernel .set.val.is.not.kernel;
@@ -27,7 +27,7 @@
   ret arr;
 }
 @convolve(kernel: ptr<float>, kernelsize: int, array: ptr<float>, arraysize: int): ptr<float> {
-.entry:
+.__sc_entry__:
   zero: float = const 0;
   one: int = const 1;
   t: int = sub arraysize kernelsize;
@@ -66,7 +66,7 @@
   ret output;
 }
 @printoutput(out: ptr<float>, kernelsize: int, arraysize: int) {
-.entry:
+.__sc_entry__:
   one: int = const 1;
   t: int = sub arraysize kernelsize;
   outputsize: int = add t one;
@@ -85,7 +85,7 @@
   ret;
 }
 @main {
-.entry:
+.__sc_entry__:
   t: bool = const true;
   f: bool = const false;
   kernelsize: int = const 3;

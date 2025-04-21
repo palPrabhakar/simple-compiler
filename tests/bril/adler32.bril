@@ -1,5 +1,5 @@
 @main {
-.entry:
+.__sc_entry__:
   size: int = const 512;
   arr: ptr<int> = alloc size;
   call @fill_array arr size;
@@ -8,14 +8,14 @@
   free arr;
 }
 @mod(r: int, s: int): int {
-.entry:
+.__sc_entry__:
   x: int = div r s;
   y: int = mul x s;
   result: int = sub r y;
   ret result;
 }
 @fill_array(arr: ptr<int>, size: int) {
-.entry:
+.__sc_entry__:
   one: int = const 1;
   curr: int = const 0;
   loc: ptr<int> = id arr;
@@ -29,7 +29,7 @@
   nop;
 }
 @bitwise_or(x: int, y: int): int {
-.entry:
+.__sc_entry__:
   one: int = const 1;
   two: int = const 2;
   val: int = const 1;
@@ -56,7 +56,7 @@
   ret result;
 }
 @adler32(arr: ptr<int>, size: int): int {
-.entry:
+.__sc_entry__:
   a: int = const 1;
   b: int = const 0;
   one: int = const 1;
