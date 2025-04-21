@@ -1,0 +1,43 @@
+#pragma once
+
+#include <cassert>
+#include <cmath>
+#include <cstdint>
+#include <vector>
+
+namespace sc {
+
+inline size_t Idx32(size_t num) { return num / 32; }
+
+// Fast set union and intersection using bitwise operations.
+// Map each node in the CFG to a number between 0 - |N| - 1,
+// where |N| is the number of nodes in the CFG.
+// Now, a set of nodes can be represented using a bitset,
+// where 1 => element is present and 0 => not present.
+class IndexSet {
+  public:
+    IndexSet(size_t sz) : size(sz), sets(Idx32(sz) + 1) {}
+
+    void Set(size_t idx) {
+        assert(idx < size);
+        auto i = Idx32(idx);
+        sets[i] |= 1U << (idx - 32 * i);
+    }
+
+    void Reset(size_t idx) {
+        assert(idx < size);
+        auto i = Idx32(idx);
+        sets[i] &= ~(1U << (idx - 32 * i));
+    }
+
+    bool Get(size_t idx) const {
+        assert(idx < size);
+        auto i = Idx32(idx);
+        return sets[i] & (1U << (idx - 32 * i));
+    }
+
+  private:
+    size_t size;
+    std::vector<uint32_t> sets;
+};
+} // namespace sc
