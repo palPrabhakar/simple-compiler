@@ -1,0 +1,37 @@
+#include "index_set.hpp"
+#include <algorithm>
+#include <ranges>
+
+namespace sc {
+IndexSet operator|(const IndexSet &lhs, const IndexSet &rhs) {
+    auto min = std::min(lhs.sets.size(), rhs.sets.size());
+    auto size = std::max(lhs.size, rhs.size);
+    auto rset = IndexSet(size);
+
+    for (auto i : std::views::iota(0UL, min)) {
+        rset.sets[i] = lhs.sets[i] | rhs.sets[i];
+    }
+
+    for (auto i : std::views::iota(min, lhs.sets.size())) {
+        rset.sets[i] = lhs.sets[i];
+    }
+
+    for (auto i : std::views::iota(min, rhs.sets.size())) {
+        rset.sets[i] = rhs.sets[i];
+    }
+
+    return rset;
+}
+
+IndexSet operator&(const IndexSet &lhs, const IndexSet &rhs) {
+    auto min = std::min(lhs.sets.size(), rhs.sets.size());
+    auto size = std::min(lhs.size, rhs.size);
+    auto rset = IndexSet(size);
+
+    for (auto i : std::views::iota(0UL, min)) {
+        rset.sets[i] = lhs.sets[i] & rhs.sets[i];
+    }
+
+    return rset;
+}
+} // namespace sc

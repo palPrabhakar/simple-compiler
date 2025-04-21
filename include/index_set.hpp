@@ -7,7 +7,7 @@
 
 namespace sc {
 
-inline size_t Idx32(size_t num) { return num / 32; }
+inline size_t Idx32(size_t num) { return num >> 5; }
 
 // Fast set union and intersection using bitwise operations.
 // Map each node in the CFG to a number between 0 - |N| - 1,
@@ -36,8 +36,13 @@ class IndexSet {
         return sets[i] & (1U << (idx - 32 * i));
     }
 
-  private:
+  public:
     size_t size;
     std::vector<uint32_t> sets;
+
+    // Union
+    friend IndexSet operator|(const IndexSet &lhs, const IndexSet &rhs);
+    // Intersection
+    friend IndexSet operator&(const IndexSet &lhs, const IndexSet &rhs);
 };
 } // namespace sc
