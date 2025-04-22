@@ -34,4 +34,12 @@ IndexSet operator&(const IndexSet &lhs, const IndexSet &rhs) {
 
     return rset;
 }
+
+bool operator==(const IndexSet &lhs, const IndexSet &rhs) {
+    return lhs.sets == rhs.sets;
+}
+
+bool operator!=(const IndexSet &lhs, const IndexSet &rhs) {
+    return !(lhs == rhs);
+}
 } // namespace sc

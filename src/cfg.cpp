@@ -49,12 +49,9 @@ static void BuildCFGImpl(Function *func) {
             add_nodes(instr, i, 0, 2);
             break;
         case OpCode::RET:
-            assert(i == func->GetBlockSize() - 1 &&
-                   "Function::BuildCFG - ret instruction found befor last "
-                   "block\n");
             break;
         default:
-            assert(false && "FunctionBuild::CFG - Unexpted opcode found\n");
+            assert(false && "FunctionBuild::CFG - Unexpected opcode found\n");
         }
     }
 }

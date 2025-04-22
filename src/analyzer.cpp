@@ -1,21 +1,51 @@
 #include "analyzer.hpp"
 #include <ranges>
-#include <unordered_set>
 
 namespace sc {
 void DominatorAnalyzer::ComputeDominance() {
-    // std::unordered_set<Block *> universal(func->GetBlocks().begin(),
-    //                                       func->GetBlocks().end());
-    // dom[func->GetBlock(0)].insert(func->GetBlock(0));
-    // for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
-    //     dom[func->GetBlock(i)] = universal;
-    // }
+    dom.emplace_back(func->GetBlockSize(), false);
+    dom[0].Set(0);
+    for (auto _ : std::views::iota(1UL, func->GetBlockSize())) {
+        dom.emplace_back(func->GetBlockSize(), true);
+    }
 
     bool changed = true;
-    while(changed) {
+    while (changed) {
         changed = false;
-        // for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
-        // }
+        for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
+            auto block = func->GetBlock(i);
+            IndexSet ns(dom[imap[block->GetPredecessor(0)]]);
+
+            for (auto k : std::views::iota(1UL, block->GetPredecessorSize())) {
+                ns = ns & dom[imap[block->GetPredecessor(k)]];
+            }
+            ns.Set(i);
+
+            if (ns != dom[imap[block]]) {
+                dom[imap[block]] = ns;
+                changed = true;
+            }
+        }
     }
 }
+
+void DominatorAnalyzer::BuildIndexMap() {
+    for (auto i : std::views::iota(0UL, func->GetBlockSize())) {
+        imap[func->GetBlock(i)] = i;
+    }
+}
+
+void DominatorAnalyzer::DumpDominators(std::ostream &out) {
+    for (auto i : std::views::iota(0UL, func->GetBlockSize())) {
+        auto *block = func->GetBlock(i);
+        out << block->GetName() << "\n";
+        for (auto k : std::views::iota(0UL, dom[imap[block]].GetSize())) {
+            if (dom[imap[block]].Get(k)) {
+                out << "  " << func->GetBlock(k)->GetName();
+            }
+        }
+        out << "\n";
+    }
+}
+
 } // namespace sc

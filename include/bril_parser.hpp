@@ -212,9 +212,12 @@ class BrilParser {
             auto args = instr.Get("args").value();
             assert((!has_args || args.Size() == args_size) &&
                    "Invaid argument size");
-
             for (size_t i : std::views::iota(0UL, args.Size())) {
                 auto arg = args.Get(i)->Get<std::string>().value();
+                // It is possible that the block that defines the args
+                // comes later in text but happens before in control flow
+                assert(operands.contains(arg) &&
+                       "todo: add support of parsing args before def\n");
                 instr_ptr->SetOperand(operands[arg]);
             }
         }

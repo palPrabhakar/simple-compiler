@@ -1,0 +1,168 @@
+{
+  "functions": [
+    {
+      "instrs": [
+        {
+          "label": "b0"
+        },
+        {
+          "dest": "v0",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "label": "b1"
+        },
+        {
+          "dest": "v1",
+          "op": "const",
+          "type": "int",
+          "value": 2
+        },
+        {
+          "args": [
+            "v0",
+            "v1"
+          ],
+          "dest": "cond",
+          "op": "lt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "cond"
+          ],
+          "labels": [
+            "b2",
+            "b5"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "b2"
+        },
+        {
+          "dest": "a",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "label": "b3"
+        },
+        {
+          "dest": "b",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "args": [
+            "a",
+            "v0"
+          ],
+          "dest": "test",
+          "op": "eq",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "test"
+          ],
+          "labels": [
+            "b4",
+            "b1"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "b4"
+        },
+        {
+          "op": "ret"
+        },
+        {
+          "label": "b5"
+        },
+        {
+          "args": [
+            "v1",
+            "v0"
+          ],
+          "dest": "c",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "args": [
+            "c",
+            "v1"
+          ],
+          "dest": "cond",
+          "op": "gt",
+          "type": "bool"
+        },
+        {
+          "args": [
+            "cond"
+          ],
+          "labels": [
+            "b6",
+            "b8"
+          ],
+          "op": "br"
+        },
+        {
+          "label": "b6"
+        },
+        {
+          "dest": "zero",
+          "op": "const",
+          "type": "int",
+          "value": 0
+        },
+        {
+          "labels": [
+            "b7"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "b8"
+        },
+        {
+          "dest": "one",
+          "op": "const",
+          "type": "int",
+          "value": 1
+        },
+        {
+          "labels": [
+            "b7"
+          ],
+          "op": "jmp"
+        },
+        {
+          "label": "b7"
+        },
+        {
+          "args": [
+            "zero",
+            "one"
+          ],
+          "dest": "v1",
+          "op": "add",
+          "type": "int"
+        },
+        {
+          "labels": [
+            "b3"
+          ],
+          "op": "jmp"
+        }
+      ],
+      "name": "main"
+    }
+  ]
+}

@@ -82,6 +82,10 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
 
     // Check conditional value
     auto arg = args.Get(0)->Get<std::string>().value();
+    // It is possible that the block that defines the args
+    // comes later in text but happens before in control flow
+    assert(operands.contains(arg) &&
+           "todo: add support of parsing args before def\n");
     instr_ptr->SetOperand(operands[arg]);
 
     APPEND_INSTR(func, instr_ptr);

@@ -1,0 +1,29 @@
+@main {
+.b0:
+  v0: int = const 1;
+.b1:
+  v1: int = const 2;
+  cond: bool = lt v0 v1;
+  br cond .b2 .b5;
+.b2:
+  a: int = const 1;
+.b3:
+  b: int = const 0;
+  test: bool = eq a v0;
+  br test .b4 .b1;
+.b4:
+    ret;
+.b5:
+  c: int = add v1 v0;
+  cond: bool = gt c v1;
+  br cond .b6 .b8;
+.b6:
+  zero: int = const 0;
+  jmp .b7;
+.b8:
+  one: int = const 1;
+  jmp .b7;
+.b7:
+  v1: int = add zero one;
+  jmp .b3;
+}

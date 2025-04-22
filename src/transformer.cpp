@@ -60,13 +60,11 @@ void EarlyIRTransformer::FixIR(Function *func) {
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
               << " Processing block:  " << block->GetName() << "\n";
-    block->Dump();
 #endif
     if (block->GetInstructionSize() &&
         LAST_INSTR(block)->GetOpCode() == OpCode::RET) {
         rb.push_back(block);
-    } else {
-        // Empty last block found
+    } else if (!block->GetInstructionSize() || !rb.size()) {
         // can only add a ret instr if function is void
         assert(func->GetRetType() == DataType::VOID &&
                "Non-void function with no return instruction.\n");

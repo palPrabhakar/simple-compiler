@@ -16,7 +16,8 @@ inline size_t Idx32(size_t num) { return num >> 5; }
 // where 1 => element is present and 0 => not present.
 class IndexSet {
   public:
-    IndexSet(size_t sz) : size(sz), sets(Idx32(sz) + 1) {}
+    IndexSet(size_t sz, bool all_set = false)
+        : size(sz), sets(Idx32(sz) + 1, (all_set ? 0xFFFFFFFF : 0)) {}
 
     void Set(size_t idx) {
         assert(idx < size);
@@ -36,7 +37,11 @@ class IndexSet {
         return sets[i] & (1U << (idx - 32 * i));
     }
 
-  public:
+    size_t GetSize() const { return size; }
+
+    const std::vector<uint32_t> &GetData() const { return sets; }
+
+  private:
     size_t size;
     std::vector<uint32_t> sets;
 
@@ -44,5 +49,8 @@ class IndexSet {
     friend IndexSet operator|(const IndexSet &lhs, const IndexSet &rhs);
     // Intersection
     friend IndexSet operator&(const IndexSet &lhs, const IndexSet &rhs);
+
+    friend bool operator==(const IndexSet &lhs, const IndexSet &rhs);
+    friend bool operator!=(const IndexSet &lhs, const IndexSet &rhs);
 };
 } // namespace sc
