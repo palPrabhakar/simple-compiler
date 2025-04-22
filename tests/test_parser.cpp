@@ -1,6 +1,4 @@
-#include "bril_parser.hpp"
-#include "program.hpp"
-#include <fstream>
+#include "test_utils.hpp"
 #include <gtest/gtest.h>
 #include <sstream>
 
@@ -8,22 +6,6 @@
     std::ifstream testf(x);                                                    \
     std::stringstream testp;                                                   \
     testp << testf.rdbuf();
-
-#define READ_PROGRAM(x)                                                        \
-    std::ifstream ifs(x);                                                      \
-    auto parser = sc::BrilParser(ifs);                                         \
-    auto program = parser.ParseProgram();
-
-#define DUMP_PROGRAM                                                           \
-    std::stringstream output;                                                  \
-    for (size_t i = 0; i < program->GetSize(); ++i) {                          \
-        auto func = program->GetFunction(i);                                   \
-        func->Dump(output);                                                    \
-    }
-
-namespace sc {
-std::unique_ptr<Program> ParseProgram(sjp::Json);
-}
 
 TEST(ParserTest, ParseAdd) {
     READ_PROGRAM("../tests/bril/add.json")

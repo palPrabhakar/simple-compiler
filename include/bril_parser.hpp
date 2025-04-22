@@ -33,13 +33,150 @@ class BrilParser {
     FuncPtr ParseFunction(sjp::Json &jfunc);
     FuncPtr ParseArguments(FuncPtr func, sjp::Json &args);
     FuncPtr ParseBody(FuncPtr func, sjp::Json &instrs);
-    FuncPtr ParseInstructions(FuncPtr func, sjp::Json &instr);
 
     FuncPtr MakeNewBlock(FuncPtr func, std::string name);
     FuncPtr MakeJmpInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeBranchInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeCallInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeConstInstruction(FuncPtr func, sjp::Json &instr);
+
+    template <bool first = false>
+    FuncPtr ParseInstructions(FuncPtr func, sjp::Json &instr) {
+        // Check opcode
+        OpCode opcode = OpCode::NOP;
+        auto opcode_str = instr.Get("op");
+        if (opcode_str == std::nullopt) {
+            if (instr.Get("label") == std::nullopt) {
+                throw std::runtime_error(
+                    std::format("Error parsing function {}. "
+                                "No valid instructions found.\n",
+                                func->GetName()));
+            }
+            opcode = OpCode::LABEL;
+        } else {
+            opcode = GetOpCodeFromStr(opcode_str->Get<std::string>().value());
+
+            if constexpr (first) {
+                func = MakeNewBlock(std::move(func), "__sc_entry__");
+            }
+        }
+
+        // If a br or jmp instr is processed then skip all instr until a label
+        // is found since it is not possible to get to these instructions.
+        // Since it is not possible to jmp to unnamed locations in bril[??]
+        if (check) {
+            check = opcode != OpCode::LABEL;
+            if (check) {
+                return func;
+            }
+        }
+
+        switch (opcode) {
+        // Arithmetic Instructions
+        case OpCode::ADD:
+            return MakeInstruction<AddInstruction>(std::move(func), instr);
+        case OpCode::MUL:
+            return MakeInstruction<MulInstruction>(std::move(func), instr);
+        case OpCode::SUB:
+            return MakeInstruction<SubInstruction>(std::move(func), instr);
+        case OpCode::DIV:
+            return MakeInstruction<DivInstruction>(std::move(func), instr);
+        // Comparison Instructions
+        case OpCode::EQ:
+            return MakeInstruction<EqInstruction>(std::move(func), instr);
+        case OpCode::LT:
+            return MakeInstruction<LtInstruction>(std::move(func), instr);
+        case OpCode::GT:
+            return MakeInstruction<GtInstruction>(std::move(func), instr);
+        case OpCode::LE:
+            return MakeInstruction<LeInstruction>(std::move(func), instr);
+        case OpCode::GE:
+            return MakeInstruction<GeInstruction>(std::move(func), instr);
+        // Logic Instructions
+        case OpCode::AND:
+            return MakeInstruction<AndInstruction>(std::move(func), instr);
+        case OpCode::OR:
+            return MakeInstruction<OrInstruction>(std::move(func), instr);
+        case OpCode::NOT:
+            return MakeInstruction<NotInstruction>(std::move(func), instr);
+        // Control Instructions
+        case OpCode::JMP: {
+            // End block
+            check = true;
+            return MakeJmpInstruction(std::move(func), instr);
+        }
+        case OpCode::BR: {
+            // End block
+            check = true;
+            return MakeBranchInstruction(std::move(func), instr);
+        }
+        case OpCode::CALL:
+            return MakeCallInstruction(std::move(func), instr);
+        case OpCode::RET:
+            return MakeInstruction<RetInstruction, false, false>(
+                std::move(func), instr);
+        // SSA Instructions
+        case OpCode::SET:
+            assert(false && "todo set\n");
+        case OpCode::GET:
+            assert(false && "todo get\n");
+        // Memory Instructions
+        case OpCode::ALLOC:
+            return MakeInstruction<AllocInstruction>(std::move(func), instr);
+        case OpCode::FREE:
+            return MakeInstruction<FreeInstruction, false, true>(
+                std::move(func), instr);
+        case OpCode::LOAD:
+            return MakeInstruction<LoadInstruction>(std::move(func), instr);
+        case OpCode::STORE:
+            return MakeInstruction<StoreInstruction, false>(std::move(func),
+                                                            instr);
+        case OpCode::PTRADD:
+            return MakeInstruction<PtraddInstruction>(std::move(func), instr);
+        // Floating Instructions
+        case OpCode::FADD:
+            return MakeInstruction<FAddInstruction>(std::move(func), instr);
+        case OpCode::FMUL:
+            return MakeInstruction<FMulInstruction>(std::move(func), instr);
+        case OpCode::FSUB:
+            return MakeInstruction<FSubInstruction>(std::move(func), instr);
+        case OpCode::FDIV:
+            return MakeInstruction<FDivInstruction>(std::move(func), instr);
+        // Floating Comparisons
+        case OpCode::FEQ:
+            return MakeInstruction<FEqInstruction>(std::move(func), instr);
+        case OpCode::FLT:
+            return MakeInstruction<FLtInstruction>(std::move(func), instr);
+        case OpCode::FLE:
+            return MakeInstruction<FLeInstruction>(std::move(func), instr);
+        case OpCode::FGT:
+            return MakeInstruction<FGtInstruction>(std::move(func), instr);
+        case OpCode::FGE:
+            return MakeInstruction<FGeInstruction>(std::move(func), instr);
+        // Miscellaneous Instructions
+        case OpCode::ID:
+            return MakeInstruction<IdInstruction>(std::move(func), instr);
+        case OpCode::CONST:
+            return MakeConstInstruction(std::move(func), instr);
+        case OpCode::PRINT:
+            return MakeInstruction<PrintInstruction, false, false>(
+                std::move(func), instr);
+        case OpCode::LABEL: {
+            // Make new block
+            auto lbl = instr.Get("label")->Get<std::string>().value();
+            return MakeNewBlock(std::move(func), lbl);
+        };
+        case OpCode::NOP: {
+            auto instr_ptr = std::make_unique<NopInstruction>();
+            APPEND_INSTR(func, instr_ptr);
+            return func;
+        }
+        default:
+            assert(false && "Invalid opcode\n");
+        }
+
+        return func;
+    }
 
     template <typename T, bool has_dest = true, bool has_args = true,
               size_t args_size = T::OP_SIZE>
@@ -78,7 +215,6 @@ class BrilParser {
 
             for (size_t i : std::views::iota(0UL, args.Size())) {
                 auto arg = args.Get(i)->Get<std::string>().value();
-                CheckSymbol(arg, func->GetName().c_str(), "MakeInstruction");
                 instr_ptr->SetOperand(operands[arg]);
             }
         }
@@ -123,16 +259,6 @@ class BrilParser {
         APPEND_INSTR(func, instr_ptr);
 
         return func;
-    }
-
-    inline void CheckSymbol(std::string &arg, const char *fname,
-                            const char *instr) {
-        if (!operands.contains(arg)) {
-            throw std::runtime_error(
-                std::format("Error parsing {} in function {}. "
-                            "Use of an undefined operand {} found.\n",
-                            instr, fname, arg));
-        }
     }
 
     template <typename T> T ParsePtrType(T t, sjp::Json &data) {
