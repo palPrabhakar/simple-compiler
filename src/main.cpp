@@ -29,5 +29,7 @@ int main(int argc, char *argv[]) {
     auto dom = sc::DominatorAnalyzer(program->GetFunction(0));
     dom.ComputeDominance();
     dom.DumpDominators();
+    dom.ComputeImmediateDominators();
+    dom.DumpImmediateDominators();
     return 0;
 }

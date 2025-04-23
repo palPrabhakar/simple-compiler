@@ -3,6 +3,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstdint>
+#include <strings.h>
 #include <vector>
 
 namespace sc {
@@ -40,6 +41,8 @@ class IndexSet {
     size_t GetSize() const { return size; }
 
     const std::vector<uint32_t> &GetData() const { return sets; }
+
+    std::vector<size_t> GetDominators() const;
 
   private:
     size_t size;

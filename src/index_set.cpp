@@ -1,5 +1,6 @@
 #include "index_set.hpp"
 #include <algorithm>
+#include <limits>
 #include <ranges>
 
 namespace sc {
@@ -42,4 +43,21 @@ bool operator==(const IndexSet &lhs, const IndexSet &rhs) {
 bool operator!=(const IndexSet &lhs, const IndexSet &rhs) {
     return !(lhs == rhs);
 }
+
+std::vector<size_t> IndexSet::GetDominators() const {
+    std::vector<size_t> indexes;
+    for (auto i : std::views::iota(0UL, sets.size())) {
+        auto bits = sets[i];
+        uint k = 0;
+        while (bits) {
+            if (bits & (1 << k)) {
+                indexes.push_back(i * 32 + k);
+                bits &= ~(1 << k);
+            }
+            ++k;
+        }
+    }
+    return indexes;
+}
+
 } // namespace sc
