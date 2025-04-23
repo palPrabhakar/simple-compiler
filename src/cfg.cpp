@@ -1,4 +1,5 @@
 #include "cfg.hpp"
+#include <algorithm>
 #include <memory>
 #include <ranges>
 #include <stack>
@@ -26,6 +27,12 @@ const std::vector<Block *> GetPostOrder(Function *func) {
             st.pop();
         }
     }
+    return post_order;
+}
+
+const std::vector<Block *> GetReversePostOrder(Function *func) {
+    auto post_order = GetPostOrder(func);
+    std::reverse(post_order.begin(), post_order.end());
     return post_order;
 }
 

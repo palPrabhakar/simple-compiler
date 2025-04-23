@@ -1,5 +1,6 @@
 #include "analyzer.hpp"
 #include "test_utils.hpp"
+#include "transformer.hpp"
 #include <gtest/gtest.h>
 #include <ranges>
 #include <vector>
@@ -7,6 +8,8 @@
 TEST(DominatorAnalyzerTest, TestDominators) {
     READ_PROGRAM("../tests/bril/dominator.json")
     BUILD_CFG()
+    auto transformer = sc::CFTransformer();
+    program = transformer.Transform(std::move(program));
     auto *func = program->GetFunction(0);
     auto dom = sc::DominatorAnalyzer(func);
     dom.ComputeDominance();

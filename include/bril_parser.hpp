@@ -43,6 +43,13 @@ class BrilParser {
     template <bool first = false>
     FuncPtr ParseInstructions(FuncPtr func, sjp::Json &instr) {
         // Check opcode
+        if constexpr (first) {
+            // Add this if it's not required the subsequent passes
+            // will remove redundant block. This ensures that there
+            // is always a unique entry block
+            func = MakeNewBlock(std::move(func), "__sc_entry__");
+        }
+
         OpCode opcode = OpCode::NOP;
         auto opcode_str = instr.Get("op");
         if (opcode_str == std::nullopt) {
@@ -55,10 +62,6 @@ class BrilParser {
             opcode = OpCode::LABEL;
         } else {
             opcode = GetOpCodeFromStr(opcode_str->Get<std::string>().value());
-
-            if constexpr (first) {
-                func = MakeNewBlock(std::move(func), "__sc_entry__");
-            }
         }
 
         // If a br or jmp instr is processed then skip all instr until a label

@@ -142,7 +142,8 @@ std::unique_ptr<Program>
 CFTransformer::Transform(std::unique_ptr<Program> program) {
     for (auto &f : *program) {
 #ifdef PRINT_DEBUG
-        std::cout << __PRETTY_FUNCTION__ << " Clean:  " << f->GetName() << "\n";
+        std::cout << __PRETTY_FUNCTION__
+                  << " Processing Function:  " << f->GetName() << "\n";
 #endif
         do {
             traverse_order = GetPostOrder(f.get());
@@ -180,7 +181,7 @@ bool CFTransformer::Clean() {
                 RemoveEmptyBlock(block);
                 ret = true;
             }
-            // root node has no successor
+            // exit node has no successor
             auto *succ_blk =
                 block->GetSuccessorSize() ? block->GetSuccessor(0) : nullptr;
             if (succ_blk && succ_blk->GetPredecessorSize() == 1) {
