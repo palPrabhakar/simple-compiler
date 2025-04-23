@@ -1,3 +1,4 @@
+#include "analyzer.hpp"
 #include "bril_parser.hpp"
 #include "cfg.hpp"
 #include "program.hpp"
@@ -25,5 +26,8 @@ int main(int argc, char *argv[]) {
     auto cf_transformer = sc::CFTransformer();
     program = cf_transformer.Transform(std::move(program));
     program->Dump();
+    auto dom = sc::DominatorAnalyzer(program->GetFunction(0));
+    dom.ComputeDominance();
+    dom.DumpDominators();
     return 0;
 }

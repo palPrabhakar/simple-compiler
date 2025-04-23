@@ -1,4 +1,6 @@
 #include "analyzer.hpp"
+#include "cfg.hpp"
+#include <iostream>
 #include <ranges>
 
 namespace sc {
@@ -9,21 +11,27 @@ void DominatorAnalyzer::ComputeDominance() {
         dom.emplace_back(func->GetBlockSize(), true);
     }
 
+    auto rpo = GetReversePostOrder(func);
+
     bool changed = true;
     while (changed) {
         changed = false;
-        for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
-            auto block = func->GetBlock(i);
-            IndexSet ns(dom[imap[block->GetPredecessor(0)]]);
+        for (auto *block : rpo) {
+            // Only entry block has no predecessor. Entry block's
+            // dom set only contains itself
+            if (block->GetPredecessorSize()) {
+                IndexSet ns(dom[imap[block->GetPredecessor(0)]]);
 
-            for (auto k : std::views::iota(1UL, block->GetPredecessorSize())) {
-                ns = ns & dom[imap[block->GetPredecessor(k)]];
-            }
-            ns.Set(i);
+                for (auto k :
+                     std::views::iota(1UL, block->GetPredecessorSize())) {
+                    ns = ns & dom[imap[block->GetPredecessor(k)]];
+                }
+                ns.Set(imap[block]);
 
-            if (ns != dom[imap[block]]) {
-                dom[imap[block]] = ns;
-                changed = true;
+                if (ns != dom[imap[block]]) {
+                    dom[imap[block]] = ns;
+                    changed = true;
+                }
             }
         }
     }
