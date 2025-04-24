@@ -2,6 +2,7 @@
 #include "opcodes.hpp"
 #include "operand.hpp"
 #include <cassert>
+#include <iomanip>
 #include <iostream>
 #include <ranges>
 #include <unordered_map>
@@ -178,7 +179,8 @@ void ConstInstruction::Dump(std::ostream &out) const {
     } break;
     case DataType::FLOAT: {
         auto float_src = static_cast<ImmedOperand<ValType::FLOAT> *>(src);
-        out << float_src->GetValue();
+        out << std::fixed << std::setprecision(15) << float_src->GetValue();
+        out.unsetf(std::ios::fixed);
     } break;
     case DataType::BOOL: {
         auto bool_src = static_cast<ImmedOperand<ValType::BOOL> *>(src);

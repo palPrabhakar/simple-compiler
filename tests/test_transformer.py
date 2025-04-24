@@ -1,6 +1,8 @@
 import subprocess
 import re
+import math
 from pathlib import Path
+from colorama import Fore, Style
 
 ARGS_RE = r'ARGS: (.*)'
 timeout = 5
@@ -86,6 +88,12 @@ def baseline(files):
 
 
 def transformer(files, expected):
+    def check(a, b):
+        if isinstance(a, float):
+            return math.isclose(a, b)
+        else:
+            return a == b
+
     pipeline = [
         "bril2json",
         "../build/sc",
@@ -97,10 +105,10 @@ def transformer(files, expected):
         name = f.split('/')[-1]
         got = result[f]
         exp = expected[f]
-        if got == exp:
-            print("Pass: {}".format(name))
+        if len(got) == len(exp) and all(check(x, y) for x, y in zip(exp, got)):
+            print(Fore.GREEN + "Pass: {}".format(name) + Style.RESET_ALL)
         else:
-            print("Fail: {}".format(name))
+            print(Fore.RED + "Fail: {}".format(name) + Style.RESET_ALL)
 
 
 def main():
