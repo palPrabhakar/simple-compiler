@@ -64,7 +64,7 @@ void DominatorAnalyzer::BuildIndexMap() {
 }
 
 void DominatorAnalyzer::DumpDominators(std::ostream &out) {
-    std::cout << "\nDominators: " << func->GetName() << "\n";
+    std::cout << "Dominators: " << func->GetName() << "\n";
     for (auto i : std::views::iota(0UL, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
@@ -78,7 +78,7 @@ void DominatorAnalyzer::DumpDominators(std::ostream &out) {
 }
 
 void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) {
-    std::cout << "\nImmediate Dominators: " << func->GetName() << "\n";
+    std::cout << "Immediate Dominators: " << func->GetName() << "\n";
     auto *block = func->GetBlock(0);
     out << block->GetName() << ":";
     out << "  \n";

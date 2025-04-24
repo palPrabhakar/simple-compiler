@@ -287,6 +287,8 @@ void CFTransformer::CombineBlocks(Block *block) {
     block->RemoveSuccessor(0);
 
     for (size_t i : std::views::iota(0UL, succ_blk->GetSuccessorSize())) {
+        RemovePredecessorIf(succ_blk->GetSuccessor(i), succ_blk);
+        succ_blk->GetSuccessor(i)->AddPredecessor(block);
         block->AddSuccessor(succ_blk->GetSuccessor(i));
     }
 }

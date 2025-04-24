@@ -1,6 +1,5 @@
 #include "function.hpp"
 #include "block.hpp"
-#include "instruction.hpp"
 #include "operand.hpp"
 
 namespace sc {
@@ -39,11 +38,16 @@ void Function::DumpBlocks(std::ostream &out) {
 }
 
 void Function::DumpCFG(std::ostream &out) {
-    out << "function: " << name << "\n";
+    out << "CFG function: " << name << "\n";
     for (auto &block : blocks) {
-        out << "  " << block->GetName() << ": ";
+        out << "  " << block->GetName() << ":\n";
+        out<<"    successors: ";
         for (auto succ : block->GetSuccessors()) {
             out << succ->GetName() << " ";
+        }
+        out<<"\n    predecessors: ";
+        for (auto pred : block->GetPredecessors()) {
+            out << pred->GetName() << " ";
         }
         out << "\n";
     }

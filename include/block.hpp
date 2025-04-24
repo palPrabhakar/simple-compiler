@@ -84,7 +84,7 @@ class Block {
 
     const std::vector<Block *> &GetSuccessors() const { return successors; }
 
-    const std::vector<Block *> &GetPredecessors() const { return successors; }
+    const std::vector<Block *> &GetPredecessors() const { return predecessors; }
 
     Block *GetPredecessor(size_t idx) {
         assert(idx < predecessors.size() &&
