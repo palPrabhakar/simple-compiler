@@ -7,7 +7,7 @@ namespace sc {
 void DominatorAnalyzer::ComputeDominance() {
     dom.emplace_back(func->GetBlockSize(), false);
     dom[0].Set(0);
-    for (auto _ : std::views::iota(1UL, func->GetBlockSize())) {
+    for (auto _ : std::views::iota(1ul, func->GetBlockSize())) {
         dom.emplace_back(func->GetBlockSize(), true);
     }
 
@@ -23,7 +23,7 @@ void DominatorAnalyzer::ComputeDominance() {
                 IndexSet ns(dom[imap[block->GetPredecessor(0)]]);
 
                 for (auto k :
-                     std::views::iota(1UL, block->GetPredecessorSize())) {
+                     std::views::iota(1ul, block->GetPredecessorSize())) {
                     ns = ns & dom[imap[block->GetPredecessor(k)]];
                 }
                 ns.Set(imap[block]);
@@ -44,7 +44,7 @@ void DominatorAnalyzer::ComputeImmediateDominators() {
 
     idom = std::vector<Block *>(func->GetBlockSize(), nullptr);
 
-    for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
+    for (auto i : std::views::iota(1ul, func->GetBlockSize())) {
         auto sdom = dom[i];
         sdom.Reset(i);
         auto dominators = sdom.GetDominators();
@@ -57,18 +57,41 @@ void DominatorAnalyzer::ComputeImmediateDominators() {
     }
 }
 
+void DominatorAnalyzer::ComputeDominanceFrontier() {
+    if (idom.size() != func->GetBlockSize()) {
+        ComputeImmediateDominators();
+    }
+
+    df = std::vector<IndexSet>(func->GetBlockSize(),
+                               IndexSet(func->GetBlockSize()));
+
+    // Since entry block has no predecessors
+    for (auto i : std::views::iota(1ul, func->GetBlockSize())) {
+        auto *block = func->GetBlock(i);
+        if (block->GetPredecessorSize() > 1) {
+            for (auto k : std::views::iota(0ul, block->GetPredecessorSize())) {
+                auto *runner = block->GetPredecessor(k);
+                while (runner != idom[i]) {
+                    df[imap[runner]].Set(i);
+                    runner = idom[imap[runner]];
+                }
+            }
+        }
+    }
+}
+
 void DominatorAnalyzer::BuildIndexMap() {
-    for (auto i : std::views::iota(0UL, func->GetBlockSize())) {
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         imap[func->GetBlock(i)] = i;
     }
 }
 
 void DominatorAnalyzer::DumpDominators(std::ostream &out) {
     std::cout << "Dominators: " << func->GetName() << "\n";
-    for (auto i : std::views::iota(0UL, func->GetBlockSize())) {
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
-        for (auto k : std::views::iota(0UL, dom[imap[block]].GetSize())) {
+        for (auto k : std::views::iota(0ul, dom[imap[block]].GetSize())) {
             if (dom[imap[block]].Get(k)) {
                 out << "  " << func->GetBlock(k)->GetName();
             }
@@ -82,10 +105,24 @@ void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) {
     auto *block = func->GetBlock(0);
     out << block->GetName() << ":";
     out << "  \n";
-    for (auto i : std::views::iota(1UL, func->GetBlockSize())) {
+    for (auto i : std::views::iota(1ul, func->GetBlockSize())) {
         block = func->GetBlock(i);
         out << block->GetName() << ":";
         out << "  " << idom[i]->GetName() << "\n";
+    }
+}
+
+void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) {
+    std::cout << "DominanceFrontier: " << func->GetName() << "\n";
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
+        auto *block = func->GetBlock(i);
+        out << block->GetName() << ":";
+        for (auto k : std::views::iota(0ul, df[imap[block]].GetSize())) {
+            if (df[imap[block]].Get(k)) {
+                out << "  " << func->GetBlock(k)->GetName();
+            }
+        }
+        out << "\n";
     }
 }
 

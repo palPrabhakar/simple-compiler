@@ -42,6 +42,9 @@ int main(int argc, char *argv[]) {
     //     std::cout<<"\n";
     //     dom.ComputeImmediateDominators();
     //     dom.DumpImmediateDominators();
+    //     std::cout<<"\n";
+    //     dom.ComputeDominanceFrontier();
+    //     dom.DumpDominanceFrontier();
     //     std::cout<<"=============================\n";
     // }
 

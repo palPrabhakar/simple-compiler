@@ -13,14 +13,20 @@
         auto dom = sc::DominatorAnalyzer(func);                                \
         dom.ComputeDominance();                                                \
         EXPECT_EQ(func->GetBlockSize(), dom_results[i].size());                \
-        for (auto k : std::views::iota(0UL, func->GetBlockSize())) {           \
+        for (auto k : std::views::iota(0ul, func->GetBlockSize())) {           \
             EXPECT_EQ(dom.GetDominators(k).GetData()[0], dom_results[i][k]);   \
         }                                                                      \
         dom.ComputeImmediateDominators();                                      \
         EXPECT_EQ(func->GetBlockSize(), idom_results[i].size());               \
-        for (auto k : std::views::iota(1UL, func->GetBlockSize())) {           \
+        for (auto k : std::views::iota(1ul, func->GetBlockSize())) {           \
             EXPECT_EQ(dom.GetImmediateDominator(k),                            \
                       func->GetBlock(idom_results[i][k]));                     \
+        }                                                                      \
+        dom.ComputeDominanceFrontier();                                        \
+        EXPECT_EQ(func->GetBlockSize(), df_results[i].size());                 \
+        for (auto k : std::views::iota(0ul, func->GetBlockSize())) {           \
+            EXPECT_EQ(dom.GetDominanceFrontier(k).GetData()[0],                \
+                      df_results[i][k]);                                       \
         }                                                                      \
     }
 
@@ -28,7 +34,9 @@ TEST(DominatorAnalyzerTest, TestDominators) {
     std::vector<std::vector<uint32_t>> dom_results = {
         {1, 3, 7, 11, 27, 35, 99, 163, 291}};
     std::vector<std::vector<size_t>> idom_results = {
-        {-1UL, 0, 1, 1, 3, 1, 5, 5, 5}};
+        {-1ul, 0, 1, 1, 3, 1, 5, 5, 5}};
+    std::vector<std::vector<uint32_t>> df_results = {
+        {0, 2, 8, 2, 0, 8, 256, 256, 8}};
 
     READ_PROGRAM("../tests/bril/dominator.json")
     BUILD_CFG()
@@ -36,10 +44,20 @@ TEST(DominatorAnalyzerTest, TestDominators) {
 }
 
 TEST(DominatorAnalyzerTest, TestAckermann) {
-    std::vector<std::vector<uint32_t>> dom_results = {{1, 3, 5, 13, 21, 33},
-                                                      {1}};
-    std::vector<std::vector<size_t>> idom_results = {{-1UL, 0, 0, 2, 2, 0},
-                                                     {-1UL}};
+    // clang-format off
+    std::vector<std::vector<uint32_t>> dom_results = {
+        {1, 3, 5, 13, 21, 33},
+        {1}
+    };
+    std::vector<std::vector<size_t>> idom_results = {
+        {-1ul, 0, 0, 2, 2, 0},
+        {-1ul}
+    };
+    std::vector<std::vector<size_t>> df_results = {
+        {0, 32, 32, 32, 32, 0},
+        {0}
+    };
+    // clang-format on
 
     READ_PROGRAM("../tests/bril/ackermann.json")
     BUILD_CFG()
@@ -60,6 +78,12 @@ TEST(DominatorAnalyzerTest, Test1dconv) {
         {-1ul, 0, 1, 1},
         {-1ul}
     };
+    std::vector<std::vector<size_t>> df_results = {
+        {0, 8, 8, 0, 16, 16, 0},
+        {0, 2, 2, 10, 8, 2, 0},
+        {0, 2, 2, 0},
+        {0}
+    };
     // clang-format on
 
     READ_PROGRAM("../tests/bril/1dconv.json")
@@ -78,6 +102,11 @@ TEST(DominatorAnalyzerTest, TestPalindrome) {
         {-1ul, 0, 1, 1, 0},
         {-1ul, 0, 1, 1, 0},
         {-1ul, 0, 0, 2, 2, 0},
+    };
+    std::vector<std::vector<size_t>> df_results = {
+        {0, 18, 18, 18, 0},
+        {0, 18, 18, 18, 0},
+        {0, 32, 32, 32, 32, 0},
     };
     // clang-format on
 
