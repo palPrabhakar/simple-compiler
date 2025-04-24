@@ -66,3 +66,22 @@ TEST(DominatorAnalyzerTest, Test1dconv) {
     BUILD_CFG()
     DOM_ANALYSIS()
 }
+
+TEST(DominatorAnalyzerTest, TestPalindrome) {
+    // clang-format off
+    std::vector<std::vector<uint32_t>> dom_results = {
+        {1, 3, 7, 11, 17},
+        {1, 3, 7, 11, 17},
+        {1, 3, 5, 13, 21, 33},
+    };
+    std::vector<std::vector<size_t>> idom_results = {
+        {-1ul, 0, 1, 1, 0},
+        {-1ul, 0, 1, 1, 0},
+        {-1ul, 0, 0, 2, 2, 0},
+    };
+    // clang-format on
+
+    READ_PROGRAM("../tests/bril/palindrome.json")
+    BUILD_CFG()
+    DOM_ANALYSIS()
+}

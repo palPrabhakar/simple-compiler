@@ -27,23 +27,23 @@ int main(int argc, char *argv[]) {
     program = sc::BuildCFG(std::move(program));
     auto cf_transformer = sc::CFTransformer();
     program = cf_transformer.Transform(std::move(program));
-    // program->Dump();
+    program->Dump();
 
-    for (auto i : std::views::iota(0ul, program->GetSize())) {
-        std::cout<<"\n=============================\n";
-        auto *func = program->GetFunction(i);
-        func->Dump();
-        std::cout<<"\n";
-        func->DumpCFG();
-        std::cout<<"\n";
-        auto dom = sc::DominatorAnalyzer(func);
-        dom.ComputeDominance();
-        dom.DumpDominators();
-        std::cout<<"\n";
-        dom.ComputeImmediateDominators();
-        dom.DumpImmediateDominators();
-        std::cout<<"=============================\n";
-    }
+    // for (auto i : std::views::iota(0ul, program->GetSize())) {
+    //     std::cout<<"\n=============================\n";
+    //     auto *func = program->GetFunction(i);
+    //     func->Dump();
+    //     std::cout<<"\n";
+    //     func->DumpCFG();
+    //     std::cout<<"\n";
+    //     auto dom = sc::DominatorAnalyzer(func);
+    //     dom.ComputeDominance();
+    //     dom.DumpDominators();
+    //     std::cout<<"\n";
+    //     dom.ComputeImmediateDominators();
+    //     dom.DumpImmediateDominators();
+    //     std::cout<<"=============================\n";
+    // }
 
     return 0;
 }

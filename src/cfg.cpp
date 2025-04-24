@@ -2,31 +2,29 @@
 #include <algorithm>
 #include <memory>
 #include <ranges>
-#include <stack>
 #include <unordered_set>
 
 namespace sc {
+
+static void PostOrderImpl(Block *block, std::vector<Block *> &post_order,
+                          std::unordered_set<Block *> &visited) {
+    if (visited.contains(block)) {
+        return;
+    }
+
+    visited.insert(block);
+
+    for (auto i : std::views::iota(0ul, block->GetSuccessorSize())) {
+        PostOrderImpl(block->GetSuccessor(i), post_order, visited);
+    }
+
+    post_order.push_back(block);
+}
+
 const std::vector<Block *> GetPostOrder(Function *func) {
     std::vector<Block *> post_order;
     std::unordered_set<Block *> visited;
-    std::stack<Block *> st;
-    st.push(func->GetBlock(0));
-    while (!st.empty()) {
-        auto *block = st.top();
-        if (!visited.contains(block) && block->GetSuccessorSize() > 0) {
-            for (size_t i : std::views::iota(0UL, block->GetSuccessorSize()) |
-                                std::views::reverse) {
-                if (!visited.contains(block->GetSuccessor(i))) {
-                    st.push(block->GetSuccessor(i));
-                }
-            }
-            visited.insert(block);
-        } else {
-            post_order.push_back(block);
-            visited.insert(block);
-            st.pop();
-        }
-    }
+    PostOrderImpl(func->GetBlock(0), post_order, visited);
     return post_order;
 }
 
