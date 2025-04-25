@@ -1,13 +1,13 @@
 @main {
 .__sc_entry__:
-  v0: float = const 1.1;
-  v1: float = const 0.02;
-  v2: float = const 0.3;
+  v0: float = const 1.100000000000000;
+  v1: float = const 0.020000000000000;
+  v2: float = const 0.300000000000000;
   v3: float = fadd v0 v1;
   v4: float = fmul v2 v2;
-  v5: float = const 1;
-  v6: float = const 1e+06;
-  v7: float = const 1e-06;
-  v8: float = const -1e+06;
-  v9: float = const 1.1e+11;
+  v5: float = const 1.000000000000000;
+  v6: float = const 1000000.000000000000000;
+  v7: float = const 0.000001000000000;
+  v8: float = const -1000000.000000000000000;
+  v9: float = const 110000000000.000000000000000;
 }

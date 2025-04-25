@@ -1,8 +1,8 @@
 @main {
 .__sc_entry__:
-  a: float = const 2;
-  b: float = const 10;
-  n: float = const 8;
+  a: float = const 2.000000000000000;
+  b: float = const 10.000000000000000;
+  n: float = const 8.000000000000000;
   left: float = call @left_riemann a b n;
   print left;
   midpoint: float = call @midpoint_riemann a b n;
@@ -17,13 +17,13 @@
 }
 @left_riemann(a: float, b: float, n: float): float {
 .__sc_entry__:
-  zero: float = const 0;
-  one: float = const 1;
+  zero: float = const 0.000000000000000;
+  one: float = const 1.000000000000000;
   negative_one: float = fsub zero one;
   diff: float = fsub b a;
   delta: float = fdiv diff n;
   i: float = fsub n one;
-  sum: float = const 0;
+  sum: float = const 0.000000000000000;
 .while.header:
   cond: bool = feq i negative_one;
   br cond .while.end .while.body;
@@ -40,12 +40,12 @@
 }
 @right_riemann(a: float, b: float, n: float): float {
 .__sc_entry__:
-  zero: float = const 0;
-  one: float = const 1;
+  zero: float = const 0.000000000000000;
+  one: float = const 1.000000000000000;
   diff: float = fsub b a;
   delta: float = fdiv diff n;
   i: float = id n;
-  sum: float = const 0;
+  sum: float = const 0.000000000000000;
 .while.header:
   cond: bool = feq i zero;
   br cond .while.end .while.body;
@@ -62,14 +62,14 @@
 }
 @midpoint_riemann(a: float, b: float, n: float): float {
 .__sc_entry__:
-  zero: float = const 0;
-  one: float = const 1;
+  zero: float = const 0.000000000000000;
+  one: float = const 1.000000000000000;
   negative_one: float = fsub zero one;
-  two: float = const 2;
+  two: float = const 2.000000000000000;
   diff: float = fsub b a;
   delta: float = fdiv diff n;
   i: float = fsub n one;
-  sum: float = const 0;
+  sum: float = const 0.000000000000000;
 .while.header:
   cond: bool = feq i negative_one;
   br cond .while.end .while.body;

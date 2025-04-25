@@ -1,14 +1,14 @@
 @genarray(size: int, iskernel: bool): ptr<float> {
 .__sc_entry__:
   arr: ptr<float> = alloc size;
-  v0: float = const 0;
+  v0: float = const 0.000000000000000;
   br iskernel .set.val.is.kernel .set.val.is.not.kernel;
 .set.val.is.kernel:
-  kernelval: float = const 0.3;
+  kernelval: float = const 0.300000000000000;
   v0: float = fadd v0 kernelval;
   jmp .continue;
 .set.val.is.not.kernel:
-  arrval: float = const 60;
+  arrval: float = const 60.000000000000000;
   v0: float = fadd v0 arrval;
 .continue:
   i: int = const 0;
@@ -28,7 +28,7 @@
 }
 @convolve(kernel: ptr<float>, kernelsize: int, array: ptr<float>, arraysize: int): ptr<float> {
 .__sc_entry__:
-  zero: float = const 0;
+  zero: float = const 0.000000000000000;
   one: int = const 1;
   t: int = sub arraysize kernelsize;
   outputsize: int = add t one;
