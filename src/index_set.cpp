@@ -1,6 +1,5 @@
 #include "index_set.hpp"
 #include <algorithm>
-#include <limits>
 #include <ranges>
 
 namespace sc {

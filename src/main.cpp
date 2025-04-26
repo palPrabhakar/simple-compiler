@@ -29,24 +29,16 @@ int main(int argc, char *argv[]) {
     program = cf_transformer.Transform(std::move(program));
     program->Dump();
 
-    // for (auto i : std::views::iota(0ul, program->GetSize())) {
-    //     std::cout<<"\n=============================\n";
-    //     auto *func = program->GetFunction(i);
-    //     func->Dump();
-    //     std::cout<<"\n";
-    //     func->DumpCFG();
-    //     std::cout<<"\n";
-    //     auto dom = sc::DominatorAnalyzer(func);
-    //     dom.ComputeDominance();
-    //     dom.DumpDominators();
-    //     std::cout<<"\n";
-    //     dom.ComputeImmediateDominators();
-    //     dom.DumpImmediateDominators();
-    //     std::cout<<"\n";
-    //     dom.ComputeDominanceFrontier();
-    //     dom.DumpDominanceFrontier();
-    //     std::cout<<"=============================\n";
-    // }
+    for (auto i : std::views::iota(0ul, program->GetSize())) {
+        std::cout<<"\n=============================\n";
+        auto *func = program->GetFunction(i);
+        auto global_analyzer = sc::GlobalsAnalyzer(func);
+        global_analyzer.FindGlobalNames();
+        global_analyzer.DumpGlobals();
+        std::cout<<"\n\n";
+        global_analyzer.DumpBlocks();
+        std::cout<<"=============================\n";
+    }
 
     return 0;
 }

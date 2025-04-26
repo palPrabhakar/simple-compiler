@@ -142,7 +142,7 @@ void LoadInstruction::Dump(std::ostream &out) const {
 
 void StoreInstruction::Dump(std::ostream &out) const {
     out << "store";
-    for (size_t i : std::views::iota(0UL, operands.size())) {
+    for (size_t i : std::views::iota(0ul, operands.size())) {
         out << " " << operands[i]->GetName();
     }
     out << ";\n";

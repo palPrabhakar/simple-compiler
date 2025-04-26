@@ -1,9 +1,13 @@
 #include "analyzer.hpp"
 #include "cfg.hpp"
+#include "instruction.hpp"
+#include "operand.hpp"
 #include <iostream>
 #include <ranges>
+#include <unordered_set>
 
 namespace sc {
+// DominatorAnalyzer begin
 void DominatorAnalyzer::ComputeDominance() {
     dom.emplace_back(func->GetBlockSize(), false);
     dom[0].Set(0);
@@ -86,13 +90,13 @@ void DominatorAnalyzer::BuildIndexMap() {
     }
 }
 
-void DominatorAnalyzer::DumpDominators(std::ostream &out) {
+void DominatorAnalyzer::DumpDominators(std::ostream &out) const {
     std::cout << "Dominators: " << func->GetName() << "\n";
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
-        for (auto k : std::views::iota(0ul, dom[imap[block]].GetSize())) {
-            if (dom[imap[block]].Get(k)) {
+        for (auto k : std::views::iota(0ul, dom.at(imap.at(block)).GetSize())) {
+            if (dom.at(imap.at(block)).Get(k)) {
                 out << "  " << func->GetBlock(k)->GetName();
             }
         }
@@ -100,7 +104,7 @@ void DominatorAnalyzer::DumpDominators(std::ostream &out) {
     }
 }
 
-void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) {
+void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) const {
     std::cout << "Immediate Dominators: " << func->GetName() << "\n";
     auto *block = func->GetBlock(0);
     out << block->GetName() << ":";
@@ -112,18 +116,103 @@ void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) {
     }
 }
 
-void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) {
+void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) const {
     std::cout << "DominanceFrontier: " << func->GetName() << "\n";
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
-        for (auto k : std::views::iota(0ul, df[imap[block]].GetSize())) {
-            if (df[imap[block]].Get(k)) {
+        for (auto k : std::views::iota(0ul, df.at(imap.at(block)).GetSize())) {
+            if (df.at(imap.at(block)).Get(k)) {
                 out << "  " << func->GetBlock(k)->GetName();
             }
         }
         out << "\n";
     }
 }
+// DominatorAnalyzer end
+
+// GlobalsAnalyzer begin
+void GlobalsAnalyzer::FindGlobalNames() {
+    auto var_kill = std::unordered_set<OperandBase *>();
+    auto process = [&var_kill, &globals = this->globals,
+                    &blocks = this->blocks](InstructionBase *instr,
+                                            Block *block, size_t start,
+                                            bool dest = true) {
+        for (auto i : std::views::iota(start, instr->GetOperandSize())) {
+            if (!var_kill.contains(instr->GetOperand(i))) {
+                globals.insert(instr->GetOperand(i));
+            }
+        }
+
+        if (dest) {
+            var_kill.insert(instr->GetOperand(0));
+            blocks[instr->GetOperand(0)].insert(block);
+        }
+    };
+
+    for (auto b : std::views::iota(0ul, func->GetBlockSize())) {
+        auto *block = func->GetBlock(b);
+        var_kill.clear();
+
+        for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
+            auto *instr = block->GetInstruction(i);
+            auto opcode = instr->GetOpCode();
+            switch (opcode) {
+            case OpCode::JMP:
+            case OpCode::BR:
+            case OpCode::LABEL:
+            case OpCode::NOP:
+                // Don't do anything
+                break;
+            case OpCode::SET:
+            case OpCode::GET:
+                assert(false && "Unexpected opcode\n");
+            case OpCode::CALL: {
+                auto *call = static_cast<CallInstruction *>(instr);
+                process(instr, block, call->GetRetVal(), call->GetRetVal());
+            } break;
+
+            case OpCode::RET: {
+                auto *ret = static_cast<RetInstruction *>(instr);
+                if (ret->GetOperandSize()) {
+                    process(instr, block, 0, false);
+                }
+            } break;
+            case OpCode::FREE:
+            case OpCode::STORE:
+            case OpCode::CONST:
+                process(instr, block, instr->GetOperandSize(), true);
+                break;
+            case OpCode::PRINT:
+                process(instr, block, 0, false);
+                break;
+            default: {
+                // Defines a value
+                process(instr, block, 1, true);
+            } break;
+            }
+        }
+    }
+}
+
+void GlobalsAnalyzer::DumpGlobals(std::ostream &out) const {
+    out << "Globals: " << func->GetName() << "\n";
+    for (auto *op : globals) {
+        out << "  " << op->GetName() << "\n";
+    }
+}
+
+void GlobalsAnalyzer::DumpBlocks(std::ostream &out) const {
+    out << "Blocks " << func->GetName() << "\n";
+    for (auto &[k, v] : blocks) {
+        out << "  Operand: " << k->GetName() << "\n";
+        out << "  ";
+        for (auto *b : v) {
+            out << "  " << b->GetName();
+        }
+        out << "\n";
+    }
+}
+// GlobalsAnalyzer end
 
 } // namespace sc

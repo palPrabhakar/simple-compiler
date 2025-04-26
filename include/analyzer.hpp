@@ -2,18 +2,14 @@
 
 #include "function.hpp"
 #include "index_set.hpp"
+#include "operand.hpp"
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace sc {
-
-// using DomMap = std::unordered_map<Block *, std::unordered_set<Block *>>;
-using DomMap = std::vector<IndexSet>;
-using DFMap = std::vector<IndexSet>;
-using IdomMap = std::vector<Block *>;
-using IndexMap = std::unordered_map<Block *, size_t>;
 
 class DominatorAnalyzer {
   public:
@@ -26,9 +22,9 @@ class DominatorAnalyzer {
     void ComputeImmediateDominators();
     void ComputeDominanceFrontier();
 
-    void DumpDominators(std::ostream &out = std::cout);
-    void DumpImmediateDominators(std::ostream &out = std::cout);
-    void DumpDominanceFrontier(std::ostream &out = std::cout);
+    void DumpDominators(std::ostream &out = std::cout) const;
+    void DumpImmediateDominators(std::ostream &out = std::cout) const;
+    void DumpDominanceFrontier(std::ostream &out = std::cout) const;
 
     const IndexSet &GetDominators(size_t idx) const {
         assert(idx < func->GetBlockSize());
@@ -47,11 +43,27 @@ class DominatorAnalyzer {
 
   private:
     Function *func;
-    DomMap dom;
-    DFMap df;
-    IdomMap idom;
-    IndexMap imap;
+    std::vector<IndexSet> dom;
+    std::vector<IndexSet> df;
+    std::vector<Block *> idom;
+    std::unordered_map<Block *, size_t> imap;
 
     void BuildIndexMap();
 };
+
+class GlobalsAnalyzer {
+  public:
+    GlobalsAnalyzer(Function *f) : func(f) {}
+
+    void FindGlobalNames();
+
+    void DumpGlobals(std::ostream &out = std::cout) const;
+    void DumpBlocks(std::ostream &out = std::cout) const;
+
+  private:
+    Function *func;
+    std::unordered_set<OperandBase *> globals;
+    std::unordered_map<OperandBase *, std::unordered_set<Block *>> blocks;
+};
+
 } // namespace sc
