@@ -42,7 +42,7 @@ class IndexSet {
 
     const std::vector<uint32_t> &GetData() const { return sets; }
 
-    std::vector<size_t> GetDominators() const;
+    std::vector<size_t> GetBlocks() const;
 
   private:
     size_t size;

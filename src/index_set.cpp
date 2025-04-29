@@ -43,7 +43,7 @@ bool operator!=(const IndexSet &lhs, const IndexSet &rhs) {
     return !(lhs == rhs);
 }
 
-std::vector<size_t> IndexSet::GetDominators() const {
+std::vector<size_t> IndexSet::GetBlocks() const {
     std::vector<size_t> indexes;
     for (auto i : std::views::iota(0UL, sets.size())) {
         auto bits = sets[i];

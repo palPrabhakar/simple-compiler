@@ -51,7 +51,7 @@ void DominatorAnalyzer::ComputeImmediateDominators() {
     for (auto i : std::views::iota(1ul, func->GetBlockSize())) {
         auto sdom = dom[i];
         sdom.Reset(i);
-        auto dominators = sdom.GetDominators();
+        auto dominators = sdom.GetBlocks();
         for (auto k : dominators) {
             if (sdom == dom[k]) {
                 idom[i] = func->GetBlock(k);
@@ -82,6 +82,16 @@ void DominatorAnalyzer::ComputeDominanceFrontier() {
             }
         }
     }
+}
+
+std::vector<Block *>
+DominatorAnalyzer::GetDominanceFrontier(Block *block) const {
+    auto blocks = df.at(imap.at(block)).GetBlocks();
+    std::vector<Block *> result;
+    for (auto i : blocks) {
+        result.push_back(func->GetBlock(i));
+    }
+    return result;
 }
 
 void DominatorAnalyzer::BuildIndexMap() {
@@ -132,7 +142,7 @@ void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) const {
 // DominatorAnalyzer end
 
 // GlobalsAnalyzer begin
-void GlobalsAnalyzer::FindGlobalNames() {
+void GlobalsAnalyzer::ComputeGlobalNames() {
     auto var_kill = std::unordered_set<OperandBase *>();
     auto process = [&var_kill, &globals = this->globals,
                     &blocks = this->blocks](InstructionBase *instr,
@@ -150,9 +160,16 @@ void GlobalsAnalyzer::FindGlobalNames() {
         }
     };
 
+    if (func->GetArgsSize()) {
+        auto *block = func->GetBlock(0);
+        for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
+            var_kill.insert(func->GetArgs(i));
+            blocks[func->GetArgs(i)].insert(block);
+        }
+    }
+
     for (auto b : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(b);
-        var_kill.clear();
 
         for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
             auto *instr = block->GetInstruction(i);
@@ -192,6 +209,10 @@ void GlobalsAnalyzer::FindGlobalNames() {
             } break;
             }
         }
+        // Clear the var_kill set before the start of next iteration!
+        // Can't clear above becuase in case of first block the var_kill
+        // set will have function arguments.
+        var_kill.clear();
     }
 }
 
