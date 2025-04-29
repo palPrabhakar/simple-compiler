@@ -125,6 +125,20 @@ void RetInstruction::Dump(std::ostream &out) const {
     out << ";\n";
 }
 
+// Control Instructions
+void SetInstruction::Dump(std::ostream &out) const {
+    out << "set";
+    for (auto i : std::views::iota(0ul, operands.size())) {
+        out << " " << operands[i]->GetName();
+    }
+    out << ";\n";
+}
+
+void GetInstruction::Dump(std::ostream &out) const {
+    out << operands[0]->GetName() << ":"
+        << " " << operands[0]->GetStrType() << " = get;\n";
+}
+
 // Memory Instructions
 void AllocInstruction::Dump(std::ostream &out) const {
     out << operands[0]->GetName() << ": " << operands[0]->GetStrType()

@@ -189,6 +189,20 @@ class RetInstruction final : public UnaryInstruction {
     void Dump(std::ostream &out = std::cout) const override;
 };
 
+// SSA Instructions
+class SetInstruction : BinaryInstruction {
+  public:
+    SetInstruction() : BinaryInstruction(OpCode::SET) {}
+    void Dump(std::ostream &out = std::cout) const override;
+};
+
+class GetInstruction : UnaryInstruction {
+  public:
+    GetInstruction() : UnaryInstruction(OpCode::GET) {}
+    void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 0;
+};
+
 // Memory Instructions
 class AllocInstruction : public BinaryInstruction {
   public:
