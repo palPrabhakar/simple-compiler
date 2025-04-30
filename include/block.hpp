@@ -19,6 +19,8 @@ class Block {
 
     void SetLabel(LabelOperand *lbl) { label = lbl; }
 
+    void SetIndex(size_t _idx) { idx = _idx; }
+
     void AddInstruction(instr_ptr instr) {
         instructions.push_back(std::move(instr));
     }
@@ -67,6 +69,8 @@ class Block {
     }
 
     std::string GetName() const { return name; }
+
+    size_t GetIndex() const { return idx; }
 
     LabelOperand *GetLabel() const { return label; }
 
@@ -123,6 +127,7 @@ class Block {
     std::vector<Block *> successors;   // cfg successors
     std::vector<Block *> predecessors; // cfg predecessors
     std::string name;
+    size_t idx;
     LabelOperand *label = nullptr;
 };
 } // namespace sc

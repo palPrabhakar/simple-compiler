@@ -14,14 +14,12 @@ namespace sc {
 
 class DominatorAnalyzer {
   public:
-    DominatorAnalyzer(Function *f) : func(f) {
-        assert(func->GetBlockSize());
-        BuildIndexMap();
-    }
+    DominatorAnalyzer(Function *f) : func(f) {}
 
     void ComputeDominance();
     void ComputeImmediateDominators();
     void ComputeDominanceFrontier();
+    void BuildDominatorTree();
 
     void DumpDominators(std::ostream &out = std::cout) const;
     void DumpImmediateDominators(std::ostream &out = std::cout) const;
@@ -44,12 +42,16 @@ class DominatorAnalyzer {
 
     std::vector<Block *> GetDominanceFrontier(Block *block) const;
 
+    std::vector<Block *> GetDTreeSuccessor(Block *block) const {
+        return dtree[block->GetIndex()];
+    }
+
   private:
     Function *func;
     std::vector<IndexSet> dom;
     std::vector<IndexSet> df;
     std::vector<Block *> idom;
-    std::unordered_map<Block *, size_t> imap;
+    std::vector<std::vector<Block *>> dtree;
 
     void BuildIndexMap();
 };
