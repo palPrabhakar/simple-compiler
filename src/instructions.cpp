@@ -188,16 +188,16 @@ void ConstInstruction::Dump(std::ostream &out) const {
         << " " << type << " = const ";
     switch (src->GetType()) {
     case DataType::INT: {
-        auto int_src = static_cast<ImmedOperand<ValType::INT> *>(src);
+        auto int_src = static_cast<IntOperand *>(src);
         out << int_src->GetValue();
     } break;
     case DataType::FLOAT: {
-        auto float_src = static_cast<ImmedOperand<ValType::FLOAT> *>(src);
+        auto float_src = static_cast<FloatOperand *>(src);
         out << std::fixed << std::setprecision(15) << float_src->GetValue();
         out.unsetf(std::ios::fixed);
     } break;
     case DataType::BOOL: {
-        auto bool_src = static_cast<ImmedOperand<ValType::BOOL> *>(src);
+        auto bool_src = static_cast<BoolOperand *>(src);
         out << (bool_src->GetValue() ? "true" : "false");
     } break;
     default:

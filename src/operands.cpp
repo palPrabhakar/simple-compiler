@@ -1,5 +1,6 @@
 #include "operand.hpp"
 #include <cassert>
+#include <memory>
 
 namespace sc {
 DataType GetDataTypeFromStr(std::string type_str) {
@@ -54,6 +55,31 @@ std::string OperandBase::GetStrType() const {
     } else {
         return GetStrDataType(type);
     }
+}
+
+std::unique_ptr<OperandBase> RegOperand::Clone() const {
+    return std::make_unique<RegOperand>(type, name);
+}
+
+std::unique_ptr<OperandBase> PtrOperand::Clone() const {
+    auto clone = std::make_unique<PtrOperand>(name);
+    clone->ptr_chain = ptr_chain;
+    return clone;
+}
+
+std::unique_ptr<OperandBase> IntOperand::CloneImpl() const {
+    auto clone = std::make_unique<IntOperand>(name, val);
+    return clone;
+}
+
+std::unique_ptr<OperandBase> FloatOperand::CloneImpl() const {
+    auto clone = std::make_unique<FloatOperand>(name, val);
+    return clone;
+}
+
+std::unique_ptr<OperandBase> BoolOperand::CloneImpl() const {
+    auto clone = std::make_unique<BoolOperand>(name, val);
+    return clone;
 }
 
 } // namespace sc

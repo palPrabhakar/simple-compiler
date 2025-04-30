@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cassert>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -31,15 +32,21 @@ std::string GetPtrType(const std::vector<DataType> &ptr_chain);
 class OperandBase {
   public:
     virtual ~OperandBase() = default;
+
+    virtual std::unique_ptr<OperandBase> Clone() const = 0;
+
+    void SetName(std::string _name) { name = _name; }
+
     std::string GetStrType() const;
+
     DataType GetType() const { return type; }
+
     std::string GetName() const { return name; }
 
   protected:
     OperandBase(DataType _type, std::string _name)
         : type(_type), name(std::move(_name)) {}
 
-  private:
     DataType type;
     std::string name;
 };
@@ -47,21 +54,32 @@ class OperandBase {
 class RegOperand : public OperandBase {
   public:
     RegOperand(DataType type, std::string name) : OperandBase(type, name) {}
+
+    virtual std::unique_ptr<OperandBase> Clone() const override;
 };
 
-class PtrOperand : public RegOperand {
+class PtrOperand final : public RegOperand {
   public:
     PtrOperand(std::string name) : RegOperand(DataType::PTR, name) {}
+
+    std::unique_ptr<OperandBase> Clone() const override;
+
     void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
+
     const std::vector<DataType> &GetPtrChain() const { return ptr_chain; }
 
   private:
     std::vector<DataType> ptr_chain;
 };
 
-class LabelOperand : public OperandBase {
+class LabelOperand final : public OperandBase {
   public:
     LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
+
+    std::unique_ptr<OperandBase> Clone() const override {
+        assert(false && "LabelOperand cannot be cloned\n");
+        return nullptr;
+    }
 
     void SetBlock(Block *blk) { block = blk; }
 
@@ -71,15 +89,56 @@ class LabelOperand : public OperandBase {
     Block *block;
 };
 
-template <typename T> class ImmedOperand : public OperandBase {
+template <typename C> class ImmedOperand : public OperandBase {
   public:
-    ImmedOperand(DataType type, std::string name)
-        : OperandBase(type, name), val(T{}) {}
-    ImmedOperand(DataType type, std::string name, T val)
-        : OperandBase(type, name), val(val) {}
-    T GetValue() { return val; }
+    std::unique_ptr<OperandBase> Clone() const override {
+        return static_cast<const C *>(this)->CloneImpl();
+    }
+
+  protected:
+    ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
+};
+
+class IntOperand : public ImmedOperand<IntOperand> {
+  public:
+    using val_type = ValType::INT;
+    IntOperand(std::string name, val_type val)
+        : ImmedOperand<IntOperand>(DataType::INT, name), val(val) {}
+
+    std::unique_ptr<OperandBase> CloneImpl() const;
+
+    val_type GetValue() const { return val; }
 
   private:
-    T val;
+    val_type val;
 };
+
+class FloatOperand : public ImmedOperand<FloatOperand> {
+  public:
+    using val_type = ValType::FLOAT;
+    FloatOperand(std::string name, val_type val)
+        : ImmedOperand<FloatOperand>(DataType::FLOAT, name), val(val) {}
+
+    std::unique_ptr<OperandBase> CloneImpl() const;
+
+    val_type GetValue() const { return val; }
+
+  private:
+    val_type val;
+};
+
+class BoolOperand : public ImmedOperand<BoolOperand> {
+  public:
+    using val_type = ValType::BOOL;
+    BoolOperand(std::string name, val_type val)
+        : ImmedOperand<BoolOperand>(DataType::BOOL, name), val(val) {}
+
+    std::unique_ptr<OperandBase> CloneImpl() const;
+
+    val_type GetValue() const { return val; }
+
+  private:
+    val_type val;
+};
+
 } // namespace sc

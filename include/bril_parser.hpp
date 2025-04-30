@@ -234,7 +234,9 @@ class BrilParser {
     FuncPtr BuildConstInstruction(FuncPtr func, sjp::Json &instr,
                                   std::string type_str) {
         // One single ImmedOperand represents every instance of that constant
-        T value = GetJsonValue<T>(instr.Get("value").value());
+        typename T::val_type value =
+            GetJsonValue<typename T::val_type>(instr.Get("value").value());
+
         auto instr_ptr = std::make_unique<ConstInstruction>();
 
         auto dest = instr.Get("dest")->Get<std::string>().value();
@@ -256,7 +258,7 @@ class BrilParser {
         } else {
             // Create new Immed Operand
             auto src_oprnd =
-                std::make_unique<ImmedOperand<T>>(type, sym_name, value);
+                std::make_unique<T>(sym_name, value);
             operands[sym_name] = src_oprnd.get();
             instr_ptr->SetOperand(src_oprnd.get());
             func->AddOperand(std::move(src_oprnd));
