@@ -9,6 +9,7 @@
 #include <algorithm>
 #include <cassert>
 #include <format>
+#include <iostream>
 #include <memory>
 #include <ranges>
 #include <unordered_set>
@@ -17,6 +18,9 @@ namespace sc {
 
 // #define PRINT_DEBUG
 #undef PRINT_DEBUG
+
+#define PRINT_DEBUG_SSA
+// #undef PRINT_DEBUG_SSA
 
 // EarlyIRTransformer Begin
 void EarlyIRTransformer::Transform() {
@@ -344,6 +348,10 @@ void CFTransformer::RemoveUnreachableCFNode() {
 void SSATransformer::Transform() { RewriteInSSAForm(); }
 
 void SSATransformer::RewriteInSSAForm() {
+#ifdef PRINT_DEBUG_SSA
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing Function:  " << func->GetName() << "\n\n";
+#endif
     globals.ComputeGlobalNames();
     dom.ComputeDominanceFrontier();
 
@@ -392,7 +400,7 @@ void SSATransformer::RewriteInSSAForm() {
 }
 
 void SSATransformer::RenameGet(Block *block) {
-#ifdef PRINT_DEBUG
+#ifdef PRINT_DEBUG_SSA
     std::cout << __PRETTY_FUNCTION__
               << "Processing Block:  " << block->GetName() << "\n";
 #endif
@@ -401,7 +409,13 @@ void SSATransformer::RenameGet(Block *block) {
 
     auto process = [this, &pop_count](InstructionBase *instr, size_t start,
                                       bool dest = true) {
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\n\tBefore: ";
+        instr->Dump();
+#endif
+
         for (auto i : std::views::iota(start, instr->GetOperandSize())) {
+
             instr->SetOperand(name[instr->GetOperand(i)].top(), i);
         }
 
@@ -410,9 +424,50 @@ void SSATransformer::RenameGet(Block *block) {
             auto *ndest = NewDest(instr->GetOperand(0));
             instr->SetOperand(ndest, 0);
         }
+
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\tAfter: ";
+        instr->Dump();
+#endif
     };
 
-    for (size_t i = 0; i < block->GetInstructionSize(); ++i) {
+    size_t i = 0;
+    for (i = 0; i < block->GetInstructionSize(); ++i) {
+        auto *instr = block->GetInstruction(i);
+        if (instr->GetOpCode() != OpCode::GET) {
+            break;
+        }
+        process(instr, instr->GetOperandSize(), true);
+    }
+
+    for (auto *pred : block->GetPredecessors()) {
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\n\tProcessing predecessor: " << pred->GetName() << "\n";
+#endif
+        for (auto i : std::views::iota(0ul, pred->GetInstructionSize() - 1) |
+                          std::views::reverse) {
+            auto instr = pred->GetInstruction(i);
+            if (instr->GetOpCode() != OpCode::SET) {
+                break;
+            }
+
+            if (gets[block->GetIndex()].contains(instr->GetOperand(0))) {
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n\t  Before: ";
+                instr->Dump();
+#endif
+
+                instr->SetOperand(name[instr->GetOperand(0)].top(), 0);
+
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\t  After: ";
+                instr->Dump();
+#endif
+            }
+        }
+    }
+
+    for (; i < block->GetInstructionSize(); ++i) {
         auto *instr = block->GetInstruction(i);
 
         auto opcode = instr->GetOpCode();
@@ -425,15 +480,18 @@ void SSATransformer::RenameGet(Block *block) {
         case OpCode::BR:
             process(instr, 2, false);
             break;
-        case OpCode::GET: {
-            process(instr, instr->GetOperandSize(), true);
-        } break;
+        case OpCode::GET:
+            assert(false);
         case OpCode::SET: {
             if (name[instr->GetOperand(1)].empty()) {
                 auto undef_instr = std::make_unique<UndefInstruction>();
-                auto *ndest = NewDest(instr->GetOperand(i));
+                auto *ndest = NewDest(instr->GetOperand(1));
                 undef_instr->SetOperand(ndest);
-                block->InsertInstruction(std::move(undef_instr), i);
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n\tInsert: ";
+                undef_instr->Dump();
+#endif
+                block->InsertInstruction(std::move(undef_instr), 1);
                 ++i;
                 assert(instr->GetOpCode() == OpCode::SET);
             }
@@ -463,19 +521,9 @@ void SSATransformer::RenameGet(Block *block) {
         }
     }
 
-    for (auto *pred : block->GetPredecessors()) {
-        for (auto i : std::views::iota(0ul, pred->GetInstructionSize() - 1) |
-                          std::views::reverse) {
-            auto instr = pred->GetInstruction(i);
-            if (instr->GetOpCode() != OpCode::SET) {
-                break;
-            }
-
-            if (gets[block->GetIndex()].contains(instr->GetOperand(0))) {
-                instr->SetOperand(name[instr->GetOperand(0)].top(), 0);
-            }
-        }
-    }
+#ifdef PRINT_DEBUG_SSA
+    std::cout << "\n";
+#endif
 
     // dom
     for (auto *succ : dom.GetDTreeSuccessor(block)) {
