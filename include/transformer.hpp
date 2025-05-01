@@ -10,36 +10,47 @@
 #include <unordered_set>
 
 namespace sc {
+
+template <typename TT>
+std::unique_ptr<Program> ApplyTransformation(std::unique_ptr<Program> program) {
+    for(auto &f: *program) {
+        TT t(f.get());
+        t.Transform();
+    }
+    return program;
+}
+
 class Transformer {
   public:
     virtual ~Transformer() = default;
-    virtual std::unique_ptr<Program>
-    Transform(std::unique_ptr<Program> program) = 0;
+    virtual void Transform() = 0;
 
   protected:
-    Transformer() = default;
+    Function *func;
+
+    Transformer(Function *f) : func(f) {}
 };
 
 class EarlyIRTransformer final : public Transformer {
   public:
-    EarlyIRTransformer() {}
-    std::unique_ptr<Program>
-    Transform(std::unique_ptr<Program> program) override;
+    EarlyIRTransformer(Function *f) : Transformer(f) {}
+    void Transform() override;
 
   private:
-    void FixIR(Function *func);
-    void AddUniqueExitBlock(std::vector<Block *> rb, Function *func);
+    void FixIR();
+    void AddUniqueExitBlock(std::vector<Block *> rb);
 };
 
 class CFTransformer final : public Transformer {
   public:
-    std::unique_ptr<Program>
-    Transform(std::unique_ptr<Program> program) override;
+    CFTransformer(Function *f) : Transformer(f) {}
+
+    void Transform() override;
 
   private:
     std::vector<Block *> traverse_order;
 
-    void RemoveUnreachableCFNode(Function *func);
+    void RemoveUnreachableCFNode();
     bool Clean();
     void ReplaceBrWithJmp(Block *block);
     void RemoveEmptyBlock(Block *block);

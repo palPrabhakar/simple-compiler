@@ -19,19 +19,15 @@ namespace sc {
 #undef PRINT_DEBUG
 
 // EarlyIRTransformer Begin
-std::unique_ptr<Program>
-EarlyIRTransformer::Transform(std::unique_ptr<Program> program) {
-    for (auto &f : *program) {
+void EarlyIRTransformer::Transform() {
 #ifdef PRINT_DEBUG
-        std::cout << __PRETTY_FUNCTION__
-                  << "Processing function:  " << f->GetName() << "\n";
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing function:  " << func->GetName() << "\n";
 #endif
-        FixIR(f.get());
-    }
-    return program;
+    FixIR();
 }
 
-void EarlyIRTransformer::FixIR(Function *func) {
+void EarlyIRTransformer::FixIR() {
     std::vector<Block *> rb;
     for (size_t i : std::views::iota(0UL, func->GetBlockSize()) |
                         std::views::take(func->GetBlockSize() - 1)) {
@@ -81,12 +77,11 @@ void EarlyIRTransformer::FixIR(Function *func) {
            LAST_INSTR(block)->GetOpCode() == OpCode::BR);
 
     if (rb.size() > 1) {
-        AddUniqueExitBlock(std::move(rb), func);
+        AddUniqueExitBlock(std::move(rb));
     }
 }
 
-void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
-                                            Function *func) {
+void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb) {
     // add new exit block
     func->AddBlock(std::make_unique<Block>("__sc_exit__"));
     LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
@@ -143,24 +138,20 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
 // EarlyIRTransformer End
 
 // CFTransformer Begin
-std::unique_ptr<Program>
-CFTransformer::Transform(std::unique_ptr<Program> program) {
-    for (auto &f : *program) {
+void CFTransformer::Transform() {
 #ifdef PRINT_DEBUG
-        std::cout << __PRETTY_FUNCTION__
-                  << " Processing Function:  " << f->GetName() << "\n";
+    std::cout << __PRETTY_FUNCTION__
+              << " Processing Function:  " << f->GetName() << "\n";
 #endif
-        do {
-            traverse_order = GetPostOrder(f.get());
-        } while (Clean());
+    do {
+        traverse_order = GetPostOrder(func);
+    } while (Clean());
 
-        // Remove all unreachable nodes
-        traverse_order = GetPostOrder(f.get());
-        if (traverse_order.size() != f->GetBlockSize()) {
-            RemoveUnreachableCFNode(f.get());
-        }
+    // Remove all unreachable nodes
+    traverse_order = GetPostOrder(func);
+    if (traverse_order.size() != func->GetBlockSize()) {
+        RemoveUnreachableCFNode();
     }
-    return program;
 }
 
 bool CFTransformer::Clean() {
@@ -322,7 +313,7 @@ void CFTransformer::HoistBranch(Block *block) {
     block->AddInstruction(std::move(br_instr), block->GetInstructionSize() - 1);
 }
 
-void CFTransformer::RemoveUnreachableCFNode(Function *func) {
+void CFTransformer::RemoveUnreachableCFNode() {
     std::unordered_set<Block *> reachable(traverse_order.cbegin(),
                                           traverse_order.cend());
     auto &blocks = func->GetBlocks();
@@ -363,7 +354,7 @@ void SSATransformer::RewriteInSSAForm() {
             auto *block = worklist[i];
             for (auto *d : dom.GetDominanceFrontier(block)) {
                 // add get instruction
-                if(gets[d->GetIndex()].contains(op)) {
+                if (gets[d->GetIndex()].contains(op)) {
                     continue;
                 }
 

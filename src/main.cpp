@@ -22,15 +22,13 @@ int main(int argc, char *argv[]) {
         program = parser.ParseProgram();
     }
 
-    auto ir_transformer = sc::EarlyIRTransformer();
-    program = ir_transformer.Transform(std::move(program));
+    program =
+        sc::ApplyTransformation<sc::EarlyIRTransformer>(std::move(program));
     program = sc::BuildCFG(std::move(program));
-    auto cf_transformer = sc::CFTransformer();
-    program = cf_transformer.Transform(std::move(program));
+    program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
     // program->Dump();
 
-    auto ssa_transformer = sc::SSATransformer(program->GetFunction(0));
-    ssa_transformer.Transform();
+    program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
     program->Dump();
 
     // for (auto i : std::views::iota(0ul, program->GetSize())) {

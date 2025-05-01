@@ -6,8 +6,7 @@
 #include <vector>
 
 #define DOM_ANALYSIS()                                                         \
-    auto transformer = sc::CFTransformer();                                    \
-    program = transformer.Transform(std::move(program));                       \
+    program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));  \
     for (auto i : std::views::iota(0UL, program->GetSize())) {                 \
         auto *func = program->GetFunction(i);                                  \
         auto dom = sc::DominatorAnalyzer(func);                                \

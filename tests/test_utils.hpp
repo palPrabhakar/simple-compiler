@@ -12,8 +12,8 @@
     auto program = parser.ParseProgram();
 
 #define BUILD_CFG()                                                            \
-    sc::EarlyIRTransformer ir_transformer;                                     \
-    program = ir_transformer.Transform(std::move(program));                    \
+    program =                                                                  \
+        sc::ApplyTransformation<sc::EarlyIRTransformer>(std::move(program));   \
     program = BuildCFG(std::move(program));
 
 #define DUMP_PROGRAM                                                           \
