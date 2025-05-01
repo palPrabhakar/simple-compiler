@@ -190,15 +190,22 @@ class RetInstruction final : public UnaryInstruction {
 };
 
 // SSA Instructions
-class SetInstruction : BinaryInstruction {
+class SetInstruction final : public BinaryInstruction {
   public:
     SetInstruction() : BinaryInstruction(OpCode::SET) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class GetInstruction : UnaryInstruction {
+class GetInstruction final : public UnaryInstruction {
   public:
     GetInstruction() : UnaryInstruction(OpCode::GET) {}
+    void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 0;
+};
+
+class UndefInstruction final : public UnaryInstruction {
+  public:
+    UndefInstruction() : UnaryInstruction(OpCode::UNDEF) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 0;
 };

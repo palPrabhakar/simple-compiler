@@ -26,6 +26,7 @@ enum class OpCode {
     // SSA
     SET,
     GET,
+    UNDEF,
     // Memory
     ALLOC,
     FREE,

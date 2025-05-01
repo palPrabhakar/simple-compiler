@@ -106,7 +106,8 @@ void DominatorAnalyzer::DumpDominators(std::ostream &out) const {
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
-        for (auto k : std::views::iota(0ul, dom.at(block->GetIndex()).GetSize())) {
+        for (auto k :
+             std::views::iota(0ul, dom.at(block->GetIndex()).GetSize())) {
             if (dom.at(block->GetIndex()).Get(k)) {
                 out << "  " << func->GetBlock(k)->GetName();
             }
@@ -132,7 +133,8 @@ void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) const {
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         out << block->GetName() << ":";
-        for (auto k : std::views::iota(0ul, df.at(block->GetIndex()).GetSize())) {
+        for (auto k :
+             std::views::iota(0ul, df.at(block->GetIndex()).GetSize())) {
             if (df.at(block->GetIndex()).Get(k)) {
                 out << "  " << func->GetBlock(k)->GetName();
             }
@@ -177,7 +179,6 @@ void GlobalsAnalyzer::ComputeGlobalNames() {
             auto opcode = instr->GetOpCode();
             switch (opcode) {
             case OpCode::JMP:
-            case OpCode::BR:
             case OpCode::LABEL:
             case OpCode::NOP:
                 // Don't do anything
@@ -185,11 +186,13 @@ void GlobalsAnalyzer::ComputeGlobalNames() {
             case OpCode::SET:
             case OpCode::GET:
                 assert(false && "Unexpected opcode\n");
+            case OpCode::BR:
+                process(instr, block, 2, false);
+                break;
             case OpCode::CALL: {
                 auto *call = static_cast<CallInstruction *>(instr);
                 process(instr, block, call->GetRetVal(), call->GetRetVal());
             } break;
-
             case OpCode::RET: {
                 auto *ret = static_cast<RetInstruction *>(instr);
                 if (ret->GetOperandSize()) {
@@ -198,18 +201,16 @@ void GlobalsAnalyzer::ComputeGlobalNames() {
             } break;
             case OpCode::FREE:
             case OpCode::STORE:
+            case OpCode::PRINT:
                 process(instr, block, 0, false);
                 break;
             case OpCode::CONST:
                 process(instr, block, instr->GetOperandSize(), true);
                 break;
-            case OpCode::PRINT:
-                process(instr, block, 0, false);
-                break;
-            default: {
+            default:
                 // Defines a value
                 process(instr, block, 1, true);
-            } break;
+                break;
             }
         }
         // Clear the var_kill set before the start of next iteration!

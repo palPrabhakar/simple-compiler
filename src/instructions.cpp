@@ -43,6 +43,7 @@ static const std::unordered_map<std::string, OpCode> str_to_opcodes = {
     // SSA
     {"get", OpCode::GET},
     {"set", OpCode::SET},
+    {"undef", OpCode::UNDEF},
     // Memory
     {"alloc", OpCode::ALLOC},
     {"free", OpCode::FREE},
@@ -129,7 +130,8 @@ void RetInstruction::Dump(std::ostream &out) const {
 void SetInstruction::Dump(std::ostream &out) const {
     out << "set";
     for (auto i : std::views::iota(0ul, operands.size())) {
-        out << " " << operands[i]->GetName();
+        auto str = operands[i] ? operands[i]->GetName() : "<undef>";
+        out << " " << str;
     }
     out << ";\n";
 }
@@ -137,6 +139,11 @@ void SetInstruction::Dump(std::ostream &out) const {
 void GetInstruction::Dump(std::ostream &out) const {
     out << operands[0]->GetName() << ":"
         << " " << operands[0]->GetStrType() << " = get;\n";
+}
+
+void UndefInstruction::Dump(std::ostream &out) const {
+    out << operands[0]->GetName() << ":"
+        << " " << operands[0]->GetStrType() << " = undef;\n";
 }
 
 // Memory Instructions

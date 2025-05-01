@@ -1,10 +1,13 @@
 #pragma once
 
-#include "cfg.hpp"
+#include "analyzer.hpp"
 #include "program.hpp"
 #include <cassert>
 #include <memory>
 #include <ranges>
+#include <stack>
+#include <unordered_map>
+#include <unordered_set>
 
 namespace sc {
 class Transformer {
@@ -17,7 +20,7 @@ class Transformer {
     Transformer() = default;
 };
 
-class EarlyIRTransformer : public Transformer {
+class EarlyIRTransformer final : public Transformer {
   public:
     EarlyIRTransformer() {}
     std::unique_ptr<Program>
@@ -28,7 +31,7 @@ class EarlyIRTransformer : public Transformer {
     void AddUniqueExitBlock(std::vector<Block *> rb, Function *func);
 };
 
-class CFTransformer : public Transformer {
+class CFTransformer final : public Transformer {
   public:
     std::unique_ptr<Program>
     Transform(std::unique_ptr<Program> program) override;
@@ -69,6 +72,27 @@ class CFTransformer : public Transformer {
             }
         }
     }
+};
+
+class SSATransformer {
+  public:
+    SSATransformer(Function *_f)
+        : func(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
+
+    void Transform();
+
+  private:
+    Function *func;
+    DominatorAnalyzer dom;
+    GlobalsAnalyzer globals;
+    std::vector<std::unordered_set<OperandBase *>> gets;
+    std::unordered_map<OperandBase *, size_t> counter;
+    std::unordered_map<OperandBase *, std::stack<OperandBase *>> name;
+
+    void RewriteInSSAForm();
+    void RenameGet(Block *block);
+
+    OperandBase *NewDest(OperandBase *op);
 };
 
 } // namespace sc

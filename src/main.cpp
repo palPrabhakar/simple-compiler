@@ -27,18 +27,22 @@ int main(int argc, char *argv[]) {
     program = sc::BuildCFG(std::move(program));
     auto cf_transformer = sc::CFTransformer();
     program = cf_transformer.Transform(std::move(program));
+    // program->Dump();
+
+    auto ssa_transformer = sc::SSATransformer(program->GetFunction(0));
+    ssa_transformer.Transform();
     program->Dump();
 
-    for (auto i : std::views::iota(0ul, program->GetSize())) {
-        std::cout<<"\n=============================\n";
-        auto *func = program->GetFunction(i);
-        auto global_analyzer = sc::GlobalsAnalyzer(func);
-        global_analyzer.FindGlobalNames();
-        global_analyzer.DumpGlobals();
-        std::cout<<"\n\n";
-        global_analyzer.DumpBlocks();
-        std::cout<<"=============================\n";
-    }
+    // for (auto i : std::views::iota(0ul, program->GetSize())) {
+    //     std::cout<<"\n=============================\n";
+    //     auto *func = program->GetFunction(i);
+    //     auto global_analyzer = sc::GlobalsAnalyzer(func);
+    //     global_analyzer.FindGlobalNames();
+    //     global_analyzer.DumpGlobals();
+    //     std::cout<<"\n\n";
+    //     global_analyzer.DumpBlocks();
+    //     std::cout<<"=============================\n";
+    // }
 
     return 0;
 }

@@ -3,8 +3,10 @@
 #include "instruction.hpp"
 #include "operand.hpp"
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace sc {
@@ -28,6 +30,16 @@ class Block {
     void AddInstruction(instr_ptr instr, size_t idx) {
         assert(idx < instructions.size());
         instructions[idx] = std::move(instr);
+    }
+
+    void InsertInstructions(std::vector<instr_ptr> instrs, size_t idx) {
+        instructions.insert(instructions.begin() + idx,
+                            std::make_move_iterator(instrs.begin()),
+                            std::make_move_iterator(instrs.end()));
+    }
+
+    void InsertInstruction(instr_ptr instr, size_t idx) {
+        instructions.insert(instructions.begin() + idx, std::move(instr));
     }
 
     void RemoveInstruction(size_t idx) {
