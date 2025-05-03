@@ -13,7 +13,7 @@ namespace sc {
 
 template <typename TT>
 std::unique_ptr<Program> ApplyTransformation(std::unique_ptr<Program> program) {
-    for(auto &f: *program) {
+    for (auto &f : *program) {
         TT t(f.get());
         t.Transform();
     }
@@ -85,15 +85,14 @@ class CFTransformer final : public Transformer {
     }
 };
 
-class SSATransformer {
+class SSATransformer : public Transformer {
   public:
     SSATransformer(Function *_f)
-        : func(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
+        : Transformer(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
 
-    void Transform();
+    void Transform() override { RewriteInSSAForm(); }
 
   private:
-    Function *func;
     DominatorAnalyzer dom;
     GlobalsAnalyzer globals;
     std::vector<std::unordered_set<OperandBase *>> gets;

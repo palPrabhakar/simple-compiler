@@ -19,8 +19,8 @@ namespace sc {
 // #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
-#define PRINT_DEBUG_SSA
-// #undef PRINT_DEBUG_SSA
+// #define PRINT_DEBUG_SSA
+#undef PRINT_DEBUG_SSA
 
 // EarlyIRTransformer Begin
 void EarlyIRTransformer::Transform() {
@@ -86,6 +86,10 @@ void EarlyIRTransformer::FixIR() {
 }
 
 void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb) {
+#ifdef PRINT_DEBUG
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing function:  " << func->GetName() << "\n";
+#endif
     // add new exit block
     func->AddBlock(std::make_unique<Block>("__sc_exit__"));
     LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
@@ -344,9 +348,6 @@ void CFTransformer::RemoveUnreachableCFNode() {
 }
 // CFTransformer End
 
-// SSATransformer start
-void SSATransformer::Transform() { RewriteInSSAForm(); }
-
 void SSATransformer::RewriteInSSAForm() {
 #ifdef PRINT_DEBUG_SSA
     std::cout << __PRETTY_FUNCTION__
@@ -355,16 +356,43 @@ void SSATransformer::RewriteInSSAForm() {
     globals.ComputeGlobalNames();
     dom.ComputeDominanceFrontier();
 
+    // globals.DumpGlobals();
+    // std::cout << "\n";
+    // globals.DumpBlocks();
+    // std::cout << "\n";
+
+    // dom.DumpImmediateDominators();
+    // std::cout << "\n";
+    // dom.DumpDominanceFrontier();
+    // std::cout << "\n";
+
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
+        assert(func->GetBlock(i)->GetIndex() == i);
+    }
+
     for (auto *op : globals.GetGlobals()) {
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "Global: " << op->GetName() << "\n\n";
+#endif
         auto gblocks = globals.GetBlocks(op);
         auto worklist = std::vector<Block *>(gblocks.begin(), gblocks.end());
-        for (size_t i = 0; i < worklist.size(); ++i) {
+        auto wl_size = worklist.size();
+        for (size_t i = 0; i < wl_size; ++i) {
             auto *block = worklist[i];
+#ifdef PRINT_DEBUG_SSA
+            std::cout << "  Worklist: " << block->GetName() << "\n\n";
+#endif
+
             for (auto *d : dom.GetDominanceFrontier(block)) {
                 // add get instruction
                 if (gets[d->GetIndex()].contains(op)) {
                     continue;
                 }
+
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\t" << d->GetName() << ": " << op->GetName()
+                          << " = get;\n";
+#endif
 
                 gets[d->GetIndex()].insert(op);
                 auto get_instr = std::make_unique<GetInstruction>();
@@ -378,16 +406,29 @@ void SSATransformer::RewriteInSSAForm() {
                     set_instr->SetOperand(op);
                     pred->InsertInstruction(std::move(set_instr),
                                             pred->GetInstructionSize() - 1);
+#ifdef PRINT_DEBUG_SSA
+                    std::cout << "\t" << pred->GetName() << ": set "
+                              << op->GetName() << "\n";
+#endif
                 }
 
-                if (std::find(worklist.begin(), worklist.end(), d) !=
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n";
+#endif
+
+                if (std::find(worklist.begin(), worklist.end(), d) ==
                     worklist.end()) {
                     worklist.push_back(d);
+                    ++wl_size;
                 }
             }
         }
         counter[op] = 0;
     }
+
+#ifdef PRINT_DEBUG_SSA
+    std::cout << "\n";
+#endif
 
     if (func->GetArgsSize()) {
         for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
@@ -491,7 +532,7 @@ void SSATransformer::RenameGet(Block *block) {
                 std::cout << "\n\tInsert: ";
                 undef_instr->Dump();
 #endif
-                block->InsertInstruction(std::move(undef_instr), 1);
+                block->InsertInstruction(std::move(undef_instr), 0);
                 ++i;
                 assert(instr->GetOpCode() == OpCode::SET);
             }
@@ -545,7 +586,7 @@ OperandBase *SSATransformer::NewDest(OperandBase *op) {
     auto nop = op->Clone();
     name[op].push(nop.get());
 
-    nop->SetName(std::format("{}{}", op->GetName(), i));
+    nop->SetName(std::format("{}.{}", op->GetName(), i));
     func->AddOperand(std::move(nop));
 
     return name[op].top();

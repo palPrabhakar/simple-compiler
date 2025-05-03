@@ -132,7 +132,7 @@ void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) const {
     std::cout << "DominanceFrontier: " << func->GetName() << "\n";
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
-        out << block->GetName() << ":";
+        out << "  " << block->GetName() << ":";
         for (auto k :
              std::views::iota(0ul, df.at(block->GetIndex()).GetSize())) {
             if (df.at(block->GetIndex()).Get(k)) {
