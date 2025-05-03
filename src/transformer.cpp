@@ -351,7 +351,7 @@ void CFTransformer::RemoveUnreachableCFNode() {
 void SSATransformer::RewriteInSSAForm() {
 #ifdef PRINT_DEBUG_SSA
     std::cout << __PRETTY_FUNCTION__
-              << "Processing Function:  " << func->GetName() << "\n\n";
+              << " Processing Function:  " << func->GetName() << "\n\n";
 #endif
     globals.ComputeGlobalNames();
     dom.ComputeDominanceFrontier();
@@ -481,7 +481,10 @@ void SSATransformer::RenameGet(Block *block) {
         process(instr, instr->GetOperandSize(), true);
     }
 
+    std::unordered_set<OperandBase *> sets;
     for (auto *pred : block->GetPredecessors()) {
+        sets.clear();
+
 #ifdef PRINT_DEBUG_SSA
         std::cout << "\n\tProcessing predecessor: " << pred->GetName() << "\n";
 #endif
@@ -492,11 +495,18 @@ void SSATransformer::RenameGet(Block *block) {
                 break;
             }
 
-            if (gets[block->GetIndex()].contains(instr->GetOperand(0))) {
+            if (gets[block->GetIndex()].contains(instr->GetOperand(0)) &&
+                !sets.contains(instr->GetOperand(0))) {
 #ifdef PRINT_DEBUG_SSA
                 std::cout << "\n\t  Before: ";
                 instr->Dump();
 #endif
+
+                // Only one set instr per operand per successor.
+                // There could other set intr with same operand
+                // corresponding to get instr in some other block.
+                // This will prevent overriding those sets.
+                sets.insert(instr->GetOperand(0));
 
                 instr->SetOperand(name[instr->GetOperand(0)].top(), 0);
 
@@ -532,9 +542,10 @@ void SSATransformer::RenameGet(Block *block) {
                 std::cout << "\n\tInsert: ";
                 undef_instr->Dump();
 #endif
-                block->InsertInstruction(std::move(undef_instr), 0);
-                ++i;
-                assert(instr->GetOpCode() == OpCode::SET);
+                func->GetBlock(0)->InsertInstruction(std::move(undef_instr), 0);
+                if (func->GetBlock(0) == block) {
+                    ++i;
+                }
             }
             process(instr, 1, false);
         } break;
