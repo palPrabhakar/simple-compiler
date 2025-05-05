@@ -3,8 +3,10 @@
 #include "instruction.hpp"
 #include "operand.hpp"
 #include <iostream>
+#include <iterator>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace sc {
@@ -19,6 +21,8 @@ class Block {
 
     void SetLabel(LabelOperand *lbl) { label = lbl; }
 
+    void SetIndex(size_t _idx) { idx = _idx; }
+
     void AddInstruction(instr_ptr instr) {
         instructions.push_back(std::move(instr));
     }
@@ -28,9 +32,19 @@ class Block {
         instructions[idx] = std::move(instr);
     }
 
+    void InsertInstructions(std::vector<instr_ptr> instrs, size_t idx) {
+        instructions.insert(instructions.begin() + static_cast<long>(idx),
+                            std::make_move_iterator(instrs.begin()),
+                            std::make_move_iterator(instrs.end()));
+    }
+
+    void InsertInstruction(instr_ptr instr, size_t idx) {
+        instructions.insert(instructions.begin() + static_cast<long>(idx), std::move(instr));
+    }
+
     void RemoveInstruction(size_t idx) {
         assert(idx < instructions.size());
-        instructions.erase(instructions.begin() + idx);
+        instructions.erase(instructions.begin() + static_cast<long>(idx));
     }
 
     std::vector<instr_ptr> ReleaseInstructions() {
@@ -46,7 +60,7 @@ class Block {
 
     void RemoveSuccessor(size_t idx) {
         assert(idx < successors.size());
-        successors.erase(successors.begin() + idx);
+        successors.erase(successors.begin() + static_cast<long>(idx));
     }
 
     void AddPredecessor(Block *pred) { predecessors.push_back(pred); }
@@ -58,7 +72,7 @@ class Block {
 
     void RemovePredecessor(size_t idx) {
         assert(idx < predecessors.size());
-        predecessors.erase(predecessors.begin() + idx);
+        predecessors.erase(predecessors.begin() + static_cast<long>(idx));
     }
 
     InstructionBase *GetInstruction(size_t idx) {
@@ -67,6 +81,8 @@ class Block {
     }
 
     std::string GetName() const { return name; }
+
+    size_t GetIndex() const { return idx; }
 
     LabelOperand *GetLabel() const { return label; }
 
@@ -123,6 +139,7 @@ class Block {
     std::vector<Block *> successors;   // cfg successors
     std::vector<Block *> predecessors; // cfg predecessors
     std::string name;
+    size_t idx;
     LabelOperand *label = nullptr;
 };
 } // namespace sc

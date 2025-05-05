@@ -22,23 +22,25 @@ int main(int argc, char *argv[]) {
         program = parser.ParseProgram();
     }
 
-    auto ir_transformer = sc::EarlyIRTransformer();
-    program = ir_transformer.Transform(std::move(program));
+    program =
+        sc::ApplyTransformation<sc::EarlyIRTransformer>(std::move(program));
     program = sc::BuildCFG(std::move(program));
-    auto cf_transformer = sc::CFTransformer();
-    program = cf_transformer.Transform(std::move(program));
+    program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
+    // program->Dump();
+
+    program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
     program->Dump();
 
-    for (auto i : std::views::iota(0ul, program->GetSize())) {
-        std::cout<<"\n=============================\n";
-        auto *func = program->GetFunction(i);
-        auto global_analyzer = sc::GlobalsAnalyzer(func);
-        global_analyzer.FindGlobalNames();
-        global_analyzer.DumpGlobals();
-        std::cout<<"\n\n";
-        global_analyzer.DumpBlocks();
-        std::cout<<"=============================\n";
-    }
+    // for (auto i : std::views::iota(0ul, program->GetSize())) {
+    //     std::cout<<"\n=============================\n";
+    //     auto *func = program->GetFunction(i);
+    //     auto global_analyzer = sc::GlobalsAnalyzer(func);
+    //     global_analyzer.FindGlobalNames();
+    //     global_analyzer.DumpGlobals();
+    //     std::cout<<"\n\n";
+    //     global_analyzer.DumpBlocks();
+    //     std::cout<<"=============================\n";
+    // }
 
     return 0;
 }

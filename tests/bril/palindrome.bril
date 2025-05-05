@@ -1,4 +1,3 @@
-# ARGS: 12321
 @main(in: int) {
   ten: int = const 10;
   zero: int = const 0;
@@ -23,7 +22,6 @@
   is_palindrome: bool = call @palindrome in exp;
   print is_palindrome;
 }
-
 @pow(base: int, exp: int): int {
   res: int = const 1;
   zero: int = const 0;
@@ -44,7 +42,6 @@
 .for.end.pow:
   ret res;
 }
-
 @palindrome(in: int, len: int): bool {
   is_palindrome: bool = const false;
   zero: int = const 0;
@@ -71,7 +68,7 @@
   next_len: int = sub len two;
   is_palindrome: bool = call @palindrome next_in next_len;
   jmp .if.end.palindrome;
-  if.false.mirror:
+.if.false.mirror:
   is_palindrome: bool = const false;
   jmp .if.end.palindrome;
 .if.end.palindrome:

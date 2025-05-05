@@ -1,11 +1,15 @@
 #include "transformer.hpp"
+#include "analyzer.hpp"
 #include "block.hpp"
+#include "cfg.hpp"
 #include "function.hpp"
 #include "instruction.hpp"
 #include "opcodes.hpp"
 #include "operand.hpp"
 #include <algorithm>
 #include <cassert>
+#include <format>
+#include <iostream>
 #include <memory>
 #include <ranges>
 #include <unordered_set>
@@ -15,20 +19,19 @@ namespace sc {
 // #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
+// #define PRINT_DEBUG_SSA
+#undef PRINT_DEBUG_SSA
+
 // EarlyIRTransformer Begin
-std::unique_ptr<Program>
-EarlyIRTransformer::Transform(std::unique_ptr<Program> program) {
-    for (auto &f : *program) {
+void EarlyIRTransformer::Transform() {
 #ifdef PRINT_DEBUG
-        std::cout << __PRETTY_FUNCTION__
-                  << "Processing function:  " << f->GetName() << "\n";
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing function:  " << func->GetName() << "\n";
 #endif
-        FixIR(f.get());
-    }
-    return program;
+    FixIR();
 }
 
-void EarlyIRTransformer::FixIR(Function *func) {
+void EarlyIRTransformer::FixIR() {
     std::vector<Block *> rb;
     for (size_t i : std::views::iota(0UL, func->GetBlockSize()) |
                         std::views::take(func->GetBlockSize() - 1)) {
@@ -78,14 +81,19 @@ void EarlyIRTransformer::FixIR(Function *func) {
            LAST_INSTR(block)->GetOpCode() == OpCode::BR);
 
     if (rb.size() > 1) {
-        AddUniqueExitBlock(std::move(rb), func);
+        AddUniqueExitBlock(std::move(rb));
     }
 }
 
-void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
-                                            Function *func) {
+void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb) {
+#ifdef PRINT_DEBUG
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing function:  " << func->GetName() << "\n";
+#endif
     // add new exit block
     func->AddBlock(std::make_unique<Block>("__sc_exit__"));
+    LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
+
     // create new lbl operand to store jmp dest
     auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__");
     lbl_op->SetBlock(LAST_BLK(func));
@@ -138,24 +146,20 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb,
 // EarlyIRTransformer End
 
 // CFTransformer Begin
-std::unique_ptr<Program>
-CFTransformer::Transform(std::unique_ptr<Program> program) {
-    for (auto &f : *program) {
+void CFTransformer::Transform() {
 #ifdef PRINT_DEBUG
-        std::cout << __PRETTY_FUNCTION__
-                  << " Processing Function:  " << f->GetName() << "\n";
+    std::cout << __PRETTY_FUNCTION__
+              << " Processing Function:  " << f->GetName() << "\n";
 #endif
-        do {
-            traverse_order = GetPostOrder(f.get());
-        } while (Clean());
+    do {
+        traverse_order = GetPostOrder(func);
+    } while (Clean());
 
-        // Remove all unreachable nodes
-        traverse_order = GetPostOrder(f.get());
-        if (traverse_order.size() != f->GetBlockSize()) {
-            RemoveUnreachableCFNode(f.get());
-        }
+    // Remove all unreachable nodes
+    traverse_order = GetPostOrder(func);
+    if (traverse_order.size() != func->GetBlockSize()) {
+        RemoveUnreachableCFNode();
     }
-    return program;
 }
 
 bool CFTransformer::Clean() {
@@ -317,7 +321,7 @@ void CFTransformer::HoistBranch(Block *block) {
     block->AddInstruction(std::move(br_instr), block->GetInstructionSize() - 1);
 }
 
-void CFTransformer::RemoveUnreachableCFNode(Function *func) {
+void CFTransformer::RemoveUnreachableCFNode() {
     std::unordered_set<Block *> reachable(traverse_order.cbegin(),
                                           traverse_order.cend());
     auto &blocks = func->GetBlocks();
@@ -336,7 +340,269 @@ void CFTransformer::RemoveUnreachableCFNode(Function *func) {
                                     return false;
                                 }),
                  blocks.end());
+
+    // fix block indexes
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
+        func->GetBlock(i)->SetIndex(i);
+    }
 }
 // CFTransformer End
+
+void SSATransformer::RewriteInSSAForm() {
+#ifdef PRINT_DEBUG_SSA
+    std::cout << __PRETTY_FUNCTION__
+              << " Processing Function:  " << func->GetName() << "\n\n";
+#endif
+    globals.ComputeGlobalNames();
+    dom.ComputeDominanceFrontier();
+
+    // globals.DumpGlobals();
+    // std::cout << "\n";
+    // globals.DumpBlocks();
+    // std::cout << "\n";
+
+    // dom.DumpImmediateDominators();
+    // std::cout << "\n";
+    // dom.DumpDominanceFrontier();
+    // std::cout << "\n";
+
+    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
+        assert(func->GetBlock(i)->GetIndex() == i);
+    }
+
+    for (auto *op : globals.GetGlobals()) {
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "Global: " << op->GetName() << "\n\n";
+#endif
+        auto gblocks = globals.GetBlocks(op);
+        auto worklist = std::vector<Block *>(gblocks.begin(), gblocks.end());
+        auto wl_size = worklist.size();
+        for (size_t i = 0; i < wl_size; ++i) {
+            auto *block = worklist[i];
+#ifdef PRINT_DEBUG_SSA
+            std::cout << "  Worklist: " << block->GetName() << "\n\n";
+#endif
+
+            for (auto *d : dom.GetDominanceFrontier(block)) {
+                // add get instruction
+                if (gets[d->GetIndex()].contains(op)) {
+                    continue;
+                }
+
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\t" << d->GetName() << ": " << op->GetName()
+                          << " = get;\n";
+#endif
+
+                gets[d->GetIndex()].insert(op);
+                auto get_instr = std::make_unique<GetInstruction>();
+                get_instr->SetOperand(op);
+                d->InsertInstruction(std::move(get_instr), 0ul);
+
+                // add set instructions
+                for (auto *pred : d->GetPredecessors()) {
+                    auto set_instr = std::make_unique<SetInstruction>();
+                    set_instr->SetOperand(op);
+                    set_instr->SetOperand(op);
+                    pred->InsertInstruction(std::move(set_instr),
+                                            pred->GetInstructionSize() - 1);
+#ifdef PRINT_DEBUG_SSA
+                    std::cout << "\t" << pred->GetName() << ": set "
+                              << op->GetName() << "\n";
+#endif
+                }
+
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n";
+#endif
+
+                if (std::find(worklist.begin(), worklist.end(), d) ==
+                    worklist.end()) {
+                    worklist.push_back(d);
+                    ++wl_size;
+                }
+            }
+        }
+        counter[op] = 0;
+    }
+
+#ifdef PRINT_DEBUG_SSA
+    std::cout << "\n";
+#endif
+
+    if (func->GetArgsSize()) {
+        for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
+            name[func->GetArgs(i)].push(func->GetArgs(i));
+        }
+    }
+
+    dom.BuildDominatorTree();
+    RenameGet(func->GetBlock(0));
+}
+
+void SSATransformer::RenameGet(Block *block) {
+#ifdef PRINT_DEBUG_SSA
+    std::cout << __PRETTY_FUNCTION__
+              << "Processing Block:  " << block->GetName() << "\n";
+#endif
+
+    std::unordered_map<OperandBase *, size_t> pop_count;
+
+    auto process = [this, &pop_count](InstructionBase *instr, size_t start,
+                                      bool dest = true) {
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\n\tBefore: ";
+        instr->Dump();
+#endif
+
+        for (auto i : std::views::iota(start, instr->GetOperandSize())) {
+
+            instr->SetOperand(name[instr->GetOperand(i)].top(), i);
+        }
+
+        if (dest) {
+            pop_count[instr->GetOperand(0)]++;
+            auto *ndest = NewDest(instr->GetOperand(0));
+            instr->SetOperand(ndest, 0);
+        }
+
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\tAfter: ";
+        instr->Dump();
+#endif
+    };
+
+    size_t i = 0;
+    for (i = 0; i < block->GetInstructionSize(); ++i) {
+        auto *instr = block->GetInstruction(i);
+        if (instr->GetOpCode() != OpCode::GET) {
+            break;
+        }
+        process(instr, instr->GetOperandSize(), true);
+    }
+
+    std::unordered_set<OperandBase *> sets;
+    for (auto *pred : block->GetPredecessors()) {
+        sets.clear();
+
+#ifdef PRINT_DEBUG_SSA
+        std::cout << "\n\tProcessing predecessor: " << pred->GetName() << "\n";
+#endif
+        for (auto i : std::views::iota(0ul, pred->GetInstructionSize() - 1) |
+                          std::views::reverse) {
+            auto instr = pred->GetInstruction(i);
+            if (instr->GetOpCode() != OpCode::SET) {
+                break;
+            }
+
+            if (gets[block->GetIndex()].contains(instr->GetOperand(0)) &&
+                !sets.contains(instr->GetOperand(0))) {
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n\t  Before: ";
+                instr->Dump();
+#endif
+
+                // Only one set instr per operand per successor.
+                // There could other set intr with same operand
+                // corresponding to get instr in some other block.
+                // This will prevent overriding those sets.
+                sets.insert(instr->GetOperand(0));
+
+                instr->SetOperand(name[instr->GetOperand(0)].top(), 0);
+
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\t  After: ";
+                instr->Dump();
+#endif
+            }
+        }
+    }
+
+    for (; i < block->GetInstructionSize(); ++i) {
+        auto *instr = block->GetInstruction(i);
+
+        auto opcode = instr->GetOpCode();
+        switch (opcode) {
+        case OpCode::JMP:
+        case OpCode::LABEL:
+        case OpCode::NOP:
+            // Don't do anything
+            break;
+        case OpCode::BR:
+            process(instr, 2, false);
+            break;
+        case OpCode::GET:
+            assert(false);
+        case OpCode::SET: {
+            if (name[instr->GetOperand(1)].empty()) {
+                auto undef_instr = std::make_unique<UndefInstruction>();
+                auto *ndest = NewDest(instr->GetOperand(1));
+                undef_instr->SetOperand(ndest);
+#ifdef PRINT_DEBUG_SSA
+                std::cout << "\n\tInsert: ";
+                undef_instr->Dump();
+#endif
+                func->GetBlock(0)->InsertInstruction(std::move(undef_instr), 0);
+                if (func->GetBlock(0) == block) {
+                    ++i;
+                }
+            }
+            process(instr, 1, false);
+        } break;
+        case OpCode::CALL: {
+            auto *call = static_cast<CallInstruction *>(instr);
+            process(instr, call->GetRetVal(), call->GetRetVal());
+        } break;
+        case OpCode::RET: {
+            auto *ret = static_cast<RetInstruction *>(instr);
+            if (ret->GetOperandSize()) {
+                process(instr, 0, false);
+            }
+        } break;
+        case OpCode::FREE:
+        case OpCode::STORE:
+        case OpCode::PRINT:
+            process(instr, 0, false);
+            break;
+        case OpCode::CONST:
+            process(instr, instr->GetOperandSize(), true);
+            break;
+        default:
+            process(instr, 1, true);
+            break;
+        }
+    }
+
+#ifdef PRINT_DEBUG_SSA
+    std::cout << "\n";
+#endif
+
+    // dom
+    for (auto *succ : dom.GetDTreeSuccessor(block)) {
+        RenameGet(succ);
+    }
+
+    for (auto [k, v] : pop_count) {
+        for (auto _ : std::views::iota(0ul, v)) {
+            name[k].pop();
+        }
+    }
+}
+
+OperandBase *SSATransformer::NewDest(OperandBase *op) {
+    // TODO:
+    // cleanup old operands that are not
+    // used for SSA transformation
+    auto i = counter[op]++;
+    auto nop = op->Clone();
+    name[op].push(nop.get());
+
+    nop->SetName(std::format("{}.{}", op->GetName(), i));
+    func->AddOperand(std::move(nop));
+
+    return name[op].top();
+}
+
+// SSATransformer end
 
 } // namespace sc

@@ -3,7 +3,6 @@
 #include "function.hpp"
 #include "instruction.hpp"
 #include "json.hpp"
-#include "opcodes.hpp"
 #include "operand.hpp"
 #include "program.hpp"
 #include <format>
@@ -18,6 +17,7 @@ FuncPtr BrilParser::MakeNewBlock(FuncPtr func, std::string name) {
     // add the label to the block
     // add the block to the label
     func->AddBlock(std::make_unique<Block>(name));
+    LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
 
     // Check if label already exists
     if (labels.contains(name)) {
@@ -212,6 +212,7 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
     // Parse function body
     auto instrs = jfunc.Get("instrs");
     func = ParseBody(std::move(func), instrs.value());
+
     return func;
 }
 

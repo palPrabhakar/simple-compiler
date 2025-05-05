@@ -36,7 +36,7 @@ std::string GetStrDataType(DataType type) {
 std::string GetPtrType(const std::vector<DataType> &ptr_chain) {
     std::string type;
     type += "ptr<";
-    int count = 1;
+    size_t count = 1;
     for (auto t : ptr_chain) {
         if (t == DataType::PTR) {
             ++count;
