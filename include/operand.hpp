@@ -24,6 +24,7 @@ using BOOL = bool;
 }; // namespace ValType
 
 class Block;
+class InstructionBase;
 
 DataType GetDataTypeFromStr(std::string);
 std::string GetStrDataType(DataType);
@@ -37,11 +38,22 @@ class OperandBase {
 
     void SetName(std::string _name) { name = _name; }
 
+    void SetDef(InstructionBase *instr) { def = instr; }
+
+    void SetUse(InstructionBase *instr) { uses.push_back(instr); }
+
     std::string GetStrType() const;
 
     DataType GetType() const { return type; }
 
     std::string GetName() const { return name; }
+
+    InstructionBase *GetDef() const { return def; }
+
+    InstructionBase *GetUse(size_t idx) const {
+        assert(idx < uses.size());
+        return uses[idx];
+    }
 
   protected:
     OperandBase(DataType _type, std::string _name)
@@ -49,6 +61,10 @@ class OperandBase {
 
     DataType type;
     std::string name;
+
+    // ssa-form single def
+    InstructionBase *def;
+    std::vector<InstructionBase *> uses;
 };
 
 class RegOperand : public OperandBase {

@@ -11,6 +11,8 @@
 
 namespace sc {
 
+template <typename T> using stack = std::stack<T, std::vector<T>>;
+
 template <typename TT>
 std::unique_ptr<Program> ApplyTransformation(std::unique_ptr<Program> program) {
     for (auto &f : *program) {
@@ -85,7 +87,7 @@ class CFTransformer final : public Transformer {
     }
 };
 
-class SSATransformer : public Transformer {
+class SSATransformer final : public Transformer {
   public:
     SSATransformer(Function *_f)
         : Transformer(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
@@ -97,7 +99,7 @@ class SSATransformer : public Transformer {
     GlobalsAnalyzer globals;
     std::vector<std::unordered_set<OperandBase *>> gets;
     std::unordered_map<OperandBase *, size_t> counter;
-    std::unordered_map<OperandBase *, std::stack<OperandBase *>> name;
+    std::unordered_map<OperandBase *, sc::stack<OperandBase *>> name;
 
     void RewriteInSSAForm();
     void RenameGet(Block *block);

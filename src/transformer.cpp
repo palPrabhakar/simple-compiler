@@ -22,7 +22,7 @@ namespace sc {
 // #define PRINT_DEBUG_SSA
 #undef PRINT_DEBUG_SSA
 
-// EarlyIRTransformer Begin
+// EarlyIRTransformer begin
 void EarlyIRTransformer::Transform() {
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
@@ -143,9 +143,9 @@ void EarlyIRTransformer::AddUniqueExitBlock(std::vector<Block *> rb) {
     func->AddOperand(std::move(lbl_op));
     func->AddOperand(std::move(ret_op));
 }
-// EarlyIRTransformer End
+// EarlyIRTransformer end
 
-// CFTransformer Begin
+// CFTransformer begin
 void CFTransformer::Transform() {
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
@@ -346,8 +346,9 @@ void CFTransformer::RemoveUnreachableCFNode() {
         func->GetBlock(i)->SetIndex(i);
     }
 }
-// CFTransformer End
+// CFTransformer end
 
+// SSATransformer begin
 void SSATransformer::RewriteInSSAForm() {
 #ifdef PRINT_DEBUG_SSA
     std::cout << __PRETTY_FUNCTION__
@@ -355,16 +356,6 @@ void SSATransformer::RewriteInSSAForm() {
 #endif
     globals.ComputeGlobalNames();
     dom.ComputeDominanceFrontier();
-
-    // globals.DumpGlobals();
-    // std::cout << "\n";
-    // globals.DumpBlocks();
-    // std::cout << "\n";
-
-    // dom.DumpImmediateDominators();
-    // std::cout << "\n";
-    // dom.DumpDominanceFrontier();
-    // std::cout << "\n";
 
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         assert(func->GetBlock(i)->GetIndex() == i);
@@ -397,13 +388,16 @@ void SSATransformer::RewriteInSSAForm() {
                 gets[d->GetIndex()].insert(op);
                 auto get_instr = std::make_unique<GetInstruction>();
                 get_instr->SetOperand(op);
-                d->InsertInstruction(std::move(get_instr), 0ul);
 
                 // add set instructions
                 for (auto *pred : d->GetPredecessors()) {
                     auto set_instr = std::make_unique<SetInstruction>();
                     set_instr->SetOperand(op);
                     set_instr->SetOperand(op);
+
+                    set_instr->SetGetPair(get_instr.get());
+                    get_instr->SetSetPair(set_instr.get());
+
                     pred->InsertInstruction(std::move(set_instr),
                                             pred->GetInstructionSize() - 1);
 #ifdef PRINT_DEBUG_SSA
@@ -411,6 +405,9 @@ void SSATransformer::RewriteInSSAForm() {
                               << op->GetName() << "\n";
 #endif
                 }
+
+                // Insert the get instruction
+                d->InsertInstruction(std::move(get_instr), 0ul);
 
 #ifdef PRINT_DEBUG_SSA
                 std::cout << "\n";
@@ -456,7 +453,6 @@ void SSATransformer::RenameGet(Block *block) {
 #endif
 
         for (auto i : std::views::iota(start, instr->GetOperandSize())) {
-
             instr->SetOperand(name[instr->GetOperand(i)].top(), i);
         }
 
@@ -479,42 +475,21 @@ void SSATransformer::RenameGet(Block *block) {
             break;
         }
         process(instr, instr->GetOperandSize(), true);
-    }
 
-    std::unordered_set<OperandBase *> sets;
-    for (auto *pred : block->GetPredecessors()) {
-        sets.clear();
-
+        auto *geti = static_cast<GetInstruction *>(instr);
+        for (auto i : std::views::iota(0ul, geti->GetSetPairSize())) {
+            auto *seti = geti->GetSetPair(i);
 #ifdef PRINT_DEBUG_SSA
-        std::cout << "\n\tProcessing predecessor: " << pred->GetName() << "\n";
-#endif
-        for (auto i : std::views::iota(0ul, pred->GetInstructionSize() - 1) |
-                          std::views::reverse) {
-            auto instr = pred->GetInstruction(i);
-            if (instr->GetOpCode() != OpCode::SET) {
-                break;
-            }
-
-            if (gets[block->GetIndex()].contains(instr->GetOperand(0)) &&
-                !sets.contains(instr->GetOperand(0))) {
-#ifdef PRINT_DEBUG_SSA
-                std::cout << "\n\t  Before: ";
-                instr->Dump();
+            std::cout << "\n\t\t  Before: ";
+            seti->Dump();
 #endif
 
-                // Only one set instr per operand per successor.
-                // There could other set intr with same operand
-                // corresponding to get instr in some other block.
-                // This will prevent overriding those sets.
-                sets.insert(instr->GetOperand(0));
-
-                instr->SetOperand(name[instr->GetOperand(0)].top(), 0);
+            seti->SetOperand(geti->GetOperand(0), 0);
 
 #ifdef PRINT_DEBUG_SSA
-                std::cout << "\t  After: ";
-                instr->Dump();
+            std::cout << "\n\t\t  After: ";
+            seti->Dump();
 #endif
-            }
         }
     }
 

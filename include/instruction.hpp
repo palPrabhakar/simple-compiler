@@ -189,11 +189,21 @@ class RetInstruction final : public UnaryInstruction {
     void Dump(std::ostream &out = std::cout) const override;
 };
 
+class GetInstruction;
+
 // SSA Instructions
 class SetInstruction final : public BinaryInstruction {
   public:
     SetInstruction() : BinaryInstruction(OpCode::SET) {}
     void Dump(std::ostream &out = std::cout) const override;
+
+    void SetGetPair(GetInstruction *instr) { get = instr; }
+
+    GetInstruction *GetGetPair() const { return get; }
+
+  private:
+    // There can be only one get instr per set instr
+    GetInstruction *get;
 };
 
 class GetInstruction final : public UnaryInstruction {
@@ -201,6 +211,19 @@ class GetInstruction final : public UnaryInstruction {
     GetInstruction() : UnaryInstruction(OpCode::GET) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 0;
+
+    void SetSetPair(SetInstruction *instr) { sets.push_back(instr); }
+
+    size_t GetSetPairSize() const { return sets.size(); }
+
+    SetInstruction *GetSetPair(size_t idx) {
+        assert(idx < sets.size());
+        return sets[idx];
+    }
+
+  private:
+    // There is atleast two set instr per get instr
+    std::vector<SetInstruction *> sets;
 };
 
 class UndefInstruction final : public UnaryInstruction {
