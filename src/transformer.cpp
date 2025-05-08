@@ -577,7 +577,61 @@ OperandBase *SSATransformer::NewDest(OperandBase *op) {
 
     return name[op].top();
 }
-
 // SSATransformer end
+
+// DVNTransformer begin
+void DVNTransformer::DVN(Block *block) {
+    vt.PushScope();
+
+    auto is_redundant = [](GetInstruction *geti) {
+        for (auto i : std::views::iota(1ul, geti->GetSetPairSize())) {
+            if (geti->GetSetPair(i)->GetOperand(1) !=
+                geti->GetSetPair(0)->GetOperand(1)) {
+                return false;
+            }
+        }
+        return true;
+    };
+
+    for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
+        auto *instr = block->GetInstruction(i);
+
+        auto opcode = instr->GetOpCode();
+        switch (opcode) {
+        case OpCode::JMP:
+        case OpCode::LABEL:
+        case OpCode::NOP:
+            // Don't do anything
+            break;
+        case OpCode::BR:
+            break;
+        case OpCode::GET: {
+            // check if all set pair set the same value
+            auto *geti = static_cast<GetInstruction *>(instr);
+            if (is_redundant(geti)) {
+                vt.Insert(
+                    geti->GetOperand(0)->GetName(),
+                    vt.Get(geti->GetSetPair(0)->GetOperand(1)->GetName()));
+                remove_instrs[block->GetIndex()].push_back(i);
+            }
+        } break;
+        case OpCode::SET:
+            break;
+        case OpCode::CALL:
+            break;
+        case OpCode::RET:
+            break;
+        case OpCode::FREE:
+        case OpCode::STORE:
+        case OpCode::PRINT:
+            break;
+        case OpCode::CONST:
+            break;
+        default:
+            break;
+        }
+    }
+}
+// DVNTransformer end
 
 } // namespace sc

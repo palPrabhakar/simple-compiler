@@ -107,4 +107,45 @@ class SSATransformer final : public Transformer {
     OperandBase *NewDest(OperandBase *op);
 };
 
+class DVNTransformer final : public Transformer {
+    // Dominator-based Value Numbering
+  public:
+    DVNTransformer(Function *_f) : Transformer(_f), dom(_f), remove_instrs(_f->GetBlockSize()) {}
+
+    void Transform() override { DVN(func->GetBlock(0)); }
+
+  private:
+    DominatorAnalyzer dom;
+    std::vector<std::vector<size_t>> remove_instrs;
+
+    class ScopedVTable {
+      public:
+        void PushScope() { st.push_back({}); }
+
+        void Insert(const std::string &key, OperandBase *op) {
+            assert(!st.empty() && "Empty stack!\n");
+            st.back()[key] = op;
+        }
+
+        OperandBase *Get(const std::string &key) const {
+            for (auto tbl : std::views::reverse(st)) {
+                if (tbl.contains(key)) {
+                    return tbl[key];
+                }
+            }
+            assert(false && "Key not found!\n");
+        }
+
+        void PopScope() {
+            // Let's keep it simple
+            st.erase(st.end() - 1);
+        }
+
+      private:
+        std::vector<std::unordered_map<std::string, OperandBase *>> st;
+    } vt; // value table
+
+    void DVN(Block *block);
+};
+
 } // namespace sc
