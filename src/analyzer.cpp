@@ -85,6 +85,10 @@ void DominatorAnalyzer::ComputeDominanceFrontier() {
 }
 
 void DominatorAnalyzer::BuildDominatorTree() {
+    if (idom.size() != func->GetBlockSize()) {
+        ComputeImmediateDominators();
+    }
+
     dtree = std::vector<std::vector<Block *>>(func->GetBlockSize());
     for (auto i : std::views::iota(1ul, idom.size())) {
         dtree[idom[i]->GetIndex()].push_back(func->GetBlock(i));

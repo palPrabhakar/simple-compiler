@@ -2,6 +2,7 @@
 
 #include <cassert>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
 
@@ -33,6 +34,8 @@ std::string GetPtrType(const std::vector<DataType> &ptr_chain);
 class OperandBase {
   public:
     virtual ~OperandBase() = default;
+    OperandBase(const OperandBase &) = delete;
+    OperandBase &operator=(const OperandBase &) = delete;
 
     virtual std::unique_ptr<OperandBase> Clone() const = 0;
 
@@ -106,6 +109,8 @@ class LabelOperand final : public OperandBase {
 };
 
 template <typename C> class ImmedOperand : public OperandBase {
+    // TODO:
+    // Ensure there is unique copy per ImmedOperand for a given value
   public:
     std::unique_ptr<OperandBase> Clone() const override {
         return static_cast<const C *>(this)->CloneImpl();
@@ -115,7 +120,7 @@ template <typename C> class ImmedOperand : public OperandBase {
     ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
 };
 
-class IntOperand : public ImmedOperand<IntOperand> {
+class IntOperand final : public ImmedOperand<IntOperand> {
   public:
     using val_type = ValType::INT;
     IntOperand(std::string name, val_type val)
@@ -129,7 +134,7 @@ class IntOperand : public ImmedOperand<IntOperand> {
     val_type val;
 };
 
-class FloatOperand : public ImmedOperand<FloatOperand> {
+class FloatOperand final : public ImmedOperand<FloatOperand> {
   public:
     using val_type = ValType::FLOAT;
     FloatOperand(std::string name, val_type val)
@@ -143,7 +148,7 @@ class FloatOperand : public ImmedOperand<FloatOperand> {
     val_type val;
 };
 
-class BoolOperand : public ImmedOperand<BoolOperand> {
+class BoolOperand final : public ImmedOperand<BoolOperand> {
   public:
     using val_type = ValType::BOOL;
     BoolOperand(std::string name, val_type val)
@@ -155,6 +160,24 @@ class BoolOperand : public ImmedOperand<BoolOperand> {
 
   private:
     val_type val;
+};
+
+class UndefOperand : public OperandBase {
+  public:
+    static UndefOperand *GetUndefOperand() { return ptr; }
+
+  private:
+    static UndefOperand *ptr;
+    static std::once_flag flag;
+
+    std::unique_ptr<OperandBase> Clone() const override {
+        assert(false && "LabelOperand cannot be cloned\n");
+        return nullptr;
+    }
+
+    static void init() { ptr = new UndefOperand(); }
+
+    UndefOperand() : OperandBase(DataType::VOID, "undef") {}
 };
 
 } // namespace sc

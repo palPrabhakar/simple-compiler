@@ -8,6 +8,8 @@
 
 namespace sc {
 
+class Block;
+
 OpCode GetOpCodeFromStr(std::string);
 
 class InstructionBase {
@@ -17,6 +19,8 @@ class InstructionBase {
     OpCode GetOpCode() const { return opcode; }
     size_t GetOperandSize() const { return operands.size(); }
 
+    void SetBlock(Block *blk) { block = blk; };
+
     void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
 
     void SetOperand(OperandBase *oprnd, size_t idx) {
@@ -24,9 +28,14 @@ class InstructionBase {
         operands[idx] = oprnd;
     }
 
-    OperandBase *GetOperand(size_t idx) {
+    OperandBase *GetOperand(size_t idx) const {
         assert(idx < operands.size());
         return operands[idx];
+    }
+
+    Block *GetBlock() const {
+        assert(block != nullptr && "No owning block.\n");
+        return block;
     }
 
     static constexpr size_t OP_SIZE = 0;
@@ -37,133 +46,134 @@ class InstructionBase {
 
   private:
     OpCode opcode;
+    Block *block;
 };
 
-class UnaryInstruction : public InstructionBase {
-  public:
-    UnaryInstruction(OpCode opcode) : InstructionBase(opcode) {}
-    virtual void Dump(std::ostream &out = std::cout) const override = 0;
-    static constexpr size_t OP_SIZE = 1;
-};
+// class InstructionBase : public InstructionBase {
+//   public:
+//     InstructionBase(OpCode opcode) : InstructionBase(opcode) {}
+//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+//     static constexpr size_t OP_SIZE = 1;
+// };
 
-class BinaryInstruction : public InstructionBase {
-  public:
-    BinaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
-    virtual void Dump(std::ostream &out = std::cout) const override = 0;
-    static constexpr size_t OP_SIZE = 2;
-};
+// class InstructionBase : public InstructionBase {
+//   public:
+//     InstructionBase(OpCode _op_code) : InstructionBase(_op_code) {}
+//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+//     static constexpr size_t OP_SIZE = 2;
+// };
 
-class TernaryInstruction : public InstructionBase {
-  public:
-    TernaryInstruction(OpCode _op_code) : InstructionBase(_op_code) {}
-    virtual void Dump(std::ostream &out = std::cout) const override = 0;
-    static constexpr size_t OP_SIZE = 3;
-};
+// class InstructionBase : public InstructionBase {
+//   public:
+//     InstructionBase(OpCode _op_code) : InstructionBase(_op_code) {}
+//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
+//     static constexpr size_t OP_SIZE = 3;
+// };
 
 // Arithmetic Instructions
-class AddInstruction final : public TernaryInstruction {
+class AddInstruction final : public InstructionBase {
   public:
-    AddInstruction() : TernaryInstruction(OpCode::ADD) {}
+    AddInstruction() : InstructionBase(OpCode::ADD) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class MulInstruction final : public TernaryInstruction {
+class MulInstruction final : public InstructionBase {
   public:
-    MulInstruction() : TernaryInstruction(OpCode::MUL) {}
+    MulInstruction() : InstructionBase(OpCode::MUL) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class SubInstruction final : public TernaryInstruction {
+class SubInstruction final : public InstructionBase {
   public:
-    SubInstruction() : TernaryInstruction(OpCode::SUB) {}
+    SubInstruction() : InstructionBase(OpCode::SUB) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class DivInstruction final : public TernaryInstruction {
+class DivInstruction final : public InstructionBase {
   public:
-    DivInstruction() : TernaryInstruction(OpCode::DIV) {}
+    DivInstruction() : InstructionBase(OpCode::DIV) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
 // Comparison Instructions
-class EqInstruction final : public TernaryInstruction {
+class EqInstruction final : public InstructionBase {
   public:
-    EqInstruction() : TernaryInstruction(OpCode::EQ) {}
+    EqInstruction() : InstructionBase(OpCode::EQ) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class LtInstruction final : public TernaryInstruction {
+class LtInstruction final : public InstructionBase {
   public:
-    LtInstruction() : TernaryInstruction(OpCode::LT) {}
+    LtInstruction() : InstructionBase(OpCode::LT) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class GtInstruction final : public TernaryInstruction {
+class GtInstruction final : public InstructionBase {
   public:
-    GtInstruction() : TernaryInstruction(OpCode::GT) {}
+    GtInstruction() : InstructionBase(OpCode::GT) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class LeInstruction final : public TernaryInstruction {
+class LeInstruction final : public InstructionBase {
   public:
-    LeInstruction() : TernaryInstruction(OpCode::LE) {}
+    LeInstruction() : InstructionBase(OpCode::LE) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class GeInstruction final : public TernaryInstruction {
+class GeInstruction final : public InstructionBase {
   public:
-    GeInstruction() : TernaryInstruction(OpCode::GE) {}
+    GeInstruction() : InstructionBase(OpCode::GE) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
 // Logic Instructions
-class AndInstruction final : public TernaryInstruction {
+class AndInstruction final : public InstructionBase {
   public:
-    AndInstruction() : TernaryInstruction(OpCode::AND) {}
+    AndInstruction() : InstructionBase(OpCode::AND) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class OrInstruction final : public TernaryInstruction {
+class OrInstruction final : public InstructionBase {
   public:
-    OrInstruction() : TernaryInstruction(OpCode::OR) {}
+    OrInstruction() : InstructionBase(OpCode::OR) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class NotInstruction final : public BinaryInstruction {
+class NotInstruction final : public InstructionBase {
   public:
-    NotInstruction() : BinaryInstruction(OpCode::NOT) {}
+    NotInstruction() : InstructionBase(OpCode::NOT) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 1;
 };
 
 // Control Instruction
-class JmpInstruction final : public UnaryInstruction {
+class JmpInstruction final : public InstructionBase {
     // output_label = f(input_label)
     // Changes PC by some offset
   public:
-    JmpInstruction() : UnaryInstruction(OpCode::JMP) {}
+    JmpInstruction() : InstructionBase(OpCode::JMP) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class BranchInstruction final : public TernaryInstruction {
+class BranchInstruction final : public InstructionBase {
     // One source and two destinations
     // Source - RegOperand
     // Dest - LabelOperand
     // output_label = f(cond, input_label{0, 1})
     // Changes PC by some offset
   public:
-    BranchInstruction() : TernaryInstruction(OpCode::BR) {}
+    BranchInstruction() : InstructionBase(OpCode::BR) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
@@ -183,18 +193,18 @@ class CallInstruction final : public InstructionBase {
     bool ret_val;
 };
 
-class RetInstruction final : public UnaryInstruction {
+class RetInstruction final : public InstructionBase {
   public:
-    RetInstruction() : UnaryInstruction(OpCode::RET) {}
+    RetInstruction() : InstructionBase(OpCode::RET) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 class GetInstruction;
 
 // SSA Instructions
-class SetInstruction final : public BinaryInstruction {
+class SetInstruction final : public InstructionBase {
   public:
-    SetInstruction() : BinaryInstruction(OpCode::SET) {}
+    SetInstruction() : InstructionBase(OpCode::SET) {}
     void Dump(std::ostream &out = std::cout) const override;
 
     void SetGetPair(GetInstruction *instr) { get = instr; }
@@ -206,9 +216,9 @@ class SetInstruction final : public BinaryInstruction {
     GetInstruction *get;
 };
 
-class GetInstruction final : public UnaryInstruction {
+class GetInstruction final : public InstructionBase {
   public:
-    GetInstruction() : UnaryInstruction(OpCode::GET) {}
+    GetInstruction() : InstructionBase(OpCode::GET) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 0;
 
@@ -226,124 +236,126 @@ class GetInstruction final : public UnaryInstruction {
     std::vector<SetInstruction *> sets;
 };
 
-class UndefInstruction final : public UnaryInstruction {
+class UndefInstruction final : public InstructionBase {
   public:
-    UndefInstruction() : UnaryInstruction(OpCode::UNDEF) {}
+    UndefInstruction() : InstructionBase(OpCode::UNDEF) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 0;
+    static constexpr size_t OP_SIZE = 1;
 };
 
 // Memory Instructions
-class AllocInstruction : public BinaryInstruction {
+class AllocInstruction : public InstructionBase {
   public:
-    AllocInstruction() : BinaryInstruction(OpCode::ALLOC) {}
+    AllocInstruction() : InstructionBase(OpCode::ALLOC) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 1;
 };
 
-class FreeInstruction : public UnaryInstruction {
+class FreeInstruction : public InstructionBase {
   public:
-    FreeInstruction() : UnaryInstruction(OpCode::FREE) {}
-    void Dump(std::ostream &out = std::cout) const override;
-};
-
-class LoadInstruction : public BinaryInstruction {
-  public:
-    LoadInstruction() : BinaryInstruction(OpCode::LOAD) {}
+    FreeInstruction() : InstructionBase(OpCode::FREE) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 1;
 };
 
-class StoreInstruction : public BinaryInstruction {
+class LoadInstruction : public InstructionBase {
   public:
-    StoreInstruction() : BinaryInstruction(OpCode::STORE) {}
+    LoadInstruction() : InstructionBase(OpCode::LOAD) {}
     void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 1;
 };
 
-class PtraddInstruction : public TernaryInstruction {
+class StoreInstruction : public InstructionBase {
   public:
-    PtraddInstruction() : TernaryInstruction(OpCode::PTRADD) {}
+    StoreInstruction() : InstructionBase(OpCode::STORE) {}
+    void Dump(std::ostream &out = std::cout) const override;
+    static constexpr size_t OP_SIZE = 2;
+};
+
+class PtraddInstruction : public InstructionBase {
+  public:
+    PtraddInstruction() : InstructionBase(OpCode::PTRADD) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Point Arithmetic Instructions
-class FAddInstruction final : public TernaryInstruction {
+class FAddInstruction final : public InstructionBase {
   public:
-    FAddInstruction() : TernaryInstruction(OpCode::FADD) {}
+    FAddInstruction() : InstructionBase(OpCode::FADD) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FMulInstruction final : public TernaryInstruction {
+class FMulInstruction final : public InstructionBase {
   public:
-    FMulInstruction() : TernaryInstruction(OpCode::FMUL) {}
+    FMulInstruction() : InstructionBase(OpCode::FMUL) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FSubInstruction final : public TernaryInstruction {
+class FSubInstruction final : public InstructionBase {
   public:
-    FSubInstruction() : TernaryInstruction(OpCode::FSUB) {}
+    FSubInstruction() : InstructionBase(OpCode::FSUB) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FDivInstruction final : public TernaryInstruction {
+class FDivInstruction final : public InstructionBase {
   public:
-    FDivInstruction() : TernaryInstruction(OpCode::FDIV) {}
+    FDivInstruction() : InstructionBase(OpCode::FDIV) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Pointi Comparison Instructions
-class FEqInstruction final : public TernaryInstruction {
+class FEqInstruction final : public InstructionBase {
   public:
-    FEqInstruction() : TernaryInstruction(OpCode::FEQ) {}
+    FEqInstruction() : InstructionBase(OpCode::FEQ) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FLtInstruction final : public TernaryInstruction {
+class FLtInstruction final : public InstructionBase {
   public:
-    FLtInstruction() : TernaryInstruction(OpCode::FLT) {}
+    FLtInstruction() : InstructionBase(OpCode::FLT) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FGtInstruction final : public TernaryInstruction {
+class FGtInstruction final : public InstructionBase {
   public:
-    FGtInstruction() : TernaryInstruction(OpCode::FGT) {}
+    FGtInstruction() : InstructionBase(OpCode::FGT) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FLeInstruction final : public TernaryInstruction {
+class FLeInstruction final : public InstructionBase {
   public:
-    FLeInstruction() : TernaryInstruction(OpCode::FLE) {}
+    FLeInstruction() : InstructionBase(OpCode::FLE) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
-class FGeInstruction final : public TernaryInstruction {
+class FGeInstruction final : public InstructionBase {
   public:
-    FGeInstruction() : TernaryInstruction(OpCode::FGE) {}
+    FGeInstruction() : InstructionBase(OpCode::FGE) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 2;
 };
 
 // Miscellaneous Instructions
-class IdInstruction final : public BinaryInstruction {
+class IdInstruction final : public InstructionBase {
   public:
-    IdInstruction() : BinaryInstruction(OpCode::ID) {}
+    IdInstruction() : InstructionBase(OpCode::ID) {}
     void Dump(std::ostream &out = std::cout) const override;
     static constexpr size_t OP_SIZE = 1;
 };
 
-class ConstInstruction final : public BinaryInstruction {
+class ConstInstruction final : public InstructionBase {
     // Src is ImmedOperand
   public:
-    ConstInstruction() : BinaryInstruction(OpCode::CONST) {}
+    ConstInstruction() : InstructionBase(OpCode::CONST) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 

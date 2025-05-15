@@ -2,6 +2,7 @@
 
 #include "instruction.hpp"
 #include "operand.hpp"
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <memory>
@@ -29,17 +30,23 @@ class Block {
 
     void AddInstruction(instr_ptr instr, size_t idx) {
         assert(idx < instructions.size());
+        instr->SetBlock(this);
         instructions[idx] = std::move(instr);
     }
 
     void InsertInstructions(std::vector<instr_ptr> instrs, size_t idx) {
+        std::ranges::for_each(instrs,
+                              [this](instr_ptr &ptr) { ptr->SetBlock(this); });
+
         instructions.insert(instructions.begin() + static_cast<long>(idx),
                             std::make_move_iterator(instrs.begin()),
                             std::make_move_iterator(instrs.end()));
     }
 
     void InsertInstruction(instr_ptr instr, size_t idx) {
-        instructions.insert(instructions.begin() + static_cast<long>(idx), std::move(instr));
+        instr->SetBlock(this);
+        instructions.insert(instructions.begin() + static_cast<long>(idx),
+                            std::move(instr));
     }
 
     void RemoveInstruction(size_t idx) {
@@ -48,6 +55,9 @@ class Block {
     }
 
     std::vector<instr_ptr> ReleaseInstructions() {
+        std::ranges::for_each(instructions,
+                              [](instr_ptr &ptr) { ptr->SetBlock(nullptr); });
+
         return std::move(instructions);
     }
 

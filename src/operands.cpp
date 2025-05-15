@@ -82,4 +82,6 @@ std::unique_ptr<OperandBase> BoolOperand::CloneImpl() const {
     return clone;
 }
 
+UndefOperand* UndefOperand::ptr = nullptr;
+
 } // namespace sc

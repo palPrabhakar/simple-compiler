@@ -29,6 +29,10 @@ int main(int argc, char *argv[]) {
     // program->Dump();
 
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
+    // program->Dump();
+
+    program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
+
     program->Dump();
 
     return 0;

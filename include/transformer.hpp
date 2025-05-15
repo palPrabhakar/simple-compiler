@@ -1,11 +1,13 @@
 #pragma once
 
 #include "analyzer.hpp"
+#include "instruction.hpp"
 #include "program.hpp"
 #include <cassert>
 #include <memory>
 #include <ranges>
 #include <stack>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 
@@ -88,6 +90,8 @@ class CFTransformer final : public Transformer {
 };
 
 class SSATransformer final : public Transformer {
+    // TODO:
+    // Build def-uses links
   public:
     SSATransformer(Function *_f)
         : Transformer(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
@@ -110,9 +114,22 @@ class SSATransformer final : public Transformer {
 class DVNTransformer final : public Transformer {
     // Dominator-based Value Numbering
   public:
-    DVNTransformer(Function *_f) : Transformer(_f), dom(_f), remove_instrs(_f->GetBlockSize()) {}
+    DVNTransformer(Function *_f)
+        : Transformer(_f), dom(_f), remove_instrs(_f->GetBlockSize()) {}
 
-    void Transform() override { DVN(func->GetBlock(0)); }
+    void Transform() override {
+        if (func->GetArgsSize()) {
+            vt.PushScope();
+            for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
+                auto *arg = func->GetArgs(i);
+                vt.Insert(arg->GetName(), arg);
+            }
+        }
+
+        dom.BuildDominatorTree();
+        DVN(func->GetBlock(0));
+        RemoveInstructions();
+    }
 
   private:
     DominatorAnalyzer dom;
@@ -127,13 +144,15 @@ class DVNTransformer final : public Transformer {
             st.back()[key] = op;
         }
 
-        OperandBase *Get(const std::string &key) const {
-            for (auto tbl : std::views::reverse(st)) {
-                if (tbl.contains(key)) {
-                    return tbl[key];
+        OperandBase *Get(const std::string &key, bool local = false) const {
+            auto it = st.rbegin();
+            do {
+                if(it->contains(key)) {
+                    return it->at(key);
                 }
-            }
-            assert(false && "Key not found!\n");
+            } while (!local && ++it != st.rend());
+
+            return nullptr;
         }
 
         void PopScope() {
@@ -145,7 +164,15 @@ class DVNTransformer final : public Transformer {
         std::vector<std::unordered_map<std::string, OperandBase *>> st;
     } vt; // value table
 
+    bool IsUseless(GetInstruction *geti);
+    bool IsRedundant(GetInstruction *geti);
     void DVN(Block *block);
-};
+    void RemoveInstructions();
 
+    std::string GetKey(InstructionBase *instr) const {
+        return instr->GetOperand(1)->GetName() +
+               std::to_string(static_cast<int>(instr->GetOpCode())) +
+               instr->GetOperand(2)->GetName();
+    }
+};
 } // namespace sc
