@@ -1,4 +1,4 @@
-#include "cfg.hpp"
+#include "analyzers/cfg.hpp"
 #include <algorithm>
 #include <memory>
 #include <ranges>

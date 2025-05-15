@@ -1,9 +1,10 @@
 #pragma once
 
 #include "bril_parser.hpp"
-#include "cfg.hpp"
+#include "analyzers/cfg.hpp"
+#include "transformers/transformer.hpp"
+#include "transformers/early_ir_transformer.hpp"
 #include "program.hpp"
-#include "transformer.hpp"
 #include <fstream>
 
 #define READ_PROGRAM(x)                                                        \

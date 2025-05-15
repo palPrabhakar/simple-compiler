@@ -49,27 +49,6 @@ class InstructionBase {
     Block *block;
 };
 
-// class InstructionBase : public InstructionBase {
-//   public:
-//     InstructionBase(OpCode opcode) : InstructionBase(opcode) {}
-//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
-//     static constexpr size_t OP_SIZE = 1;
-// };
-
-// class InstructionBase : public InstructionBase {
-//   public:
-//     InstructionBase(OpCode _op_code) : InstructionBase(_op_code) {}
-//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
-//     static constexpr size_t OP_SIZE = 2;
-// };
-
-// class InstructionBase : public InstructionBase {
-//   public:
-//     InstructionBase(OpCode _op_code) : InstructionBase(_op_code) {}
-//     virtual void Dump(std::ostream &out = std::cout) const override = 0;
-//     static constexpr size_t OP_SIZE = 3;
-// };
-
 // Arithmetic Instructions
 class AddInstruction final : public InstructionBase {
   public:

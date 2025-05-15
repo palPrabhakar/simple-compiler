@@ -1,8 +1,12 @@
-#include "analyzer.hpp"
+#include "analyzers/cfg.hpp"
 #include "bril_parser.hpp"
-#include "cfg.hpp"
 #include "program.hpp"
-#include "transformer.hpp"
+#include "transformers/transformer.hpp"
+#include "transformers/early_ir_transformer.hpp"
+#include "transformers/cf_transformer.hpp"
+#include "transformers/ssa_transformer.hpp"
+#include "transformers/dvn_transformer.hpp"
+
 #include <fstream>
 #include <iostream>
 #include <ranges>
