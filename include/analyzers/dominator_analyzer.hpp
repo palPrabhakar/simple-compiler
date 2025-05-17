@@ -14,6 +14,7 @@ class DominatorAnalyzer {
     void ComputeImmediateDominators();
     void ComputeDominanceFrontier();
     void BuildDominatorTree();
+    void BuildRPODominatorTree();
 
     void DumpDominators(std::ostream &out = std::cout) const;
     void DumpImmediateDominators(std::ostream &out = std::cout) const;

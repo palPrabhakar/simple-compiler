@@ -91,6 +91,23 @@ void DominatorAnalyzer::BuildDominatorTree() {
     }
 }
 
+void DominatorAnalyzer::BuildRPODominatorTree() {
+    // successor's are in reverse postorder
+    if (idom.size() != func->GetBlockSize()) {
+        ComputeImmediateDominators();
+    }
+
+    dtree = std::vector<std::vector<Block *>>(func->GetBlockSize());
+    auto rpo = GetReversePostOrder(func);
+    for (auto *blk : rpo) {
+        if (blk == func->GetBlock(0)) {
+            continue;
+        }
+
+        dtree[idom[blk->GetIndex()]->GetIndex()].push_back(blk);
+    }
+}
+
 std::vector<Block *>
 DominatorAnalyzer::GetDominanceFrontier(Block *block) const {
     auto blocks = df.at(block->GetIndex()).GetBlocks();
@@ -143,5 +160,4 @@ void DominatorAnalyzer::DumpDominanceFrontier(std::ostream &out) const {
     }
 }
 // DominatorAnalyzer end
-
 } // namespace sc

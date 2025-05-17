@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <utility>
 #include <vector>
@@ -102,20 +103,25 @@ class Block {
 
     size_t GetPredecessorSize() const { return predecessors.size(); }
 
-    Block *GetSuccessor(size_t idx) {
+    Block *GetSuccessor(size_t idx) const {
         assert(idx < successors.size() &&
                "Invalid index Block::GetSuccessor\n");
         return successors[idx];
     }
 
-    const std::vector<Block *> &GetSuccessors() const { return successors; }
+    auto GetSuccessors() const {
+        return std::ranges::subrange(successors.cbegin(), successors.cend());
+    }
 
-    const std::vector<Block *> &GetPredecessors() const { return predecessors; }
-
-    Block *GetPredecessor(size_t idx) {
+    Block *GetPredecessor(size_t idx) const {
         assert(idx < predecessors.size() &&
                "Invalid index Block::GetPredecessor\n");
         return predecessors[idx];
+    }
+
+    auto GetPredecessors() const {
+        return std::ranges::subrange(predecessors.cbegin(),
+                                     predecessors.cend());
     }
 
     void Dump(std::ostream &out = std::cout, std::string prefix = "") {

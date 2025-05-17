@@ -9,7 +9,6 @@
 
 #include <fstream>
 #include <iostream>
-#include <ranges>
 
 namespace sc {
 std::unique_ptr<Program> ParseProgram(sjp::Json);
@@ -30,11 +29,7 @@ int main(int argc, char *argv[]) {
         sc::ApplyTransformation<sc::EarlyIRTransformer>(std::move(program));
     program = sc::BuildCFG(std::move(program));
     program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
-    // program->Dump();
-
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
-    // program->Dump();
-
     program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
 
     program->Dump();

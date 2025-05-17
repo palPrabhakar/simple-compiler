@@ -10,7 +10,6 @@
 
 namespace sc {
 
-
 class GlobalsAnalyzer {
   public:
     GlobalsAnalyzer(Function *f) : func(f) {}
@@ -34,6 +33,10 @@ class GlobalsAnalyzer {
     Function *func;
     std::unordered_set<OperandBase *> globals;
     std::unordered_map<OperandBase *, std::unordered_set<Block *>> blocks;
+
+    void Process(std::unordered_set<OperandBase *> &var_kill,
+                 InstructionBase *instr, Block *block, size_t start,
+                 bool dest = true);
 };
 
 } // namespace sc

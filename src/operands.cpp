@@ -1,6 +1,8 @@
+#include "instruction.hpp"
 #include "operand.hpp"
 #include <cassert>
 #include <memory>
+#include <ranges>
 
 namespace sc {
 DataType GetDataTypeFromStr(std::string type_str) {
@@ -49,6 +51,17 @@ std::string GetPtrType(const std::vector<DataType> &ptr_chain) {
     return type;
 }
 
+void ReplaceUses(OperandBase *base, OperandBase *replacement) {
+    for (auto i : std::views::iota(0ul, base->GetUsesSize())) {
+        auto *use = base->GetUse(i);
+        for (auto j : std::views::iota(0ul, use->GetOperandSize())) {
+            if (use->GetOperand(j) == base) {
+                use->SetOperand(replacement, j);
+            }
+        }
+    }
+}
+
 std::string OperandBase::GetStrType() const {
     if (type == DataType::PTR) {
         return GetPtrType(static_cast<const PtrOperand *>(this)->GetPtrChain());
@@ -82,6 +95,6 @@ std::unique_ptr<OperandBase> BoolOperand::CloneImpl() const {
     return clone;
 }
 
-UndefOperand* UndefOperand::ptr = nullptr;
+UndefOperand *UndefOperand::ptr = nullptr;
 
 } // namespace sc

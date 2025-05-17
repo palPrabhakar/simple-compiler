@@ -14,8 +14,8 @@ static void PostOrderImpl(Block *block, std::vector<Block *> &post_order,
 
     visited.insert(block);
 
-    for (auto i : std::views::iota(0ul, block->GetSuccessorSize())) {
-        PostOrderImpl(block->GetSuccessor(i), post_order, visited);
+    for (auto *succ : block->GetSuccessors()) {
+        PostOrderImpl(succ, post_order, visited);
     }
 
     post_order.push_back(block);

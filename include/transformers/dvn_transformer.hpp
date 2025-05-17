@@ -25,7 +25,7 @@ class DVNTransformer final : public Transformer {
             }
         }
 
-        dom.BuildDominatorTree();
+        dom.BuildRPODominatorTree();
         DVN(func->GetBlock(0));
         RemoveInstructions();
     }
@@ -63,8 +63,8 @@ class DVNTransformer final : public Transformer {
         std::vector<std::unordered_map<std::string, OperandBase *>> st;
     } vt; // value table
 
-    bool IsUseless(GetInstruction *geti);
-    bool IsRedundant(GetInstruction *geti);
+
+    bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
     void DVN(Block *block);
     void RemoveInstructions();
 

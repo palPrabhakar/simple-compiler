@@ -26,10 +26,13 @@ using BOOL = bool;
 
 class Block;
 class InstructionBase;
+class OperandBase;
 
 DataType GetDataTypeFromStr(std::string);
 std::string GetStrDataType(DataType);
 std::string GetPtrType(const std::vector<DataType> &ptr_chain);
+
+void ReplaceUses(OperandBase *base, OperandBase *replacement);
 
 class OperandBase {
   public:
@@ -52,6 +55,8 @@ class OperandBase {
     std::string GetName() const { return name; }
 
     InstructionBase *GetDef() const { return def; }
+
+    size_t GetUsesSize() const { return uses.size(); }
 
     InstructionBase *GetUse(size_t idx) const {
         assert(idx < uses.size());

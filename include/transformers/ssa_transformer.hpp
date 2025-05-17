@@ -3,8 +3,8 @@
 #include "analyzers/dominator_analyzer.hpp"
 #include "analyzers/globals_analyzer.hpp"
 #include "transformer.hpp"
-#include <unordered_map>
 #include <stack>
+#include <unordered_map>
 #include <vector>
 
 namespace sc {
@@ -29,8 +29,9 @@ class SSATransformer final : public Transformer {
 
     void RewriteInSSAForm();
     void Rename(Block *block);
-
     OperandBase *NewDest(OperandBase *op);
+    void Process(std::unordered_map<OperandBase *, size_t> &pop_count,
+                 InstructionBase *instr, size_t start, bool dest = true);
 };
 
 }; // namespace sc

@@ -64,7 +64,7 @@ class Function {
     DataType ret_type;
 };
 
-class PtrFunction : public Function {
+class PtrFunction final : public Function {
   public:
     PtrFunction(std::string name) : Function(name, DataType::PTR) {}
     void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
