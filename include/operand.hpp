@@ -1,9 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
+#include <mutex>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace sc {
 // clang-format off
@@ -25,14 +28,19 @@ using BOOL = bool;
 
 class Block;
 class InstructionBase;
+class OperandBase;
 
 DataType GetDataTypeFromStr(std::string);
 std::string GetStrDataType(DataType);
 std::string GetPtrType(const std::vector<DataType> &ptr_chain);
 
+void ReplaceUses(OperandBase *base, OperandBase *replacement);
+
 class OperandBase {
   public:
     virtual ~OperandBase() = default;
+    OperandBase(const OperandBase &) = delete;
+    OperandBase &operator=(const OperandBase &) = delete;
 
     virtual std::unique_ptr<OperandBase> Clone() const = 0;
 
@@ -42,6 +50,13 @@ class OperandBase {
 
     void SetUse(InstructionBase *instr) { uses.push_back(instr); }
 
+    void RemoveUse(InstructionBase *instr) {
+        auto it = std::find(uses.begin(), uses.end(), instr);
+        if (it != uses.end()) {
+            uses.erase(it);
+        }
+    }
+
     std::string GetStrType() const;
 
     DataType GetType() const { return type; }
@@ -50,14 +65,18 @@ class OperandBase {
 
     InstructionBase *GetDef() const { return def; }
 
+    size_t GetUsesSize() const { return uses.size(); }
+
     InstructionBase *GetUse(size_t idx) const {
         assert(idx < uses.size());
         return uses[idx];
     }
 
+    std::span<InstructionBase *> GetUses() { return std::span(uses); }
+
   protected:
     OperandBase(DataType _type, std::string _name)
-        : type(_type), name(std::move(_name)) {}
+        : type(_type), name(std::move(_name)), def(nullptr) {}
 
     DataType type;
     std::string name;
@@ -90,7 +109,8 @@ class PtrOperand final : public RegOperand {
 
 class LabelOperand final : public OperandBase {
   public:
-    LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
+    LabelOperand(std::string name)
+        : OperandBase(DataType::LABEL, name), block(nullptr) {}
 
     std::unique_ptr<OperandBase> Clone() const override {
         assert(false && "LabelOperand cannot be cloned\n");
@@ -106,6 +126,8 @@ class LabelOperand final : public OperandBase {
 };
 
 template <typename C> class ImmedOperand : public OperandBase {
+    // TODO:
+    // Ensure there is unique copy per ImmedOperand for a given value
   public:
     std::unique_ptr<OperandBase> Clone() const override {
         return static_cast<const C *>(this)->CloneImpl();
@@ -115,7 +137,7 @@ template <typename C> class ImmedOperand : public OperandBase {
     ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
 };
 
-class IntOperand : public ImmedOperand<IntOperand> {
+class IntOperand final : public ImmedOperand<IntOperand> {
   public:
     using val_type = ValType::INT;
     IntOperand(std::string name, val_type val)
@@ -129,7 +151,7 @@ class IntOperand : public ImmedOperand<IntOperand> {
     val_type val;
 };
 
-class FloatOperand : public ImmedOperand<FloatOperand> {
+class FloatOperand final : public ImmedOperand<FloatOperand> {
   public:
     using val_type = ValType::FLOAT;
     FloatOperand(std::string name, val_type val)
@@ -143,7 +165,7 @@ class FloatOperand : public ImmedOperand<FloatOperand> {
     val_type val;
 };
 
-class BoolOperand : public ImmedOperand<BoolOperand> {
+class BoolOperand final : public ImmedOperand<BoolOperand> {
   public:
     using val_type = ValType::BOOL;
     BoolOperand(std::string name, val_type val)
@@ -155,6 +177,46 @@ class BoolOperand : public ImmedOperand<BoolOperand> {
 
   private:
     val_type val;
+};
+
+// Undef Sentinel Singleton
+class UndefOperand : public OperandBase {
+  public:
+    static UndefOperand *GetUndefOperand() {
+        std::call_once(flag, [] { ptr = new UndefOperand(); });
+        return ptr;
+    }
+
+  private:
+    static UndefOperand *ptr;
+    static std::once_flag flag;
+
+    std::unique_ptr<OperandBase> Clone() const override {
+        assert(false && "LabelOperand cannot be cloned\n");
+        return nullptr;
+    }
+
+    UndefOperand() : OperandBase(DataType::VOID, "undef") {}
+};
+
+// Void Sentinel Singleteon
+class VoidOperand : public OperandBase {
+  public:
+    static VoidOperand *GetVoidOperand() {
+        std::call_once(flag, [] { ptr = new VoidOperand(); });
+        return ptr;
+    }
+
+  private:
+    static VoidOperand *ptr;
+    static std::once_flag flag;
+
+    std::unique_ptr<OperandBase> Clone() const override {
+        assert(false && "LabelOperand cannot be cloned\n");
+        return nullptr;
+    }
+
+    VoidOperand() : OperandBase(DataType::VOID, "undef") {}
 };
 
 } // namespace sc

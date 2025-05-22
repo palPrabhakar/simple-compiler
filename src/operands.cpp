@@ -1,3 +1,4 @@
+#include "instruction.hpp"
 #include "operand.hpp"
 #include <cassert>
 #include <memory>
@@ -49,6 +50,22 @@ std::string GetPtrType(const std::vector<DataType> &ptr_chain) {
     return type;
 }
 
+void ReplaceUses(OperandBase *orig, OperandBase *repl) {
+    // Need to make a copy here since the uses vector will be
+    // re-written during the operation and the iterators will
+    // be invalidated.
+    std::vector<InstructionBase *> uses(orig->GetUses().begin(),
+                                        orig->GetUses().end());
+    for (auto *use : uses) {
+        auto operands = use->GetOperands();
+        auto it = std::find(operands.begin(), operands.end(), orig);
+        if (it != operands.end()) {
+            SetOperandAndUse(use, repl,
+                             static_cast<size_t>(it - operands.begin()));
+        }
+    }
+}
+
 std::string OperandBase::GetStrType() const {
     if (type == DataType::PTR) {
         return GetPtrType(static_cast<const PtrOperand *>(this)->GetPtrChain());
@@ -81,5 +98,11 @@ std::unique_ptr<OperandBase> BoolOperand::CloneImpl() const {
     auto clone = std::make_unique<BoolOperand>(name, val);
     return clone;
 }
+
+UndefOperand *UndefOperand::ptr = nullptr;
+std::once_flag UndefOperand::flag;
+
+VoidOperand *VoidOperand::ptr = nullptr;
+std::once_flag VoidOperand::flag;
 
 } // namespace sc

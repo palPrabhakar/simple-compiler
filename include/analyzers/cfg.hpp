@@ -2,6 +2,7 @@
 
 #include "program.hpp"
 #include <memory>
+#include <ranges>
 #include <vector>
 
 namespace sc {

@@ -38,6 +38,7 @@ class BrilParser {
     FuncPtr MakeJmpInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeBranchInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeCallInstruction(FuncPtr func, sjp::Json &instr);
+    FuncPtr MakeRetInstruction(FuncPtr func, sjp::Json &instr);
     FuncPtr MakeConstInstruction(FuncPtr func, sjp::Json &instr);
 
     template <bool first = false>
@@ -115,9 +116,9 @@ class BrilParser {
         }
         case OpCode::CALL:
             return MakeCallInstruction(std::move(func), instr);
-        case OpCode::RET:
-            return MakeInstruction<RetInstruction, false, false>(
-                std::move(func), instr);
+        case OpCode::RET: {
+            return MakeRetInstruction(std::move(func), instr);
+        } break;
         // SSA Instructions
         case OpCode::SET:
             assert(false && "todo set\n");
@@ -127,8 +128,8 @@ class BrilParser {
         case OpCode::ALLOC:
             return MakeInstruction<AllocInstruction>(std::move(func), instr);
         case OpCode::FREE:
-            return MakeInstruction<FreeInstruction, false, true>(
-                std::move(func), instr);
+            return MakeInstruction<FreeInstruction, false>(std::move(func),
+                                                           instr);
         case OpCode::LOAD:
             return MakeInstruction<LoadInstruction>(std::move(func), instr);
         case OpCode::STORE:
@@ -162,8 +163,8 @@ class BrilParser {
         case OpCode::CONST:
             return MakeConstInstruction(std::move(func), instr);
         case OpCode::PRINT:
-            return MakeInstruction<PrintInstruction, false, false>(
-                std::move(func), instr);
+            return MakeInstruction<PrintInstruction, false>(std::move(func),
+                                                            instr);
         case OpCode::LABEL: {
             // Make new block
             auto lbl = instr.Get("label")->Get<std::string>().value();
@@ -181,8 +182,7 @@ class BrilParser {
         return func;
     }
 
-    template <typename T, bool has_dest = true, bool has_args = true,
-              size_t args_size = T::OP_SIZE>
+    template <typename T, bool has_dest = true>
     FuncPtr MakeInstruction(FuncPtr func, sjp::Json &instr) {
 
         auto instr_ptr = std::make_unique<T>();
@@ -191,7 +191,7 @@ class BrilParser {
             auto dest = instr.Get("dest")->Get<std::string>().value();
             if (operands.contains(dest)) {
                 // dest already exists
-                instr_ptr->SetOperand(operands[dest]);
+                instr_ptr->SetDest(operands[dest]);
             } else {
                 // create new dest reg operand
                 std::unique_ptr<OperandBase> dest_oprnd = nullptr;
@@ -206,15 +206,13 @@ class BrilParser {
                         GetDataTypeFromStr(type), dest);
                 }
                 operands[dest] = dest_oprnd.get();
-                instr_ptr->SetOperand(dest_oprnd.get());
+                instr_ptr->SetDest(dest_oprnd.get());
                 func->AddOperand(std::move(dest_oprnd));
             }
         }
 
-        if (has_args || instr.Get("args").has_value()) {
+        if (instr.Get("args").has_value()) {
             auto args = instr.Get("args").value();
-            assert((!has_args || args.Size() == args_size) &&
-                   "Invaid argument size");
             for (size_t i : std::views::iota(0UL, args.Size())) {
                 auto arg = args.Get(i)->Get<std::string>().value();
                 // It is possible that the block that defines the args
@@ -242,12 +240,12 @@ class BrilParser {
         auto dest = instr.Get("dest")->Get<std::string>().value();
         if (operands.contains(dest)) {
             // dest already exists
-            instr_ptr->SetOperand(operands[dest]);
+            instr_ptr->SetDest(operands[dest]);
         } else {
             // create new dest reg operand
             auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
             operands[dest] = dest_oprnd.get();
-            instr_ptr->SetOperand(dest_oprnd.get());
+            instr_ptr->SetDest(dest_oprnd.get());
             func->AddOperand(std::move(dest_oprnd));
         }
 
@@ -257,8 +255,7 @@ class BrilParser {
             instr_ptr->SetOperand(operands[sym_name]);
         } else {
             // Create new Immed Operand
-            auto src_oprnd =
-                std::make_unique<T>(sym_name, value);
+            auto src_oprnd = std::make_unique<T>(sym_name, value);
             operands[sym_name] = src_oprnd.get();
             instr_ptr->SetOperand(src_oprnd.get());
             func->AddOperand(std::move(src_oprnd));

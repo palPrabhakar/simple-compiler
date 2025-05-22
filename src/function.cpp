@@ -3,7 +3,7 @@
 #include "operand.hpp"
 
 namespace sc {
-void Function::Dump(std::ostream &out) {
+void Function::Dump(std::ostream &out) const {
     out << "@" << name;
     if (args.size()) {
         out << "(";
@@ -29,7 +29,7 @@ std::string Function::GetStrRetType() const {
                                       : std::string();
 }
 
-void Function::DumpBlocks(std::ostream &out) {
+void Function::DumpBlocks(std::ostream &out) const {
     out << "function: " << name << "\n";
     for (auto &block : blocks) {
         out << "  " << block->GetName() << "\n";
@@ -37,21 +37,37 @@ void Function::DumpBlocks(std::ostream &out) {
     out << "\n";
 }
 
-void Function::DumpCFG(std::ostream &out) {
+void Function::DumpCFG(std::ostream &out) const {
     out << "CFG function: " << name << "\n";
     for (auto &block : blocks) {
         out << "  " << block->GetName() << ":\n";
-        out<<"    successors: ";
+        out << "    successors: ";
         for (auto succ : block->GetSuccessors()) {
             out << succ->GetName() << " ";
         }
-        out<<"\n    predecessors: ";
+        out << "\n    predecessors: ";
         for (auto pred : block->GetPredecessors()) {
             out << pred->GetName() << " ";
         }
         out << "\n";
     }
     out << "\n";
+}
+
+void Function::DumpDefUseLinks(std::ostream &out) const {
+    for (auto &block : blocks) {
+        for (auto *instr : block->GetInstructions()) {
+            if (instr->HasDest()) {
+                out << "Def: ";
+                instr->Dump(out);
+                auto *dest = instr->GetDest();
+                for (auto *use : dest->GetUses()) {
+                    use->Dump(out << "\tUse: ");
+                }
+                out << "\n";
+            }
+        }
+    }
 }
 
 std::string PtrFunction::GetStrRetType() const { return GetPtrType(ptr_chain); }

@@ -1,6 +1,7 @@
-#include "analyzer.hpp"
+#include "analyzers/dominator_analyzer.hpp"
+#include "transformers/transformer.hpp"
+#include "transformers/cf_transformer.hpp"
 #include "test_utils.hpp"
-#include "transformer.hpp"
 #include <gtest/gtest.h>
 #include <ranges>
 #include <vector>

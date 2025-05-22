@@ -45,11 +45,11 @@ FuncPtr BrilParser::MakeJmpInstruction(FuncPtr func, sjp::Json &instr) {
     // Check if label already exists
     auto lbl = jlbl.Get(0)->Get<std::string>().value();
     if (labels.contains(lbl)) {
-        instr_ptr->SetOperand(labels[lbl]);
+        instr_ptr->SetJmpDest(labels[lbl]);
     } else {
         auto operand = std::make_unique<LabelOperand>(lbl);
         labels[lbl] = operand.get();
-        instr_ptr->SetOperand(operand.get());
+        instr_ptr->SetJmpDest(operand.get());
         func->AddOperand(std::move(operand));
     }
 
@@ -71,11 +71,19 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
     for (size_t i : std::views::iota(0UL, jlbl.Size())) {
         auto lbl = jlbl.Get(i)->Get<std::string>().value();
         if (labels.contains(lbl)) {
-            instr_ptr->SetOperand(labels[lbl]);
+            if (i == 0) {
+                instr_ptr->SetTrueDest(labels[lbl]);
+            } else {
+                instr_ptr->SetFalseDest(labels[lbl]);
+            }
         } else {
             auto operand = std::make_unique<LabelOperand>(lbl);
             labels[lbl] = operand.get();
-            instr_ptr->SetOperand(operand.get());
+            if (i == 0) {
+                instr_ptr->SetTrueDest(operand.get());
+            } else {
+                instr_ptr->SetFalseDest(operand.get());
+            }
             func->AddOperand(std::move(operand));
         }
     }
@@ -100,17 +108,32 @@ FuncPtr BrilParser::MakeCallInstruction(FuncPtr func, sjp::Json &instr) {
 
     bool has_dest = instr.Get("type").has_value();
     if (has_dest) {
-        func = MakeInstruction<CallInstruction, true, false>(std::move(func),
-                                                             instr);
+        func = MakeInstruction<CallInstruction, true>(std::move(func), instr);
     } else {
-        func = MakeInstruction<CallInstruction, false, false>(std::move(func),
-                                                              instr);
+        func = MakeInstruction<CallInstruction, false>(std::move(func), instr);
     }
 
     auto block = LAST_BLK(func);
     auto iptr = static_cast<CallInstruction *>(LAST_INSTR(block));
     iptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
     iptr->SetRetVal(has_dest);
+
+    auto *dest = has_dest ? iptr->GetDest() : VoidOperand::GetVoidOperand();
+    iptr->SetDest(dest);
+
+    return func;
+}
+
+FuncPtr BrilParser::MakeRetInstruction(FuncPtr func, sjp::Json &instr) {
+
+    func = MakeInstruction<RetInstruction, false>(std::move(func), instr);
+
+    auto block = LAST_BLK(func);
+    auto iptr = static_cast<RetInstruction *>(LAST_INSTR(block));
+
+    if (!iptr->GetOperandSize()) {
+        iptr->SetOperand(VoidOperand::GetVoidOperand());
+    }
 
     return func;
 }

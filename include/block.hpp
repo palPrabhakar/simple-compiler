@@ -2,9 +2,13 @@
 
 #include "instruction.hpp"
 #include "operand.hpp"
+#include "util.hpp"
+#include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <memory>
+#include <ranges>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -29,17 +33,23 @@ class Block {
 
     void AddInstruction(instr_ptr instr, size_t idx) {
         assert(idx < instructions.size());
+        instr->SetBlock(this);
         instructions[idx] = std::move(instr);
     }
 
     void InsertInstructions(std::vector<instr_ptr> instrs, size_t idx) {
+        std::ranges::for_each(instrs,
+                              [this](instr_ptr &ptr) { ptr->SetBlock(this); });
+
         instructions.insert(instructions.begin() + static_cast<long>(idx),
                             std::make_move_iterator(instrs.begin()),
                             std::make_move_iterator(instrs.end()));
     }
 
     void InsertInstruction(instr_ptr instr, size_t idx) {
-        instructions.insert(instructions.begin() + static_cast<long>(idx), std::move(instr));
+        instr->SetBlock(this);
+        instructions.insert(instructions.begin() + static_cast<long>(idx),
+                            std::move(instr));
     }
 
     void RemoveInstruction(size_t idx) {
@@ -47,7 +57,14 @@ class Block {
         instructions.erase(instructions.begin() + static_cast<long>(idx));
     }
 
+    void RemoveInstructions(std::vector<size_t> indexes) {
+        RemoveElements(instructions, std::move(indexes));
+    }
+
     std::vector<instr_ptr> ReleaseInstructions() {
+        std::ranges::for_each(instructions,
+                              [](instr_ptr &ptr) { ptr->SetBlock(nullptr); });
+
         return std::move(instructions);
     }
 
@@ -63,6 +80,13 @@ class Block {
         successors.erase(successors.begin() + static_cast<long>(idx));
     }
 
+    void RemoveSuccessor(Block *block) {
+        auto it = std::find(successors.begin(), successors.end(), block);
+        if (it != successors.end()) {
+            successors.erase(it);
+        }
+    }
+
     void AddPredecessor(Block *pred) { predecessors.push_back(pred); }
 
     void AddPredecessor(Block *pred, size_t idx) {
@@ -75,9 +99,21 @@ class Block {
         predecessors.erase(predecessors.begin() + static_cast<long>(idx));
     }
 
-    InstructionBase *GetInstruction(size_t idx) {
+    void RemovePredecessor(Block *block) {
+        auto it = std::find(predecessors.begin(), predecessors.end(), block);
+        if (it != predecessors.end()) {
+            predecessors.erase(it);
+        }
+    }
+
+    InstructionBase *GetInstruction(size_t idx) const {
         assert(idx < instructions.size());
         return instructions[idx].get();
+    }
+
+    auto GetInstructions() {
+        return instructions |
+               std::views::transform([](auto &i) { return i.get(); });
     }
 
     std::string GetName() const { return name; }
@@ -92,46 +128,30 @@ class Block {
 
     size_t GetPredecessorSize() const { return predecessors.size(); }
 
-    Block *GetSuccessor(size_t idx) {
+    Block *GetSuccessor(size_t idx) const {
         assert(idx < successors.size() &&
                "Invalid index Block::GetSuccessor\n");
         return successors[idx];
     }
 
-    const std::vector<Block *> &GetSuccessors() const { return successors; }
+    std::span<Block *> GetSuccessors() {
+        return std::span<Block *>(successors);
+    }
 
-    const std::vector<Block *> &GetPredecessors() const { return predecessors; }
-
-    Block *GetPredecessor(size_t idx) {
+    Block *GetPredecessor(size_t idx) const {
         assert(idx < predecessors.size() &&
                "Invalid index Block::GetPredecessor\n");
         return predecessors[idx];
     }
 
-    void Dump(std::ostream &out = std::cout, std::string prefix = "") {
+    std::span<Block *> GetPredecessors() {
+        return std::span<Block *>(predecessors);
+    }
+
+    void Dump(std::ostream &out = std::cout, std::string prefix = "") const {
         for (auto &i : instructions) {
             i->Dump(out << prefix);
         }
-    }
-
-    std::vector<instr_ptr>::iterator begin() { return instructions.begin(); }
-
-    std::vector<instr_ptr>::const_iterator begin() const {
-        return instructions.begin();
-    }
-
-    std::vector<instr_ptr>::const_iterator cbegin() const {
-        return instructions.cbegin();
-    }
-
-    std::vector<instr_ptr>::iterator end() { return instructions.end(); }
-
-    std::vector<instr_ptr>::const_iterator end() const {
-        return instructions.end();
-    }
-
-    std::vector<instr_ptr>::const_iterator cend() const {
-        return instructions.cend();
     }
 
   private:
