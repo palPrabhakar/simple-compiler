@@ -55,11 +55,6 @@ class DVNTransformer final : public Transformer {
     void DVN(Block *block);
     void MarkForRemoval(Block *block, size_t idx);
     void RemoveInstructions();
-
-    std::string GetKey(InstructionBase *instr) const {
-        return instr->GetOperand(0)->GetName() +
-               std::to_string(static_cast<int>(instr->GetOpCode())) +
-               instr->GetOperand(1)->GetName();
-    }
+    std::string GetKey(InstructionBase *instr) const;
 };
 } // namespace sc

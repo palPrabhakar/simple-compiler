@@ -85,15 +85,6 @@ void DVNTransformer::DVN(Block *block) {
 
     vt.PushScope();
 
-    // TODO:
-    // Clean the code using the def-uses chain
-    // Only need to consider instructions that define a value
-    // Use the def-uses chain to update the rest
-
-    // TODO:
-    // Fix def-use chain
-    // Clean-up and simplify
-
     for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
         auto *instr = block->GetInstruction(i);
 
@@ -103,8 +94,7 @@ void DVNTransformer::DVN(Block *block) {
 #endif
             auto opcode = instr->GetOpCode();
 
-            switch (opcode) {
-            case OpCode::GET: {
+            if (opcode == OpCode::GET) {
                 // check if all set pair set the same value
                 auto *geti = static_cast<GetInstruction *>(instr);
                 bool removei = false;
@@ -145,71 +135,19 @@ void DVNTransformer::DVN(Block *block) {
 #endif
                     }
                 }
-            } break;
-            case OpCode::CALL: {
-                auto *call = static_cast<CallInstruction *>(instr);
-                size_t start = call->HasDest();
-                // since function calls can have side-effects
-                if (start) {
-                    vt.Insert(call->GetDest()->GetName(), call->GetDest());
-                }
+            } else if (opcode == OpCode::CALL || opcode == OpCode::UNDEF ||
+                       opcode == OpCode::ALLOC) {
+                /*
+                 * Call Instruction can have side-effect
+                 */
 
-            } break;
-            case OpCode::CONST: {
-                auto *oprnd = vt.Get(instr->GetOperand(0)->GetName());
-                auto *dest = instr->GetDest();
-                if (oprnd) {
-                    vt.Insert(dest->GetName(), oprnd);
-                    ReplaceUses(dest, oprnd);
-                    MarkForRemoval(block, i);
-                } else {
-                    vt.Insert(dest->GetName(), dest);
-                    vt.Insert(instr->GetOperand(0)->GetName(), dest);
-                }
-            } break;
-            case OpCode::UNDEF: {
-                // There is only one unique copy per const or undef
+                // Need to set the value number for the dest
                 vt.Insert(instr->GetDest()->GetName(), instr->GetDest());
-            } break;
-            case OpCode::SUB:
-            case OpCode::DIV:
-            case OpCode::EQ:
-            case OpCode::LT:
-            case OpCode::GT:
-            case OpCode::LE:
-            case OpCode::GE:
-            case OpCode::AND: // short-circuit
-            case OpCode::OR:  // short-circuit
-            case OpCode::PTRADD:
-            case OpCode::FSUB:
-            case OpCode::FDIV:
-            case OpCode::FEQ:
-            case OpCode::FLT:
-            case OpCode::FGT:
-            case OpCode::FLE:
-            case OpCode::FGE: {
-                // don't commute
+            } else {
                 auto key = GetKey(instr);
-                auto *oprnd = vt.Get(key);
                 auto *dest = instr->GetDest();
-                if (oprnd) {
-                    vt.Insert(dest->GetName(), oprnd);
-                    ReplaceUses(dest, oprnd);
-                    MarkForRemoval(block, i);
-                } else {
-                    vt.Insert(dest->GetName(), dest);
-                    vt.Insert(key, dest);
-                }
 
-            } break;
-            case OpCode::LOAD:
-            case OpCode::NOT: {
-                // x = !x;
-                auto key =
-                    std::to_string(static_cast<int>(instr->GetOpCode())) +
-                    instr->GetOperand(0)->GetName();
                 auto *oprnd = vt.Get(key);
-                auto *dest = instr->GetDest();
                 if (oprnd) {
                     vt.Insert(dest->GetName(), oprnd);
                     ReplaceUses(dest, oprnd);
@@ -218,40 +156,6 @@ void DVNTransformer::DVN(Block *block) {
                     vt.Insert(dest->GetName(), dest);
                     vt.Insert(key, dest);
                 }
-            } break;
-            case OpCode::ALLOC: {
-                // x = new T[size]
-                vt.Insert(instr->GetDest()->GetName(), instr->GetDest());
-            } break;
-            case OpCode::ID: {
-                // x = y;
-                auto *oprnd = vt.Get(instr->GetOperand(0)->GetName());
-                assert(oprnd);
-                vt.Insert(instr->GetDest()->GetName(), oprnd);
-                ReplaceUses(instr->GetDest(), oprnd);
-                MarkForRemoval(block, i);
-            } break;
-            case OpCode::ADD:
-            case OpCode::MUL:
-            case OpCode::FADD:
-            case OpCode::FMUL: {
-                // TODO:
-                // commutivity, identities
-                // commute
-                auto key = GetKey(instr);
-                auto *oprnd = vt.Get(key);
-                auto *dest = instr->GetDest();
-                if (oprnd) {
-                    vt.Insert(dest->GetName(), oprnd);
-                    ReplaceUses(dest, oprnd);
-                    MarkForRemoval(block, i);
-                } else {
-                    vt.Insert(dest->GetName(), dest);
-                    vt.Insert(key, dest);
-                }
-            } break;
-            default:
-                assert(false);
             }
         }
     }
@@ -278,6 +182,21 @@ void DVNTransformer::MarkForRemoval(Block *block, size_t idx) {
 void DVNTransformer::RemoveInstructions() {
     for (auto *block : func->GetBlocks()) {
         block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]));
+    }
+}
+
+std::string DVNTransformer::GetKey(InstructionBase *instr) const {
+    if (instr->GetOperandSize() == 2) {
+        return instr->GetOperand(0)->GetName() +
+               std::to_string(static_cast<int>(instr->GetOpCode())) +
+               instr->GetOperand(1)->GetName();
+    } else {
+        if (instr->GetOpCode() == OpCode::ID) {
+            return instr->GetOperand(0)->GetName();
+        } else {
+            return std::to_string(static_cast<int>(instr->GetOpCode())) +
+                   instr->GetOperand(0)->GetName();
+        }
     }
 }
 // DVNTransformer end

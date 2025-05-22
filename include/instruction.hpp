@@ -64,100 +64,136 @@ class InstructionBase {
 };
 
 // NewInstructionClass
-template <typename T> class BinaryOperator : public InstructionBase {
+class BinaryOperator : public InstructionBase {
   public:
     BinaryOperator(OpCode opcode) : InstructionBase(opcode) {}
 
-    void Dump(std::ostream &out = std::cout) const override {
-        static_cast<const T *>(this)->Dump(out);
-    } // namespace sc
-
     bool HasDest() const override { return true; }
+
+    virtual bool Commutative() const { return false; }
+
+    virtual bool NegateCommutative() const { return false; }
+
+    virtual OpCode NegateCommutativityOp() const { return OpCode::NOP; }
 };
 
-template <typename T> class UnaryOperator : public InstructionBase {
+class UnaryOperator : public InstructionBase {
   public:
     UnaryOperator(OpCode opcode) : InstructionBase(opcode) {}
-
-    void Dump(std::ostream &out = std::cout) const override {
-        static_cast<const T *>(this)->Dump(out);
-    }
 
     bool HasDest() const override { return true; }
 };
 
 // Arithmetic Instructions
-class AddInstruction final : public BinaryOperator<AddInstruction> {
+class AddInstruction final : public BinaryOperator {
   public:
     AddInstruction() : BinaryOperator(OpCode::ADD) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class MulInstruction final : public BinaryOperator<MulInstruction> {
+class MulInstruction final : public BinaryOperator {
   public:
     MulInstruction() : BinaryOperator(OpCode::MUL) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class SubInstruction final : public BinaryOperator<SubInstruction> {
+class SubInstruction final : public BinaryOperator {
   public:
     SubInstruction() : BinaryOperator(OpCode::SUB) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class DivInstruction final : public BinaryOperator<DivInstruction> {
+class DivInstruction final : public BinaryOperator {
   public:
     DivInstruction() : BinaryOperator(OpCode::DIV) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 // Comparison Instructions
-class EqInstruction final : public BinaryOperator<EqInstruction> {
+class EqInstruction final : public BinaryOperator {
   public:
     EqInstruction() : BinaryOperator(OpCode::EQ) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class LtInstruction final : public BinaryOperator<LtInstruction> {
+class LtInstruction final : public BinaryOperator {
   public:
     LtInstruction() : BinaryOperator(OpCode::LT) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::GT; }
 };
 
-class GtInstruction final : public BinaryOperator<GtInstruction> {
+class GtInstruction final : public BinaryOperator {
   public:
     GtInstruction() : BinaryOperator(OpCode::GT) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::LT; }
 };
 
-class LeInstruction final : public BinaryOperator<LeInstruction> {
+class LeInstruction final : public BinaryOperator {
   public:
     LeInstruction() : BinaryOperator(OpCode::LE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::GE; }
 };
 
-class GeInstruction final : public BinaryOperator<GeInstruction> {
+class GeInstruction final : public BinaryOperator {
   public:
     GeInstruction() : BinaryOperator(OpCode::GE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::LE; }
 };
 
 // Logic Instructions
-class AndInstruction final : public BinaryOperator<AndInstruction> {
+class AndInstruction final : public BinaryOperator {
   public:
     AndInstruction() : BinaryOperator(OpCode::AND) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class OrInstruction final : public BinaryOperator<OrInstruction> {
+class OrInstruction final : public BinaryOperator {
   public:
     OrInstruction() : BinaryOperator(OpCode::OR) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class NotInstruction final : public UnaryOperator<NotInstruction> {
+class NotInstruction final : public UnaryOperator {
   public:
     NotInstruction() : UnaryOperator(OpCode::NOT) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
@@ -230,6 +266,7 @@ class CallInstruction final : public InstructionBase {
 class RetInstruction final : public InstructionBase {
   public:
     RetInstruction() : InstructionBase(OpCode::RET) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
@@ -239,6 +276,7 @@ class GetInstruction;
 class SetInstruction final : public InstructionBase {
   public:
     SetInstruction() : InstructionBase(OpCode::SET) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 
     void SetShadow(OperandBase *oprnd) { shadow = oprnd; }
@@ -258,6 +296,7 @@ class SetInstruction final : public InstructionBase {
 class GetInstruction final : public InstructionBase {
   public:
     GetInstruction() : InstructionBase(OpCode::GET) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 
     bool HasDest() const override { return true; }
@@ -278,107 +317,144 @@ class GetInstruction final : public InstructionBase {
     std::vector<SetInstruction *> sets;
 };
 
-class UndefInstruction final : public UnaryOperator<UndefInstruction> {
+class UndefInstruction final : public UnaryOperator {
   public:
     UndefInstruction() : UnaryOperator(OpCode::UNDEF) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 // Memory Instructions
-class AllocInstruction : public UnaryOperator<AllocInstruction> {
+class AllocInstruction : public UnaryOperator {
   public:
     AllocInstruction() : UnaryOperator(OpCode::ALLOC) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 class FreeInstruction : public InstructionBase {
   public:
     FreeInstruction() : InstructionBase(OpCode::FREE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class LoadInstruction : public UnaryOperator<LoadInstruction> {
+class LoadInstruction : public UnaryOperator {
   public:
     LoadInstruction() : UnaryOperator(OpCode::LOAD) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 class StoreInstruction : public InstructionBase {
   public:
     StoreInstruction() : InstructionBase(OpCode::STORE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class PtraddInstruction : public BinaryOperator<PtraddInstruction> {
+class PtraddInstruction : public BinaryOperator {
   public:
     PtraddInstruction() : BinaryOperator(OpCode::PTRADD) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 // Floating-Point Arithmetic Instructions
-class FAddInstruction final : public BinaryOperator<FAddInstruction> {
+class FAddInstruction final : public BinaryOperator {
   public:
     FAddInstruction() : BinaryOperator(OpCode::FADD) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class FMulInstruction final : public BinaryOperator<FMulInstruction> {
+class FMulInstruction final : public BinaryOperator {
   public:
     FMulInstruction() : BinaryOperator(OpCode::FMUL) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class FSubInstruction final : public BinaryOperator<FSubInstruction> {
+class FSubInstruction final : public BinaryOperator {
   public:
     FSubInstruction() : BinaryOperator(OpCode::FSUB) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class FDivInstruction final : public BinaryOperator<FDivInstruction> {
+class FDivInstruction final : public BinaryOperator {
   public:
     FDivInstruction() : BinaryOperator(OpCode::FDIV) {}
+
     void Dump(std::ostream &out = std::cout) const override;
 };
 
 // Floating-Pointi Comparison Instructions
-class FEqInstruction final : public BinaryOperator<FEqInstruction> {
+class FEqInstruction final : public BinaryOperator {
   public:
     FEqInstruction() : BinaryOperator(OpCode::FEQ) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool Commutative() const override { return true; }
 };
 
-class FLtInstruction final : public BinaryOperator<FLtInstruction> {
+class FLtInstruction final : public BinaryOperator {
   public:
     FLtInstruction() : BinaryOperator(OpCode::FLT) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::FGT; }
 };
 
-class FGtInstruction final : public BinaryOperator<FGtInstruction> {
+class FGtInstruction final : public BinaryOperator {
   public:
     FGtInstruction() : BinaryOperator(OpCode::FGT) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::FLT; }
 };
 
-class FLeInstruction final : public BinaryOperator<FLeInstruction> {
+class FLeInstruction final : public BinaryOperator {
   public:
     FLeInstruction() : BinaryOperator(OpCode::FLE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::FGE; }
 };
 
-class FGeInstruction final : public BinaryOperator<FGeInstruction> {
+class FGeInstruction final : public BinaryOperator {
   public:
     FGeInstruction() : BinaryOperator(OpCode::FGE) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool NegateCommutative() const override { return true; }
+
+    OpCode NegateCommutativityOp() const override { return OpCode::FLE; }
 };
 
 // Miscellaneous Instructions
-class IdInstruction final : public UnaryOperator<IdInstruction> {
+class IdInstruction final : public UnaryOperator {
   public:
     IdInstruction() : UnaryOperator(OpCode::ID) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
-class ConstInstruction final : public UnaryOperator<ConstInstruction> {
+class ConstInstruction final : public UnaryOperator {
     // Src is ImmedOperand
   public:
     ConstInstruction() : UnaryOperator(OpCode::CONST) {}
