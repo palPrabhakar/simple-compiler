@@ -1,5 +1,6 @@
 #include "transformers/dvn_transformer.hpp"
 #include "operand.hpp"
+#include "gtest/gtest.h"
 #include <ranges>
 
 namespace sc {
@@ -8,16 +9,29 @@ namespace sc {
 #undef PRINT_DEBUG
 
 // DVNTransformer begin
+void DVNTransformer::Transform() {
+    if (func->GetArgsSize()) {
+        vt.PushScope();
+        for (auto *arg : func->GetArgs()) {
+            vt.Insert(arg->GetName(), arg);
+        }
+    }
+
+    dom.BuildRPODominatorTree();
+    DVN(func->GetBlock(0));
+    RemoveInstructions();
+}
+
 bool DVNTransformer::IsUselessOrRedundant(GetInstruction *geti,
                                           std::string &key) {
     std::vector<std::string> keys(func->GetBlockSize());
     bool same = true;
     bool all_null = true;
 
-    auto *test = vt.Get(geti->GetSetPair(0)->GetOperand(1)->GetName());
-    for (auto i : std::views::iota(0ul, geti->GetSetPairSize())) {
-        auto *seti = geti->GetSetPair(i);
-        auto *op = vt.Get(seti->GetOperand(1)->GetName());
+    // Check the vn of the non-shadow oprnd of the corresponding set pair
+    auto *test = vt.Get(geti->GetSetPair(0)->GetOperand(0)->GetName());
+    for (auto *seti : geti->GetSetPairs()) {
+        auto *op = vt.Get(seti->GetOperand(0)->GetName());
 
         if (op != test) {
             same = false;
@@ -25,7 +39,7 @@ bool DVNTransformer::IsUselessOrRedundant(GetInstruction *geti,
 
         if (!op) {
             // If the value number is not set
-            keys[seti->GetBlock()->GetIndex()] = seti->GetOperand(1)->GetName();
+            keys[seti->GetBlock()->GetIndex()] = seti->GetOperand(0)->GetName();
         } else {
             all_null = false;
             keys[seti->GetBlock()->GetIndex()] = op->GetName();
@@ -33,11 +47,14 @@ bool DVNTransformer::IsUselessOrRedundant(GetInstruction *geti,
     }
 
     if (!all_null && same) {
-        auto *op = vt.Get(geti->GetSetPair(0)->GetOperand(1)->GetName());
-        ReplaceUses(geti->GetOperand(0), op);
 #ifdef PRINT_DEBUG
         std::cerr << "    Useless Get:\n";
 #endif
+        // The get instruction is useless and it will be removed
+        // Replace all the uses of the oprnd defined by this get
+        // with the value number of one of it's arguments.
+        auto *op = vt.Get(geti->GetSetPair(0)->GetOperand(0)->GetName());
+        ReplaceUses(geti->GetDest(), op);
         return true;
     }
 
@@ -48,8 +65,12 @@ bool DVNTransformer::IsUselessOrRedundant(GetInstruction *geti,
 #ifdef PRINT_DEBUG
         std::cerr << "    Redundant Get: " << op->GetName() << "\n";
 #endif
-        vt.Insert(geti->GetOperand(0)->GetName(), op);
-        ReplaceUses(geti->GetOperand(0), op);
+        auto *dest = geti->GetDest();
+        vt.Insert(dest->GetName(), op);
+        // The get instruction is redundant and it will be removed
+        // Replace all the uses of the oprnd defined by this get
+        // with the value number get instr with same key
+        ReplaceUses(dest, op);
         return true;
     }
 
@@ -76,169 +97,162 @@ void DVNTransformer::DVN(Block *block) {
     for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
         auto *instr = block->GetInstruction(i);
 
+        if (instr->HasDest()) {
 #ifdef PRINT_DEBUG
-        instr->Dump(std::cerr << "\n  ");
+            instr->Dump(std::cerr << "\n  ");
 #endif
-        auto opcode = instr->GetOpCode();
-        switch (opcode) {
-        case OpCode::JMP:
-        case OpCode::LABEL:
-        case OpCode::NOP:
-        case OpCode::BR:
-        case OpCode::SET:
-        case OpCode::RET:
-        case OpCode::FREE:
-        case OpCode::STORE:
-        case OpCode::PRINT:
-            break;
-        case OpCode::GET: {
-            // check if all set pair set the same value
-            auto *geti = static_cast<GetInstruction *>(instr);
-            bool removei = false;
-            std::string key = "";
+            auto opcode = instr->GetOpCode();
 
-            if (IsUselessOrRedundant(geti, key)) {
-                removei = true;
-            } else {
-                // No need to replace the uses in this case since
-                // the value number is same as the operand defined
-                vt.Insert(geti->GetOperand(0)->GetName(), geti->GetOperand(0));
-                vt.Insert(key, geti->GetOperand(0));
-            }
+            switch (opcode) {
+            case OpCode::GET: {
+                // check if all set pair set the same value
+                auto *geti = static_cast<GetInstruction *>(instr);
+                bool removei = false;
+                std::string key = "";
 
-            if (removei) {
-                remove_instrs[block->GetIndex()].push_back(i);
+                if (IsUselessOrRedundant(geti, key)) {
+                    removei = true;
+                } else {
+                    // No need to replace the uses in this case since
+                    // the value number is same as the operand defined
+                    auto *dest = geti->GetDest();
+                    vt.Insert(dest->GetName(), dest);
+                    vt.Insert(key, dest);
+                }
+
+                if (removei) {
+                    MarkForRemoval(block, i);
 
 #ifdef PRINT_DEBUG
-                std::cerr << "    Removing Instruction\n";
+                    std::cerr << "    Removing Instruction\n";
 #endif
 
-                // remove corresponding set instr
-                for (auto i : std::views::iota(0ul, geti->GetSetPairSize())) {
-                    auto *seti = geti->GetSetPair(i);
-                    auto *sblk = seti->GetBlock();
-                    for (auto j :
-                         std::views::iota(0ul, sblk->GetInstructionSize()) |
-                             std::views::reverse) {
-                        if (sblk->GetInstruction(j) == seti) {
+                    // remove corresponding set instr
+                    for (auto *seti : geti->GetSetPairs()) {
+                        seti->GetOperand(0)->RemoveUse(seti);
+
+                        auto *sblk = seti->GetBlock();
+
+                        auto sblki = sblk->GetInstructions();
+                        auto it = std::find(sblki.begin(), sblki.end(), seti);
+                        assert(it != sblki.end());
+                        MarkForRemoval(sblk,
+                                       static_cast<size_t>(it - sblki.begin()));
 #ifdef PRINT_DEBUG
-                            std::cerr << "    Removing from " << sblk->GetName()
-                                      << ": ";
-                            seti->Dump(std::cerr);
-
+                        std::cerr << "    Removing from " << sblk->GetName()
+                                  << ": ";
+                        seti->Dump(std::cerr);
 #endif
-                            remove_instrs[sblk->GetIndex()].push_back(j);
-                        }
                     }
                 }
-            }
-        } break;
-        case OpCode::CALL: {
-            auto *call = static_cast<CallInstruction *>(instr);
-            size_t start = call->GetRetVal();
-            // since function calls can have side-effects
-            if (start) {
-                vt.Insert(call->GetOperand(0)->GetName(), call->GetOperand(0));
-            }
+            } break;
+            case OpCode::CALL: {
+                auto *call = static_cast<CallInstruction *>(instr);
+                size_t start = call->HasDest();
+                // since function calls can have side-effects
+                if (start) {
+                    vt.Insert(call->GetDest()->GetName(), call->GetDest());
+                }
 
-        } break;
-        case OpCode::CONST: {
-            auto *oprnd = vt.Get(instr->GetOperand(1)->GetName());
-            if (oprnd) {
-                vt.Insert(instr->GetOperand(0)->GetName(), oprnd);
-                ReplaceUses(instr->GetOperand(0), oprnd);
-                remove_instrs[block->GetIndex()].push_back(i);
-            } else {
-                vt.Insert(instr->GetOperand(0)->GetName(),
-                          instr->GetOperand(0));
-                vt.Insert(instr->GetOperand(1)->GetName(),
-                          instr->GetOperand(0));
-            }
-        } break;
-        case OpCode::UNDEF: {
-            // There is only one unique copy per const or undef
-            vt.Insert(instr->GetOperand(0)->GetName(), instr->GetOperand(0));
-        } break;
-        case OpCode::SUB:
-        case OpCode::DIV:
-        case OpCode::EQ:
-        case OpCode::LT:
-        case OpCode::GT:
-        case OpCode::LE:
-        case OpCode::GE:
-        case OpCode::AND: // short-circuit
-        case OpCode::OR:  // short-circuit
-        case OpCode::PTRADD:
-        case OpCode::FSUB:
-        case OpCode::FDIV:
-        case OpCode::FEQ:
-        case OpCode::FLT:
-        case OpCode::FGT:
-        case OpCode::FLE:
-        case OpCode::FGE: {
-            // don't commute
-            auto key = GetKey(instr);
-            auto *oprnd = vt.Get(key);
-            if (oprnd) {
-                vt.Insert(instr->GetOperand(0)->GetName(), oprnd);
-                ReplaceUses(instr->GetOperand(0), oprnd);
-                remove_instrs[block->GetIndex()].push_back(i);
-            } else {
-                vt.Insert(instr->GetOperand(0)->GetName(),
-                          instr->GetOperand(0));
-                vt.Insert(key, instr->GetOperand(0));
-            }
+            } break;
+            case OpCode::CONST: {
+                auto *oprnd = vt.Get(instr->GetOperand(0)->GetName());
+                auto *dest = instr->GetDest();
+                if (oprnd) {
+                    vt.Insert(dest->GetName(), oprnd);
+                    ReplaceUses(dest, oprnd);
+                    MarkForRemoval(block, i);
+                } else {
+                    vt.Insert(dest->GetName(), dest);
+                    vt.Insert(instr->GetOperand(0)->GetName(), dest);
+                }
+            } break;
+            case OpCode::UNDEF: {
+                // There is only one unique copy per const or undef
+                vt.Insert(instr->GetDest()->GetName(), instr->GetDest());
+            } break;
+            case OpCode::SUB:
+            case OpCode::DIV:
+            case OpCode::EQ:
+            case OpCode::LT:
+            case OpCode::GT:
+            case OpCode::LE:
+            case OpCode::GE:
+            case OpCode::AND: // short-circuit
+            case OpCode::OR:  // short-circuit
+            case OpCode::PTRADD:
+            case OpCode::FSUB:
+            case OpCode::FDIV:
+            case OpCode::FEQ:
+            case OpCode::FLT:
+            case OpCode::FGT:
+            case OpCode::FLE:
+            case OpCode::FGE: {
+                // don't commute
+                auto key = GetKey(instr);
+                auto *oprnd = vt.Get(key);
+                auto *dest = instr->GetDest();
+                if (oprnd) {
+                    vt.Insert(dest->GetName(), oprnd);
+                    ReplaceUses(dest, oprnd);
+                    MarkForRemoval(block, i);
+                } else {
+                    vt.Insert(dest->GetName(), dest);
+                    vt.Insert(key, dest);
+                }
 
-        } break;
-        case OpCode::LOAD:
-        case OpCode::NOT: {
-            // x = !x;
-            auto key = std::to_string(static_cast<int>(instr->GetOpCode())) +
-                       instr->GetOperand(1)->GetName();
-            auto *oprnd = vt.Get(key);
-            if (oprnd) {
-                vt.Insert(instr->GetOperand(0)->GetName(), oprnd);
-                ReplaceUses(instr->GetOperand(0), oprnd);
-                remove_instrs[block->GetIndex()].push_back(i);
-            } else {
-                vt.Insert(instr->GetOperand(0)->GetName(),
-                          instr->GetOperand(0));
-                vt.Insert(key, instr->GetOperand(0));
+            } break;
+            case OpCode::LOAD:
+            case OpCode::NOT: {
+                // x = !x;
+                auto key =
+                    std::to_string(static_cast<int>(instr->GetOpCode())) +
+                    instr->GetOperand(0)->GetName();
+                auto *oprnd = vt.Get(key);
+                auto *dest = instr->GetDest();
+                if (oprnd) {
+                    vt.Insert(dest->GetName(), oprnd);
+                    ReplaceUses(dest, oprnd);
+                    MarkForRemoval(block, i);
+                } else {
+                    vt.Insert(dest->GetName(), dest);
+                    vt.Insert(key, dest);
+                }
+            } break;
+            case OpCode::ALLOC: {
+                // x = new T[size]
+                vt.Insert(instr->GetDest()->GetName(), instr->GetDest());
+            } break;
+            case OpCode::ID: {
+                // x = y;
+                auto *oprnd = vt.Get(instr->GetOperand(0)->GetName());
+                assert(oprnd);
+                vt.Insert(instr->GetDest()->GetName(), oprnd);
+                ReplaceUses(instr->GetDest(), oprnd);
+                MarkForRemoval(block, i);
+            } break;
+            case OpCode::ADD:
+            case OpCode::MUL:
+            case OpCode::FADD:
+            case OpCode::FMUL: {
+                // TODO:
+                // commutivity, identities
+                // commute
+                auto key = GetKey(instr);
+                auto *oprnd = vt.Get(key);
+                auto *dest = instr->GetDest();
+                if (oprnd) {
+                    vt.Insert(dest->GetName(), oprnd);
+                    ReplaceUses(dest, oprnd);
+                    MarkForRemoval(block, i);
+                } else {
+                    vt.Insert(dest->GetName(), dest);
+                    vt.Insert(key, dest);
+                }
+            } break;
+            default:
+                assert(false);
             }
-        } break;
-        case OpCode::ALLOC: {
-            // x = new T[size]
-            vt.Insert(instr->GetOperand(0)->GetName(), instr->GetOperand(0));
-        } break;
-        case OpCode::ID: {
-            // x = y;
-            vt.Insert(instr->GetOperand(0)->GetName(), instr->GetOperand(1));
-            ReplaceUses(instr->GetOperand(0), instr->GetOperand(1));
-            remove_instrs[block->GetIndex()].push_back(i);
-        } break;
-        case OpCode::ADD:
-        case OpCode::MUL:
-        case OpCode::FADD:
-        case OpCode::FMUL: {
-            // TODO:
-            // commutivity, identities
-            // commute
-
-            auto key = GetKey(instr);
-            auto *oprnd = vt.Get(key);
-            if (oprnd) {
-                vt.Insert(instr->GetOperand(0)->GetName(), oprnd);
-                ReplaceUses(instr->GetOperand(0), oprnd);
-                remove_instrs[block->GetIndex()].push_back(i);
-            } else {
-                vt.Insert(instr->GetOperand(0)->GetName(),
-                          instr->GetOperand(0));
-                vt.Insert(key, instr->GetOperand(0));
-            }
-        } break;
-        default:
-            instr->Dump();
-            assert(false);
         }
     }
 
@@ -253,30 +267,18 @@ void DVNTransformer::DVN(Block *block) {
     vt.PopScope();
 }
 
+void DVNTransformer::MarkForRemoval(Block *block, size_t idx) {
+    auto *instr = block->GetInstruction(idx);
+    for (auto *op : instr->GetOperands()) {
+        op->RemoveUse(instr);
+    }
+    remove_instrs[block->GetIndex()].push_back(idx);
+}
+
 void DVNTransformer::RemoveInstructions() {
-#ifdef PRINT_DEBUG
-    std::cerr << __PRETTY_FUNCTION__
-              << " Processing Function: " << func->GetName() << "\n";
-#endif
-    for (auto bi : std::views::iota(0ul, func->GetBlockSize())) {
-        auto blk = func->GetBlock(bi);
-
-#ifdef PRINT_DEBUG
-        std::cerr << "  Block: " << blk->GetName() << "\n";
-#endif
-        for (auto i : std::ranges::reverse_view(remove_instrs[bi])) {
-
-#ifdef PRINT_DEBUG
-            blk->GetInstruction(i)->Dump(std::cerr << "    Removing: ");
-#endif
-
-            blk->RemoveInstruction(i);
-        }
-
-#ifdef PRINT_DEBUG
-        std::cerr << "\n";
-#endif
+    for (auto *block : func->GetBlocks()) {
+        block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]));
     }
 }
 // DVNTransformer end
-}; // namespace sc
+} // namespace sc

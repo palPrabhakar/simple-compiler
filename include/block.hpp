@@ -2,11 +2,13 @@
 
 #include "instruction.hpp"
 #include "operand.hpp"
+#include "util.hpp"
 #include <algorithm>
 #include <iostream>
 #include <iterator>
 #include <memory>
 #include <ranges>
+#include <span>
 #include <string>
 #include <utility>
 #include <vector>
@@ -55,6 +57,10 @@ class Block {
         instructions.erase(instructions.begin() + static_cast<long>(idx));
     }
 
+    void RemoveInstructions(std::vector<size_t> indexes) {
+        RemoveElements(instructions, std::move(indexes));
+    }
+
     std::vector<instr_ptr> ReleaseInstructions() {
         std::ranges::for_each(instructions,
                               [](instr_ptr &ptr) { ptr->SetBlock(nullptr); });
@@ -74,6 +80,13 @@ class Block {
         successors.erase(successors.begin() + static_cast<long>(idx));
     }
 
+    void RemoveSuccessor(Block *block) {
+        auto it = std::find(successors.begin(), successors.end(), block);
+        if (it != successors.end()) {
+            successors.erase(it);
+        }
+    }
+
     void AddPredecessor(Block *pred) { predecessors.push_back(pred); }
 
     void AddPredecessor(Block *pred, size_t idx) {
@@ -86,9 +99,21 @@ class Block {
         predecessors.erase(predecessors.begin() + static_cast<long>(idx));
     }
 
-    InstructionBase *GetInstruction(size_t idx) {
+    void RemovePredecessor(Block *block) {
+        auto it = std::find(predecessors.begin(), predecessors.end(), block);
+        if (it != predecessors.end()) {
+            predecessors.erase(it);
+        }
+    }
+
+    InstructionBase *GetInstruction(size_t idx) const {
         assert(idx < instructions.size());
         return instructions[idx].get();
+    }
+
+    auto GetInstructions() {
+        return instructions |
+               std::views::transform([](auto &i) { return i.get(); });
     }
 
     std::string GetName() const { return name; }
@@ -109,8 +134,8 @@ class Block {
         return successors[idx];
     }
 
-    auto GetSuccessors() const {
-        return std::ranges::subrange(successors.cbegin(), successors.cend());
+    std::span<Block *> GetSuccessors() {
+        return std::span<Block *>(successors);
     }
 
     Block *GetPredecessor(size_t idx) const {
@@ -119,35 +144,14 @@ class Block {
         return predecessors[idx];
     }
 
-    auto GetPredecessors() const {
-        return std::ranges::subrange(predecessors.cbegin(),
-                                     predecessors.cend());
+    std::span<Block *> GetPredecessors() {
+        return std::span<Block *>(predecessors);
     }
 
-    void Dump(std::ostream &out = std::cout, std::string prefix = "") {
+    void Dump(std::ostream &out = std::cout, std::string prefix = "") const {
         for (auto &i : instructions) {
             i->Dump(out << prefix);
         }
-    }
-
-    std::vector<instr_ptr>::iterator begin() { return instructions.begin(); }
-
-    std::vector<instr_ptr>::const_iterator begin() const {
-        return instructions.begin();
-    }
-
-    std::vector<instr_ptr>::const_iterator cbegin() const {
-        return instructions.cbegin();
-    }
-
-    std::vector<instr_ptr>::iterator end() { return instructions.end(); }
-
-    std::vector<instr_ptr>::const_iterator end() const {
-        return instructions.end();
-    }
-
-    std::vector<instr_ptr>::const_iterator cend() const {
-        return instructions.cend();
     }
 
   private:

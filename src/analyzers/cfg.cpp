@@ -35,24 +35,23 @@ const std::vector<Block *> GetReversePostOrder(Function *func) {
 }
 
 static void BuildCFGImpl(Function *func) {
-    auto add_nodes = [func](InstructionBase *instr, size_t idx, size_t start,
-                            size_t end) {
-        for (size_t i : std::views::iota(start, end)) {
-            auto *jmp_blk =
-                static_cast<LabelOperand *>(instr->GetOperand(i))->GetBlock();
-            func->GetBlock(idx)->AddSuccessor(jmp_blk);
-            jmp_blk->AddPredecessor(func->GetBlock(idx));
-        }
+    auto add_nodes = [](Block *pred, Block *succ) {
+        pred->AddSuccessor(succ);
+        succ->AddPredecessor(pred);
     };
-    for (size_t i : std::views::iota(0UL, func->GetBlockSize())) {
-        auto instr = LAST_INSTR(func->GetBlock(i));
+    for (auto *block : func->GetBlocks()) {
+        auto *instr = LAST_INSTR(block);
         switch (instr->GetOpCode()) {
-        case OpCode::JMP:
-            add_nodes(instr, i, 0, 1);
-            break;
-        case OpCode::BR:
-            add_nodes(instr, i, 0, 2);
-            break;
+        case OpCode::JMP: {
+            auto jmp_blk =
+                static_cast<JmpInstruction *>(instr)->GetJmpDest()->GetBlock();
+            add_nodes(block, jmp_blk);
+        } break;
+        case OpCode::BR: {
+            auto *br = static_cast<BranchInstruction *>(instr);
+            add_nodes(block, br->GetTrueDest()->GetBlock());
+            add_nodes(block, br->GetFalseDest()->GetBlock());
+        } break;
         case OpCode::RET:
             break;
         default:

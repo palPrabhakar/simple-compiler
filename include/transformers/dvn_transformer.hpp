@@ -5,7 +5,6 @@
 #include "instruction.hpp"
 #include <vector>
 #include <string>
-#include <ranges>
 #include <unordered_map>
 
 namespace sc {
@@ -16,19 +15,7 @@ class DVNTransformer final : public Transformer {
     DVNTransformer(Function *_f)
         : Transformer(_f), dom(_f), remove_instrs(_f->GetBlockSize()) {}
 
-    void Transform() override {
-        if (func->GetArgsSize()) {
-            vt.PushScope();
-            for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
-                auto *arg = func->GetArgs(i);
-                vt.Insert(arg->GetName(), arg);
-            }
-        }
-
-        dom.BuildRPODominatorTree();
-        DVN(func->GetBlock(0));
-        RemoveInstructions();
-    }
+    void Transform() override;
 
   private:
     DominatorAnalyzer dom;
@@ -66,12 +53,13 @@ class DVNTransformer final : public Transformer {
 
     bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
     void DVN(Block *block);
+    void MarkForRemoval(Block *block, size_t idx);
     void RemoveInstructions();
 
     std::string GetKey(InstructionBase *instr) const {
-        return instr->GetOperand(1)->GetName() +
+        return instr->GetOperand(0)->GetName() +
                std::to_string(static_cast<int>(instr->GetOpCode())) +
-               instr->GetOperand(2)->GetName();
+               instr->GetOperand(1)->GetName();
     }
 };
 } // namespace sc

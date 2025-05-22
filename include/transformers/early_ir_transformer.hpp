@@ -11,7 +11,8 @@ class EarlyIRTransformer final : public Transformer {
 
   private:
     std::vector<Block *> rb;
-    void FixIR();
+    void CanonicalizeIR();
     void AddUniqueExitBlock();
+    void InsertJmpInstruction(Block* blk, Block* jmp_blk);
 };
 } // namespace sc

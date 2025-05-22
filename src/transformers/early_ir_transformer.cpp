@@ -1,6 +1,6 @@
 #include "transformers/early_ir_transformer.hpp"
-#include <ranges>
 
+// #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
 namespace sc {
@@ -10,13 +10,12 @@ void EarlyIRTransformer::Transform() {
     std::cout << __PRETTY_FUNCTION__
               << "Processing function:  " << func->GetName() << "\n";
 #endif
-    FixIR();
+    CanonicalizeIR();
 }
 
-void EarlyIRTransformer::FixIR() {
-    for (size_t i : std::views::iota(0UL, func->GetBlockSize()) |
-                        std::views::take(func->GetBlockSize() - 1)) {
-        auto *block = func->GetBlock(i);
+void EarlyIRTransformer::CanonicalizeIR() {
+    for (auto *block :
+         func->GetBlocks() | std::views::take(func->GetBlockSize() - 1)) {
 #ifdef PRINT_DEBUG
         std::cout << __PRETTY_FUNCTION__
                   << " Processing block:  " << block->GetName() << "\n";
@@ -27,16 +26,11 @@ void EarlyIRTransformer::FixIR() {
                 rb.push_back(block);
             } else if (instr->GetOpCode() != OpCode::BR &&
                        instr->GetOpCode() != OpCode::JMP) {
-                auto jmp_instr = std::make_unique<JmpInstruction>();
-                auto *nxt_lbl = func->GetBlock(i + 1)->GetLabel();
-                jmp_instr->SetOperand(nxt_lbl);
-                func->GetBlock(i)->AddInstruction(std::move(jmp_instr));
+                InsertJmpInstruction(block,
+                                     func->GetBlock(block->GetIndex() + 1));
             }
         } else {
-            auto jmp_instr = std::make_unique<JmpInstruction>();
-            auto *nxt_lbl = func->GetBlock(i + 1)->GetLabel();
-            jmp_instr->SetOperand(nxt_lbl);
-            func->GetBlock(i)->AddInstruction(std::move(jmp_instr));
+            InsertJmpInstruction(block, func->GetBlock(block->GetIndex() + 1));
         }
     }
 
@@ -52,7 +46,9 @@ void EarlyIRTransformer::FixIR() {
         // can only add a ret instr if function is void
         assert(func->GetRetType() == DataType::VOID &&
                "Non-void function with no return instruction.\n");
-        block->AddInstruction(std::make_unique<RetInstruction>());
+        auto ret_instr = std::make_unique<RetInstruction>();
+        ret_instr->SetOperand(VoidOperand::GetVoidOperand());
+        block->AddInstruction(std::move(ret_instr));
         rb.push_back(block);
     }
 
@@ -96,6 +92,8 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
                 std::make_unique<RegOperand>(func->GetRetType(), "__rret__");
         }
         ret_instr->SetOperand(ret_op.get());
+    } else {
+        ret_instr->SetOperand(VoidOperand::GetVoidOperand());
     }
     // add new unique ret instr to the exit block
     LAST_BLK(func)->AddInstruction(std::move(ret_instr));
@@ -103,18 +101,19 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     // modify the return block
     // delete ret instr and change with id and jmp instr
     for (auto *block : rb) {
-        auto ret_instr = LAST_INSTR(block);
+        auto *ret_instr = LAST_INSTR(block);
         auto jmp_instr = std::make_unique<JmpInstruction>();
-        jmp_instr->SetOperand(lbl_op.get());
+        jmp_instr->SetJmpDest(lbl_op.get());
 
         if (func->GetRetType() != DataType::VOID) {
             auto id_instr = std::make_unique<IdInstruction>();
-            id_instr->SetOperand(ret_op.get());
+            id_instr->SetDest(ret_op.get());
             id_instr->SetOperand(ret_instr->GetOperand(0));
             block->AddInstruction(std::move(id_instr),
                                   block->GetInstructionSize() - 1);
             block->AddInstruction(std::move(jmp_instr));
         } else {
+            // last instruction is ret instruction
             block->AddInstruction(std::move(jmp_instr),
                                   block->GetInstructionSize() - 1);
         }
@@ -123,6 +122,12 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     // add ret operand to function
     func->AddOperand(std::move(lbl_op));
     func->AddOperand(std::move(ret_op));
+}
+
+void EarlyIRTransformer::InsertJmpInstruction(Block *blk, Block *jmp_blk) {
+    auto jmp_instr = std::make_unique<JmpInstruction>();
+    jmp_instr->SetJmpDest(jmp_blk->GetLabel());
+    blk->AddInstruction(std::move(jmp_instr));
 }
 // EarlyIRTransformer end
 } // namespace sc

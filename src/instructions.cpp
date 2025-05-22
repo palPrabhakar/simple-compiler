@@ -8,14 +8,14 @@
 #include <unordered_map>
 
 #define PRINT_HELPER3(name)                                                    \
-    out << operands[0]->GetName() << ":"                                       \
-        << " " << operands[0]->GetStrType() << " = " #name " "                 \
-        << operands[1]->GetName() << " " << operands[2]->GetName() << ";\n";
+    out << dest->GetName() << ":"                                              \
+        << " " << dest->GetStrType() << " = " #name " "                        \
+        << operands[0]->GetName() << " " << operands[1]->GetName() << ";\n";
 
 #define PRINT_HELPER2(name)                                                    \
-    out << operands[0]->GetName() << ":"                                       \
-        << " " << operands[0]->GetStrType() << " = " #name " "                 \
-        << operands[1]->GetName() << ";\n";
+    out << dest->GetName() << ":"                                              \
+        << " " << dest->GetStrType() << " = " #name " "                        \
+        << operands[0]->GetName() << ";\n";
 
 namespace sc {
 // clang-format off
@@ -97,22 +97,20 @@ void NotInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(not) }
 
 // Control Instructions
 void JmpInstruction::Dump(std::ostream &out) const {
-    out << "jmp ." << operands[0]->GetName() << ";\n";
+    out << "jmp ." << jmp_lbl->GetName() << ";\n";
 }
 
 void BranchInstruction::Dump(std::ostream &out) const {
-    out << "br " << operands[2]->GetName() << " ." << operands[0]->GetName()
-        << " ." << operands[1]->GetName() << ";\n";
+    out << "br " << operands[0]->GetName() << " ." << true_lbl->GetName()
+        << " ." << false_lbl->GetName() << ";\n";
 }
 
 void CallInstruction::Dump(std::ostream &out) const {
     if (ret_val) {
-        out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
-            << " = ";
+        out << dest->GetName() << ": " << dest->GetStrType() << " = ";
     }
     out << "call @" << func;
-    for (size_t i :
-         std::views::iota(static_cast<size_t>(ret_val), operands.size())) {
+    for (size_t i : std::views::iota(0ul, operands.size())) {
         out << " " << operands[i]->GetName();
     }
     out << ";\n";
@@ -120,7 +118,7 @@ void CallInstruction::Dump(std::ostream &out) const {
 
 void RetInstruction::Dump(std::ostream &out) const {
     out << "ret";
-    if (operands.size()) {
+    if (operands.size() && operands[0] != VoidOperand::GetVoidOperand()) {
         out << " " << operands[0]->GetName();
     }
     out << ";\n";
@@ -128,38 +126,28 @@ void RetInstruction::Dump(std::ostream &out) const {
 
 // Control Instructions
 void SetInstruction::Dump(std::ostream &out) const {
-    out << "set";
-    for (auto i : std::views::iota(0ul, operands.size())) {
-        auto str = operands[i] ? operands[i]->GetName() : "<undef>";
-        out << " " << str;
-    }
-    out << ";\n";
+    out << "set " << shadow->GetName() << " " << operands[0]->GetName()
+        << ";\n";
 }
 
 void GetInstruction::Dump(std::ostream &out) const {
-    out << operands[0]->GetName() << ":"
-        << " " << operands[0]->GetStrType() << " = get;\n";
+    out << dest->GetName() << ":"
+        << " " << dest->GetStrType() << " = get;\n";
 }
 
 void UndefInstruction::Dump(std::ostream &out) const {
-    out << operands[0]->GetName() << ":"
-        << " " << operands[0]->GetStrType() << " = undef;\n";
+    out << dest->GetName() << ":"
+        << " " << dest->GetStrType() << " = undef;\n";
 }
 
 // Memory Instructions
-void AllocInstruction::Dump(std::ostream &out) const {
-    out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
-        << " = alloc " << operands[1]->GetName() << ";\n";
-}
+void AllocInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(alloc); }
 
 void FreeInstruction::Dump(std::ostream &out) const {
     out << "free " << operands[0]->GetName() << ";\n";
 }
 
-void LoadInstruction::Dump(std::ostream &out) const {
-    out << operands[0]->GetName() << ": " << operands[0]->GetStrType()
-        << " = load " << operands[1]->GetName() << ";\n";
-}
+void LoadInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(load) }
 
 void StoreInstruction::Dump(std::ostream &out) const {
     out << "store";
@@ -188,8 +176,7 @@ void FGeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fge) }
 void IdInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(id) }
 
 void ConstInstruction::Dump(std::ostream &out) const {
-    auto dest = operands[0];
-    auto src = operands[1];
+    auto *src = operands[0];
     auto type = dest->GetStrType();
     out << dest->GetName() << ":"
         << " " << type << " = const ";

@@ -31,7 +31,7 @@ class SSATransformer final : public Transformer {
     void Rename(Block *block);
     OperandBase *NewDest(OperandBase *op);
     void Process(std::unordered_map<OperandBase *, size_t> &pop_count,
-                 InstructionBase *instr, size_t start, bool dest = true);
+                 InstructionBase *instr);
 };
 
 }; // namespace sc

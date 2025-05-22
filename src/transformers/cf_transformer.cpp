@@ -2,32 +2,15 @@
 #include "analyzers/cfg.hpp"
 #include <unordered_set>
 
+// #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
 namespace sc {
-static void RemovePredecessorIf(Block *block, Block *match) {
-    for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
-        if (block->GetPredecessor(i) == match) {
-            block->RemovePredecessor(i);
-            return;
-        }
-    }
-}
-
-static void RemoveSuccessorIf(Block *block, Block *match) {
-    for (size_t i : std::views::iota(0UL, block->GetSuccessorSize())) {
-        if (block->GetSuccessor(i) == match) {
-            block->RemoveSuccessor(i);
-            return;
-        }
-    }
-}
-
 // CFTransformer begin
 void CFTransformer::Transform() {
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
-              << " Processing Function:  " << f->GetName() << "\n";
+              << " Processing Function:  " << func->GetName() << "\n";
 #endif
     do {
         traverse_order = GetPostOrder(func);
@@ -38,6 +21,9 @@ void CFTransformer::Transform() {
     if (traverse_order.size() != func->GetBlockSize()) {
         RemoveUnreachableCFNode();
     }
+#ifdef PRINT_DEBUG
+    std::cout<<"\n";
+#endif
 }
 
 bool CFTransformer::Clean() {
@@ -49,7 +35,8 @@ bool CFTransformer::Clean() {
 #endif
         auto instr = LAST_INSTR(block);
         if (instr->GetOpCode() == OpCode::BR &&
-            instr->GetOperand(0) == instr->GetOperand(1)) {
+            static_cast<BranchInstruction *>(instr)->GetTrueDest() ==
+                static_cast<BranchInstruction *>(instr)->GetFalseDest()) {
             ReplaceBrWithJmp(block);
             ret = true;
         }
@@ -79,6 +66,11 @@ bool CFTransformer::Clean() {
             }
         }
     }
+
+#ifdef PRINT_DEBUG
+    std::cout << "\n";
+#endif
+
     return ret;
 }
 
@@ -97,14 +89,16 @@ void CFTransformer::ReplaceBrWithJmp(Block *block) {
     // The predecessor block should ideally have two predecessor link to current
     // block. Remove the other reference.
     size_t count = 0;
-    for (size_t i : std::views::iota(0UL, succ_blk->GetPredecessorSize())) {
-        if (succ_blk->GetPredecessor(i) == block) {
+    for (auto *pred : succ_blk->GetPredecessors()) {
+        if (pred == block) {
             ++count;
             if (count > 1) {
-                succ_blk->RemovePredecessor(i);
+                succ_blk->RemovePredecessor(pred);
             }
         }
     }
+
+    assert(count > 1);
 }
 
 void CFTransformer::RemoveEmptyBlock(Block *block) {
@@ -113,38 +107,34 @@ void CFTransformer::RemoveEmptyBlock(Block *block) {
               << "\n";
 #endif
     auto *succ_blk = block->GetSuccessor(0);
-    RemovePredecessorIf(succ_blk, block);
+    succ_blk->RemovePredecessor(block);
 
     // remove the successor since clean is
     // implemented as a series of if's
-    RemoveSuccessorIf(block, succ_blk);
+    block->RemoveSuccessor(succ_blk);
 
-    for (size_t i : std::views::iota(0UL, block->GetPredecessorSize())) {
-        auto pred_blk = block->GetPredecessor(i);
+    for (auto *pred_blk : block->GetPredecessors()) {
         auto lst_instr = LAST_INSTR(pred_blk);
         if (lst_instr->GetOpCode() == OpCode::JMP) {
-            lst_instr->SetOperand(succ_blk->GetLabel(), 0);
+            static_cast<JmpInstruction *>(lst_instr)->SetJmpDest(
+                succ_blk->GetLabel());
             pred_blk->AddSuccessor(succ_blk, 0);
         } else {
             assert(lst_instr->GetOpCode() == OpCode::BR);
-            if (static_cast<LabelOperand *>(lst_instr->GetOperand(0))
-                    ->GetBlock() == block) {
-                lst_instr->SetOperand(succ_blk->GetLabel(), 0);
+            auto *br = static_cast<BranchInstruction *>(lst_instr);
+            if (br->GetTrueDest()->GetBlock() == block) {
+                br->SetTrueDest(succ_blk->GetLabel());
+                assert(pred_blk->GetSuccessor(0) == block);
                 pred_blk->AddSuccessor(succ_blk, 0);
             }
 
-            if (static_cast<LabelOperand *>(lst_instr->GetOperand(1))
-                    ->GetBlock() == block) {
-                lst_instr->SetOperand(succ_blk->GetLabel(), 1);
+            if (br->GetFalseDest()->GetBlock() == block) {
+                br->SetFalseDest(succ_blk->GetLabel());
+                assert(pred_blk->GetSuccessor(1) == block);
                 pred_blk->AddSuccessor(succ_blk, 1);
             }
         }
         succ_blk->AddPredecessor(pred_blk);
-    }
-
-    for (size_t i : std::views::iota(0UL, block->GetPredecessorSize()) |
-                        std::views::reverse) {
-        block->RemovePredecessor(i);
     }
 }
 
@@ -166,19 +156,19 @@ void CFTransformer::CombineBlocks(Block *block) {
         block->AddInstruction(std::move(instructions[i]));
     }
 
-    block->RemoveSuccessor(0);
+    block->RemoveSuccessor(static_cast<size_t>(0));
 
-    for (size_t i : std::views::iota(0UL, succ_blk->GetSuccessorSize())) {
-        RemovePredecessorIf(succ_blk->GetSuccessor(i), succ_blk);
-        succ_blk->GetSuccessor(i)->AddPredecessor(block);
-        block->AddSuccessor(succ_blk->GetSuccessor(i));
+    for (auto *ssucc : succ_blk->GetSuccessors()) {
+        ssucc->RemovePredecessor(succ_blk);
+        ssucc->AddPredecessor(block);
+        block->AddSuccessor(ssucc);
     }
 }
 
 void CFTransformer::HoistBranch(Block *block) {
     auto *succ_blk = block->GetSuccessor(0);
-    RemovePredecessorIf(succ_blk, block);
-    RemoveSuccessorIf(block, succ_blk);
+    succ_blk->RemovePredecessor(block);
+    block->RemoveSuccessor(succ_blk);
 
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
@@ -186,15 +176,22 @@ void CFTransformer::HoistBranch(Block *block) {
               << " to: " << block->GetName() << "\n";
 #endif
 
-    auto *last_instr = LAST_INSTR(succ_blk);
+    auto *last_instr = static_cast<BranchInstruction *>(LAST_INSTR(succ_blk));
     auto br_instr = std::make_unique<BranchInstruction>();
-    for (size_t i : std::views::iota(0UL, 2UL)) {
-        auto *op = static_cast<LabelOperand *>(last_instr->GetOperand(i));
-        br_instr->SetOperand(op);
-        block->AddSuccessor(op->GetBlock());
-        op->GetBlock()->AddPredecessor(block);
-    }
-    br_instr->SetOperand(last_instr->GetOperand(2));
+
+    // set the true lbl
+    auto *true_dest = last_instr->GetTrueDest();
+    br_instr->SetTrueDest(true_dest);
+    true_dest->GetBlock()->AddPredecessor(block);
+    block->AddSuccessor(true_dest->GetBlock());
+
+    // set the false lbl
+    auto *false_lbl = last_instr->GetFalseDest();
+    br_instr->SetFalseDest(false_lbl);
+    false_lbl->GetBlock()->AddPredecessor(block);
+    block->AddSuccessor(false_lbl->GetBlock());
+
+    br_instr->SetOperand(last_instr->GetOperand(0));
 
     block->AddInstruction(std::move(br_instr), block->GetInstructionSize() - 1);
 }
@@ -202,27 +199,13 @@ void CFTransformer::HoistBranch(Block *block) {
 void CFTransformer::RemoveUnreachableCFNode() {
     std::unordered_set<Block *> reachable(traverse_order.cbegin(),
                                           traverse_order.cend());
-    auto &blocks = func->GetBlocks();
-    blocks.erase(std::remove_if(blocks.begin(), blocks.end(),
-                                [&reachable](auto &block) {
-                                    if (!reachable.contains(block.get())) {
-#ifdef PRINT_DEBUG
-                                        std::cout << __PRETTY_FUNCTION__
-                                                  << " Removing block: "
-                                                  << block->GetName() << "\n";
-#endif
-                                        // TODO:
-                                        // erase the corresponding LabelOperand
-                                        return true;
-                                    }
-                                    return false;
-                                }),
-                 blocks.end());
-
-    // fix block indexes
-    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
-        func->GetBlock(i)->SetIndex(i);
+    std::vector<size_t> remove_blks;
+    for (auto *blk : func->GetBlocks()) {
+        if (!reachable.contains(blk)) {
+            remove_blks.push_back(blk->GetIndex());
+        }
     }
+    func->RemoveBlocks(std::move(remove_blks));
 }
 // CFTransformer end
 } // namespace sc

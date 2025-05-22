@@ -10,55 +10,17 @@ namespace sc {
 void GlobalsAnalyzer::ComputeGlobalNames() {
     auto var_kill = std::unordered_set<OperandBase *>();
 
-    if (func->GetArgsSize()) {
-        auto *block = func->GetBlock(0);
-        for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
-            var_kill.insert(func->GetArgs(i));
-            blocks[func->GetArgs(i)].insert(block);
-        }
+    auto *block = func->GetBlock(0);
+    for (auto *arg : func->GetArgs()) {
+        var_kill.insert(arg);
+        blocks[arg].insert(block);
     }
 
-    for (auto b : std::views::iota(0ul, func->GetBlockSize())) {
-        auto *block = func->GetBlock(b);
-
-        for (auto i : std::views::iota(0ul, block->GetInstructionSize())) {
-            auto *instr = block->GetInstruction(i);
+    for (auto *block : func->GetBlocks()) {
+        for (auto *instr : block->GetInstructions()) {
             auto opcode = instr->GetOpCode();
-            switch (opcode) {
-            case OpCode::JMP:
-            case OpCode::LABEL:
-            case OpCode::NOP:
-                // Don't do anything
-                break;
-            case OpCode::SET:
-            case OpCode::GET:
-                assert(false && "Unexpected opcode\n");
-            case OpCode::BR:
-                Process(var_kill, instr, block, 2, false);
-                break;
-            case OpCode::CALL: {
-                auto *call = static_cast<CallInstruction *>(instr);
-                Process(var_kill, instr, block, call->GetRetVal(), call->GetRetVal());
-            } break;
-            case OpCode::RET: {
-                auto *ret = static_cast<RetInstruction *>(instr);
-                if (ret->GetOperandSize()) {
-                    Process(var_kill, instr, block, 0, false);
-                }
-            } break;
-            case OpCode::FREE:
-            case OpCode::STORE:
-            case OpCode::PRINT:
-                Process(var_kill, instr, block, 0, false);
-                break;
-            case OpCode::CONST:
-                Process(var_kill, instr, block, instr->GetOperandSize(), true);
-                break;
-            default:
-                // Defines a value
-                Process(var_kill, instr, block, 1, true);
-                break;
-            }
+            assert(opcode != OpCode::GET && opcode != OpCode::SET);
+            Process(var_kill, instr, block);
         }
         // Clear the var_kill set before the start of next iteration!
         // Can't clear above becuase in case of first block the var_kill
@@ -85,18 +47,18 @@ void GlobalsAnalyzer::DumpBlocks(std::ostream &out) const {
         out << "\n";
     }
 }
+
 void GlobalsAnalyzer::Process(std::unordered_set<OperandBase *> &var_kill,
-                              InstructionBase *instr, Block *block,
-                              size_t start, bool dest) {
-    for (auto i : std::views::iota(start, instr->GetOperandSize())) {
-        if (!var_kill.contains(instr->GetOperand(i))) {
-            globals.insert(instr->GetOperand(i));
+                              InstructionBase *instr, Block *block) {
+    for (auto *op : instr->GetOperands()) {
+        if (!var_kill.contains(op)) {
+            globals.insert(op);
         }
     }
 
-    if (dest) {
-        var_kill.insert(instr->GetOperand(0));
-        blocks[instr->GetOperand(0)].insert(block);
+    if (instr->HasDest()) {
+        var_kill.insert(instr->GetDest());
+        blocks[instr->GetDest()].insert(block);
     }
 }
 // GlobalsAnalyzer end

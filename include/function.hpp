@@ -2,8 +2,10 @@
 
 #include "block.hpp"
 #include "operand.hpp"
+#include "util.hpp"
 #include <iostream>
 #include <memory>
+#include <ranges>
 #include <string>
 #include <vector>
 
@@ -33,15 +35,14 @@ class Function {
 
     DataType GetRetType() const { return ret_type; }
 
-    OperandBase *GetOperand(size_t idx) { return operands[idx].get(); }
+    size_t GetOperandSize() const { return operands.size(); }
+    OperandBase *GetOperand(size_t idx) const { return operands[idx].get(); }
 
-    OperandBase *GetArgs(size_t idx) { return args[idx]; }
+    size_t GetArgsSize() const { return args.size(); }
+    OperandBase *GetArgs(size_t idx) const { return args[idx]; }
+    std::span<OperandBase *> GetArgs() { return std::span(args); }
 
     size_t GetBlockSize() const { return blocks.size(); }
-
-    size_t GetOperandSize() const { return operands.size(); }
-
-    size_t GetArgsSize() { return args.size(); }
 
     // Non-owning pointer
     Block *GetBlock(size_t idx) {
@@ -49,16 +50,44 @@ class Function {
         return blocks[idx].get();
     }
 
-    std::vector<std::unique_ptr<Block>> &GetBlocks() { return blocks; }
+    auto GetBlocks() {
+        // the underlying data managed by this class
+        // can change via call to this func
+        return blocks |
+               std::views::transform([](auto &blk) { return blk.get(); });
+    }
+
+    void RemoveBlock(size_t idx) {
+        // Not efficient avoid using.
+        // Use helper function in utils
+        assert(idx < blocks.size());
+        blocks.erase(blocks.begin() + static_cast<long>(idx));
+
+        for (auto i : std::views::iota(idx, blocks.size())) {
+            blocks[i]->SetIndex(i);
+        }
+    }
+
+    void RemoveBlocks(std::vector<size_t> indexes) {
+        RemoveElements(blocks, std::move(indexes));
+
+        size_t i = 0;
+        for (auto &blk : blocks) {
+            blk->SetIndex(i++);
+        }
+    }
 
     virtual std::string GetStrRetType() const;
-    void Dump(std::ostream &out = std::cout);
-    void DumpBlocks(std::ostream &out = std::cout);
-    void DumpCFG(std::ostream &out = std::cout);
+    void Dump(std::ostream &out = std::cout) const;
+    void DumpBlocks(std::ostream &out = std::cout) const;
+    void DumpCFG(std::ostream &out = std::cout) const;
+    void DumpDefUseLinks(std::ostream &out = std::cout) const;
 
   protected:
     std::vector<std::unique_ptr<Block>> blocks;
     std::vector<std::unique_ptr<OperandBase>> operands;
+    // TODO:
+    // Create internal instr
     std::vector<OperandBase *> args;
     std::string name;
     DataType ret_type;

@@ -4,22 +4,27 @@
 #include <cassert>
 #include <iostream>
 #include <ostream>
+#include <span>
 #include <vector>
 
 namespace sc {
 
 class Block;
+class InstructionBase;
 
 OpCode GetOpCodeFromStr(std::string);
 
 class InstructionBase {
   public:
     virtual ~InstructionBase() = default;
+
     virtual void Dump(std::ostream &out = std::cout) const = 0;
-    OpCode GetOpCode() const { return opcode; }
-    size_t GetOperandSize() const { return operands.size(); }
+
+    virtual bool HasDest() const { return false; }
 
     void SetBlock(Block *blk) { block = blk; };
+
+    void SetDest(OperandBase *oprnd) { dest = oprnd; }
 
     void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
 
@@ -28,9 +33,19 @@ class InstructionBase {
         operands[idx] = oprnd;
     }
 
+    OpCode GetOpCode() const { return opcode; }
+
+    size_t GetOperandSize() const { return operands.size(); }
+
+    OperandBase *GetDest() const { return dest; }
+
     OperandBase *GetOperand(size_t idx) const {
         assert(idx < operands.size());
         return operands[idx];
+    }
+
+    std::span<OperandBase *> GetOperands() {
+        return std::span<OperandBase *>(operands);
     }
 
     Block *GetBlock() const {
@@ -38,10 +53,9 @@ class InstructionBase {
         return block;
     }
 
-    static constexpr size_t OP_SIZE = 0;
-
   protected:
     InstructionBase(OpCode _opcode) : opcode(_opcode) {}
+    OperandBase *dest;
     std::vector<OperandBase *> operands; // non-owning pointers
 
   private:
@@ -49,91 +63,102 @@ class InstructionBase {
     Block *block;
 };
 
+// NewInstructionClass
+template <typename T> class BinaryOperator : public InstructionBase {
+  public:
+    BinaryOperator(OpCode opcode) : InstructionBase(opcode) {}
+
+    void Dump(std::ostream &out = std::cout) const override {
+        static_cast<const T *>(this)->Dump(out);
+    } // namespace sc
+
+    bool HasDest() const override { return true; }
+};
+
+template <typename T> class UnaryOperator : public InstructionBase {
+  public:
+    UnaryOperator(OpCode opcode) : InstructionBase(opcode) {}
+
+    void Dump(std::ostream &out = std::cout) const override {
+        static_cast<const T *>(this)->Dump(out);
+    }
+
+    bool HasDest() const override { return true; }
+};
+
 // Arithmetic Instructions
-class AddInstruction final : public InstructionBase {
+class AddInstruction final : public BinaryOperator<AddInstruction> {
   public:
-    AddInstruction() : InstructionBase(OpCode::ADD) {}
+    AddInstruction() : BinaryOperator(OpCode::ADD) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class MulInstruction final : public InstructionBase {
+class MulInstruction final : public BinaryOperator<MulInstruction> {
   public:
-    MulInstruction() : InstructionBase(OpCode::MUL) {}
+    MulInstruction() : BinaryOperator(OpCode::MUL) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class SubInstruction final : public InstructionBase {
+class SubInstruction final : public BinaryOperator<SubInstruction> {
   public:
-    SubInstruction() : InstructionBase(OpCode::SUB) {}
+    SubInstruction() : BinaryOperator(OpCode::SUB) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class DivInstruction final : public InstructionBase {
+class DivInstruction final : public BinaryOperator<DivInstruction> {
   public:
-    DivInstruction() : InstructionBase(OpCode::DIV) {}
+    DivInstruction() : BinaryOperator(OpCode::DIV) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
 // Comparison Instructions
-class EqInstruction final : public InstructionBase {
+class EqInstruction final : public BinaryOperator<EqInstruction> {
   public:
-    EqInstruction() : InstructionBase(OpCode::EQ) {}
+    EqInstruction() : BinaryOperator(OpCode::EQ) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class LtInstruction final : public InstructionBase {
+class LtInstruction final : public BinaryOperator<LtInstruction> {
   public:
-    LtInstruction() : InstructionBase(OpCode::LT) {}
+    LtInstruction() : BinaryOperator(OpCode::LT) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class GtInstruction final : public InstructionBase {
+class GtInstruction final : public BinaryOperator<GtInstruction> {
   public:
-    GtInstruction() : InstructionBase(OpCode::GT) {}
+    GtInstruction() : BinaryOperator(OpCode::GT) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class LeInstruction final : public InstructionBase {
+class LeInstruction final : public BinaryOperator<LeInstruction> {
   public:
-    LeInstruction() : InstructionBase(OpCode::LE) {}
+    LeInstruction() : BinaryOperator(OpCode::LE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class GeInstruction final : public InstructionBase {
+class GeInstruction final : public BinaryOperator<GeInstruction> {
   public:
-    GeInstruction() : InstructionBase(OpCode::GE) {}
+    GeInstruction() : BinaryOperator(OpCode::GE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
 // Logic Instructions
-class AndInstruction final : public InstructionBase {
+class AndInstruction final : public BinaryOperator<AndInstruction> {
   public:
-    AndInstruction() : InstructionBase(OpCode::AND) {}
+    AndInstruction() : BinaryOperator(OpCode::AND) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class OrInstruction final : public InstructionBase {
+class OrInstruction final : public BinaryOperator<OrInstruction> {
   public:
-    OrInstruction() : InstructionBase(OpCode::OR) {}
+    OrInstruction() : BinaryOperator(OpCode::OR) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class NotInstruction final : public InstructionBase {
+class NotInstruction final : public UnaryOperator<NotInstruction> {
   public:
-    NotInstruction() : InstructionBase(OpCode::NOT) {}
+    NotInstruction() : UnaryOperator(OpCode::NOT) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
 // Control Instruction
@@ -142,7 +167,17 @@ class JmpInstruction final : public InstructionBase {
     // Changes PC by some offset
   public:
     JmpInstruction() : InstructionBase(OpCode::JMP) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool HasDest() const override { return false; }
+
+    void SetJmpDest(LabelOperand *lbl) { jmp_lbl = lbl; }
+
+    LabelOperand *GetJmpDest() const { return jmp_lbl; }
+
+  private:
+    LabelOperand *jmp_lbl;
 };
 
 class BranchInstruction final : public InstructionBase {
@@ -153,7 +188,22 @@ class BranchInstruction final : public InstructionBase {
     // Changes PC by some offset
   public:
     BranchInstruction() : InstructionBase(OpCode::BR) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool HasDest() const override { return false; }
+
+    void SetTrueDest(LabelOperand *lbl) { true_lbl = lbl; }
+
+    void SetFalseDest(LabelOperand *lbl) { false_lbl = lbl; }
+
+    LabelOperand *GetTrueDest() const { return true_lbl; }
+
+    LabelOperand *GetFalseDest() const { return false_lbl; }
+
+  private:
+    LabelOperand *true_lbl;
+    LabelOperand *false_lbl;
 };
 
 class CallInstruction final : public InstructionBase {
@@ -161,11 +211,16 @@ class CallInstruction final : public InstructionBase {
     // Rest are arguments
   public:
     CallInstruction() : InstructionBase(OpCode::CALL) {}
+
     void Dump(std::ostream &out = std::cout) const override;
+
+    bool HasDest() const override { return ret_val; }
+
     void SetFuncName(std::string fname) { func = fname; }
+
     void SetRetVal(bool val) { ret_val = val; }
+
     std::string GetFuncName() const { return func; }
-    bool GetRetVal() const { return ret_val; }
 
   private:
     std::string func;
@@ -186,11 +241,16 @@ class SetInstruction final : public InstructionBase {
     SetInstruction() : InstructionBase(OpCode::SET) {}
     void Dump(std::ostream &out = std::cout) const override;
 
+    void SetShadow(OperandBase *oprnd) { shadow = oprnd; }
+
+    OperandBase *GetShadow() const { return shadow; }
+
     void SetGetPair(GetInstruction *instr) { get = instr; }
 
     GetInstruction *GetGetPair() const { return get; }
 
   private:
+    OperandBase *shadow;
     // There can be only one get instr per set instr
     GetInstruction *get;
 };
@@ -199,7 +259,8 @@ class GetInstruction final : public InstructionBase {
   public:
     GetInstruction() : InstructionBase(OpCode::GET) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 0;
+
+    bool HasDest() const override { return true; }
 
     void SetSetPair(SetInstruction *instr) { sets.push_back(instr); }
 
@@ -210,131 +271,117 @@ class GetInstruction final : public InstructionBase {
         return sets[idx];
     }
 
+    std::span<SetInstruction *> GetSetPairs() { return std::span(sets); }
+
   private:
     // There is atleast two set instr per get instr
     std::vector<SetInstruction *> sets;
 };
 
-class UndefInstruction final : public InstructionBase {
+class UndefInstruction final : public UnaryOperator<UndefInstruction> {
   public:
-    UndefInstruction() : InstructionBase(OpCode::UNDEF) {}
+    UndefInstruction() : UnaryOperator(OpCode::UNDEF) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
 // Memory Instructions
-class AllocInstruction : public InstructionBase {
+class AllocInstruction : public UnaryOperator<AllocInstruction> {
   public:
-    AllocInstruction() : InstructionBase(OpCode::ALLOC) {}
+    AllocInstruction() : UnaryOperator(OpCode::ALLOC) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
 class FreeInstruction : public InstructionBase {
   public:
     FreeInstruction() : InstructionBase(OpCode::FREE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
-class LoadInstruction : public InstructionBase {
+class LoadInstruction : public UnaryOperator<LoadInstruction> {
   public:
-    LoadInstruction() : InstructionBase(OpCode::LOAD) {}
+    LoadInstruction() : UnaryOperator(OpCode::LOAD) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
 class StoreInstruction : public InstructionBase {
   public:
     StoreInstruction() : InstructionBase(OpCode::STORE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class PtraddInstruction : public InstructionBase {
+class PtraddInstruction : public BinaryOperator<PtraddInstruction> {
   public:
-    PtraddInstruction() : InstructionBase(OpCode::PTRADD) {}
+    PtraddInstruction() : BinaryOperator(OpCode::PTRADD) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Point Arithmetic Instructions
-class FAddInstruction final : public InstructionBase {
+class FAddInstruction final : public BinaryOperator<FAddInstruction> {
   public:
-    FAddInstruction() : InstructionBase(OpCode::FADD) {}
+    FAddInstruction() : BinaryOperator(OpCode::FADD) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FMulInstruction final : public InstructionBase {
+class FMulInstruction final : public BinaryOperator<FMulInstruction> {
   public:
-    FMulInstruction() : InstructionBase(OpCode::FMUL) {}
+    FMulInstruction() : BinaryOperator(OpCode::FMUL) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FSubInstruction final : public InstructionBase {
+class FSubInstruction final : public BinaryOperator<FSubInstruction> {
   public:
-    FSubInstruction() : InstructionBase(OpCode::FSUB) {}
+    FSubInstruction() : BinaryOperator(OpCode::FSUB) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FDivInstruction final : public InstructionBase {
+class FDivInstruction final : public BinaryOperator<FDivInstruction> {
   public:
-    FDivInstruction() : InstructionBase(OpCode::FDIV) {}
+    FDivInstruction() : BinaryOperator(OpCode::FDIV) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
 // Floating-Pointi Comparison Instructions
-class FEqInstruction final : public InstructionBase {
+class FEqInstruction final : public BinaryOperator<FEqInstruction> {
   public:
-    FEqInstruction() : InstructionBase(OpCode::FEQ) {}
+    FEqInstruction() : BinaryOperator(OpCode::FEQ) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FLtInstruction final : public InstructionBase {
+class FLtInstruction final : public BinaryOperator<FLtInstruction> {
   public:
-    FLtInstruction() : InstructionBase(OpCode::FLT) {}
+    FLtInstruction() : BinaryOperator(OpCode::FLT) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FGtInstruction final : public InstructionBase {
+class FGtInstruction final : public BinaryOperator<FGtInstruction> {
   public:
-    FGtInstruction() : InstructionBase(OpCode::FGT) {}
+    FGtInstruction() : BinaryOperator(OpCode::FGT) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FLeInstruction final : public InstructionBase {
+class FLeInstruction final : public BinaryOperator<FLeInstruction> {
   public:
-    FLeInstruction() : InstructionBase(OpCode::FLE) {}
+    FLeInstruction() : BinaryOperator(OpCode::FLE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
-class FGeInstruction final : public InstructionBase {
+class FGeInstruction final : public BinaryOperator<FGeInstruction> {
   public:
-    FGeInstruction() : InstructionBase(OpCode::FGE) {}
+    FGeInstruction() : BinaryOperator(OpCode::FGE) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 2;
 };
 
 // Miscellaneous Instructions
-class IdInstruction final : public InstructionBase {
+class IdInstruction final : public UnaryOperator<IdInstruction> {
   public:
-    IdInstruction() : InstructionBase(OpCode::ID) {}
+    IdInstruction() : UnaryOperator(OpCode::ID) {}
     void Dump(std::ostream &out = std::cout) const override;
-    static constexpr size_t OP_SIZE = 1;
 };
 
-class ConstInstruction final : public InstructionBase {
+class ConstInstruction final : public UnaryOperator<ConstInstruction> {
     // Src is ImmedOperand
   public:
-    ConstInstruction() : InstructionBase(OpCode::CONST) {}
+    ConstInstruction() : UnaryOperator(OpCode::CONST) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
 
@@ -349,4 +396,24 @@ class NopInstruction final : public InstructionBase {
     NopInstruction() : InstructionBase(OpCode::NOP) {}
     void Dump(std::ostream &out = std::cout) const override;
 };
+
+// Helper functions
+// Only meaningful in SSA-form
+inline void SetDestAndDef(InstructionBase *instr, OperandBase *oprnd) {
+    oprnd->SetDef(instr);
+    instr->SetDest(oprnd);
+}
+
+inline void SetOperandAndUse(InstructionBase *instr, OperandBase *oprnd) {
+    oprnd->SetUse(instr);
+    instr->SetOperand(oprnd);
+}
+
+inline void SetOperandAndUse(InstructionBase *instr, OperandBase *oprnd,
+                             size_t idx) {
+    auto *op = instr->GetOperand(idx);
+    op->RemoveUse(instr);
+    oprnd->SetUse(instr);
+    instr->SetOperand(oprnd, idx);
+}
 } // namespace sc

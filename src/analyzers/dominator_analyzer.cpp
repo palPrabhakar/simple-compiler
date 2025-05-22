@@ -69,8 +69,7 @@ void DominatorAnalyzer::ComputeDominanceFrontier() {
     for (auto i : std::views::iota(1ul, func->GetBlockSize())) {
         auto *block = func->GetBlock(i);
         if (block->GetPredecessorSize() > 1) {
-            for (auto k : std::views::iota(0ul, block->GetPredecessorSize())) {
-                auto *runner = block->GetPredecessor(k);
+            for (auto *runner : block->GetPredecessors()) {
                 while (runner != idom[i]) {
                     df[runner->GetIndex()].Set(i);
                     runner = idom[runner->GetIndex()];

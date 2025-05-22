@@ -1,10 +1,12 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <memory>
 #include <mutex>
 #include <string>
 #include <vector>
+#include <span>
 
 namespace sc {
 // clang-format off
@@ -48,6 +50,13 @@ class OperandBase {
 
     void SetUse(InstructionBase *instr) { uses.push_back(instr); }
 
+    void RemoveUse(InstructionBase *instr) {
+        auto it = std::find(uses.begin(), uses.end(), instr);
+        if (it != uses.end()) {
+            uses.erase(it);
+        }
+    }
+
     std::string GetStrType() const;
 
     DataType GetType() const { return type; }
@@ -63,9 +72,11 @@ class OperandBase {
         return uses[idx];
     }
 
+    std::span<InstructionBase *> GetUses() { return std::span(uses); }
+
   protected:
     OperandBase(DataType _type, std::string _name)
-        : type(_type), name(std::move(_name)) {}
+        : type(_type), name(std::move(_name)), def(nullptr) {}
 
     DataType type;
     std::string name;
@@ -98,7 +109,8 @@ class PtrOperand final : public RegOperand {
 
 class LabelOperand final : public OperandBase {
   public:
-    LabelOperand(std::string name) : OperandBase(DataType::LABEL, name) {}
+    LabelOperand(std::string name)
+        : OperandBase(DataType::LABEL, name), block(nullptr) {}
 
     std::unique_ptr<OperandBase> Clone() const override {
         assert(false && "LabelOperand cannot be cloned\n");
@@ -167,9 +179,13 @@ class BoolOperand final : public ImmedOperand<BoolOperand> {
     val_type val;
 };
 
+// Undef Sentinel Singleton
 class UndefOperand : public OperandBase {
   public:
-    static UndefOperand *GetUndefOperand() { return ptr; }
+    static UndefOperand *GetUndefOperand() {
+        std::call_once(flag, [] { ptr = new UndefOperand(); });
+        return ptr;
+    }
 
   private:
     static UndefOperand *ptr;
@@ -180,9 +196,27 @@ class UndefOperand : public OperandBase {
         return nullptr;
     }
 
-    static void init() { ptr = new UndefOperand(); }
-
     UndefOperand() : OperandBase(DataType::VOID, "undef") {}
+};
+
+// Void Sentinel Singleteon
+class VoidOperand : public OperandBase {
+  public:
+    static VoidOperand *GetVoidOperand() {
+        std::call_once(flag, [] { ptr = new VoidOperand(); });
+        return ptr;
+    }
+
+  private:
+    static VoidOperand *ptr;
+    static std::once_flag flag;
+
+    std::unique_ptr<OperandBase> Clone() const override {
+        assert(false && "LabelOperand cannot be cloned\n");
+        return nullptr;
+    }
+
+    VoidOperand() : OperandBase(DataType::VOID, "undef") {}
 };
 
 } // namespace sc

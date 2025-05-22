@@ -1,7 +1,10 @@
 #include "transformers/ssa_transformer.hpp"
+#include "instruction.hpp"
+#include "operand.hpp"
 #include <format>
 #include <ranges>
 
+// #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
 namespace sc {
@@ -13,10 +16,6 @@ void SSATransformer::RewriteInSSAForm() {
 #endif
     globals.ComputeGlobalNames();
     dom.ComputeDominanceFrontier();
-
-    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
-        assert(func->GetBlock(i)->GetIndex() == i);
-    }
 
     for (auto *op : globals.GetGlobals()) {
 #ifdef PRINT_DEBUG
@@ -44,12 +43,12 @@ void SSATransformer::RewriteInSSAForm() {
 
                 gets[d->GetIndex()].insert(op);
                 auto get_instr = std::make_unique<GetInstruction>();
-                get_instr->SetOperand(op);
+                get_instr->SetDest(op);
 
                 // add set instructions
                 for (auto *pred : d->GetPredecessors()) {
                     auto set_instr = std::make_unique<SetInstruction>();
-                    set_instr->SetOperand(op);
+                    set_instr->SetShadow(op);
                     set_instr->SetOperand(op);
 
                     set_instr->SetGetPair(get_instr.get());
@@ -84,10 +83,9 @@ void SSATransformer::RewriteInSSAForm() {
     std::cerr << "\n";
 #endif
 
-    if (func->GetArgsSize()) {
-        for (auto i : std::views::iota(0ul, func->GetArgsSize())) {
-            name[func->GetArgs(i)].push(func->GetArgs(i));
-        }
+    // TODO:
+    for (auto *arg : func->GetArgs()) {
+        name[arg].push(arg);
     }
 
     dom.BuildDominatorTree();
@@ -102,52 +100,35 @@ void SSATransformer::Rename(Block *block) {
 
     std::unordered_map<OperandBase *, size_t> pop_count;
 
-    size_t i = 0;
-    for (i = 0; i < block->GetInstructionSize(); ++i) {
+    for (size_t i = 0; i < block->GetInstructionSize(); ++i) {
         auto *instr = block->GetInstruction(i);
-        if (instr->GetOpCode() != OpCode::GET) {
-            break;
-        }
-        Process(pop_count, instr, instr->GetOperandSize(), true);
-
-        auto *geti = static_cast<GetInstruction *>(instr);
-        for (auto i : std::views::iota(0ul, geti->GetSetPairSize())) {
-            auto *seti = geti->GetSetPair(i);
-#ifdef PRINT_DEBUG
-            std::cerr << "\n\t\t  Before: ";
-            seti->Dump(std::cerr);
-#endif
-
-            seti->SetOperand(geti->GetOperand(0), 0);
-
-#ifdef PRINT_DEBUG
-            std::cerr << "\n\t\t  After: ";
-            seti->Dump(std::cerr);
-#endif
-        }
-    }
-
-    for (; i < block->GetInstructionSize(); ++i) {
-        auto *instr = block->GetInstruction(i);
-
         auto opcode = instr->GetOpCode();
-        switch (opcode) {
-        case OpCode::JMP:
-        case OpCode::LABEL:
-        case OpCode::NOP:
-            // Don't do anything
-            break;
-        case OpCode::BR:
-            Process(pop_count, instr, 2, false);
-            break;
-        case OpCode::GET:
-            assert(false);
-        case OpCode::SET: {
-            if (name[instr->GetOperand(1)].empty()) {
+
+        if (opcode == OpCode::GET) {
+            Process(pop_count, instr);
+
+            auto *geti = static_cast<GetInstruction *>(instr);
+            for (auto *seti : geti->GetSetPairs()) {
+#ifdef PRINT_DEBUG
+                std::cerr << "\n\t\t  Before: ";
+                seti->Dump(std::cerr);
+#endif
+
+                seti->SetShadow(geti->GetDest());
+
+#ifdef PRINT_DEBUG
+                std::cerr << "\n\t\t  After: ";
+                seti->Dump(std::cerr);
+#endif
+            }
+        } else if (opcode == OpCode::SET) {
+            if (name[instr->GetOperand(0)].empty()) {
                 auto undef_instr = std::make_unique<UndefInstruction>();
-                auto *ndest = NewDest(instr->GetOperand(1));
-                undef_instr->SetOperand(ndest);
-                undef_instr->SetOperand(UndefOperand::GetUndefOperand());
+                auto *ndest = NewDest(instr->GetOperand(0));
+                SetDestAndDef(undef_instr.get(), ndest);
+                SetOperandAndUse(undef_instr.get(),
+                                 UndefOperand::GetUndefOperand());
+
 #ifdef PRINT_DEBUG
                 std::cerr << "\n\tInsert: ";
                 undef_instr->Dump(std::cerr);
@@ -157,29 +138,9 @@ void SSATransformer::Rename(Block *block) {
                     ++i;
                 }
             }
-            Process(pop_count, instr, 1, false);
-        } break;
-        case OpCode::CALL: {
-            auto *call = static_cast<CallInstruction *>(instr);
-            Process(pop_count, instr, call->GetRetVal(), call->GetRetVal());
-        } break;
-        case OpCode::RET: {
-            auto *ret = static_cast<RetInstruction *>(instr);
-            if (ret->GetOperandSize()) {
-                Process(pop_count, instr, 0, false);
-            }
-        } break;
-        case OpCode::FREE:
-        case OpCode::STORE:
-        case OpCode::PRINT:
-            Process(pop_count, instr, 0, false);
-            break;
-        case OpCode::CONST:
-            Process(pop_count, instr, instr->GetOperandSize(), true);
-            break;
-        default:
-            Process(pop_count, instr, 1, true);
-            break;
+            Process(pop_count, instr);
+        } else {
+            Process(pop_count, instr);
         }
     }
 
@@ -215,23 +176,30 @@ OperandBase *SSATransformer::NewDest(OperandBase *op) {
 
 void SSATransformer::Process(
     std::unordered_map<OperandBase *, size_t> &pop_count,
-    InstructionBase *instr, size_t start, bool dest) {
+    InstructionBase *instr) {
 #ifdef PRINT_DEBUG
     std::cerr << "\n\tBefore: ";
     instr->Dump(std::cerr);
 #endif
 
-    for (auto i : std::views::iota(start, instr->GetOperandSize())) {
-        auto op = name[instr->GetOperand(i)].top();
-        op->SetUse(instr);
-        instr->SetOperand(op, i);
+    for (auto i : std::views::iota(0ul, instr->GetOperandSize())) {
+        if (name.contains(instr->GetOperand(i))) {
+            auto op = name[instr->GetOperand(i)].top();
+            SetOperandAndUse(instr, op, i);
+        } else {
+            assert(instr->GetOpCode() == OpCode::RET ||
+                   instr->GetOpCode() == OpCode::NOP ||
+                   instr->GetOpCode() == OpCode::GET ||
+                   instr->GetOpCode() == OpCode::JMP ||
+                   instr->GetOpCode() == OpCode::CALL ||
+                   instr->GetOpCode() == OpCode::CONST);
+        }
     }
 
-    if (dest) {
-        pop_count[instr->GetOperand(0)]++;
-        auto *ndest = NewDest(instr->GetOperand(0));
-        ndest->SetDef(instr);
-        instr->SetOperand(ndest, 0);
+    if (instr->HasDest()) {
+        pop_count[instr->GetDest()]++;
+        auto *ndest = NewDest(instr->GetDest());
+        SetDestAndDef(instr, ndest);
     }
 
 #ifdef PRINT_DEBUG
@@ -239,6 +207,5 @@ void SSATransformer::Process(
     instr->Dump(std::cerr);
 #endif
 }
-
 // SSATransformer end
 } // namespace sc
