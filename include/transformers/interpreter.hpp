@@ -3,11 +3,14 @@
 #include "instruction_visitor.hpp"
 
 namespace sc {
-
-class Interpreter : public InstructionVisitor {
+class Interpreter final : private InstructionVisitor {
   public:
     OperandBase *ProcessInstruction(InstructionBase *instr);
 
+  private:
+    OperandBase *result = nullptr;
+
+    // Arithmetic
     void VisitAddInstruction(AddInstruction *instr) override;
     void VisitMulInstruction(MulInstruction *instr) override;
     void VisitSubInstruction(SubInstruction *instr) override;
@@ -37,9 +40,6 @@ class Interpreter : public InstructionVisitor {
     void VisitFGtInstruction(FGtInstruction *instr) override;
     void VisitFLeInstruction(FLeInstruction *instr) override;
     void VisitFGeInstruction(FGeInstruction *instr) override;
-
-  private:
-    OperandBase *result = nullptr;
 
     template <template <typename> typename Op, typename T,
               typename U = T::val_type>

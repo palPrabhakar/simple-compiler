@@ -42,7 +42,7 @@ void DVNTransformer::DVN(Block *block) {
 
         if (instr->HasDest()) {
 #ifdef PRINT_DEBUG
-            instr->Dump(std::cerr << "\n  ");
+            instr->Dump(std::cerr << "  ");
 #endif
             auto Opcode = instr->GetOpcode();
 
@@ -128,17 +128,32 @@ void DVNTransformer::Process(InstructionBase *instr, size_t idx) {
             if (vn_lop->GetDef()->GetOpcode() == Opcode::CONST &&
                 vn_rop->GetDef()->GetOpcode() == Opcode::CONST) {
                 instr = FoldConstInstruction(instr, idx);
+
+#ifdef PRINT_DEBUG
+                std::cerr << "    After folding: ";
+                instr->Dump(std::cerr);
+#endif
+            }
+        } else {
+            if (instr->GetOpcode() != Opcode::PTRADD) {
+                instr = simplifier.ProcessInstruction(instr, idx);
+
+#ifdef PRINT_DEBUG
+                std::cerr << "    After simplifying: ";
+                instr->Dump(std::cerr);
+#endif
             }
         }
 
-        // if (CheckIdentity(block, instr, idx)) {
-        //     return;
-        // }
     } else {
         if (instr->GetOpcode() == Opcode::NOT &&
             instr->GetOperand(0)->GetDef() &&
             instr->GetOperand(0)->GetDef()->GetOpcode() == Opcode::CONST) {
             instr = FoldConstInstruction(instr, idx);
+#ifdef PRINT_DEBUG
+                std::cerr << "    After folding: ";
+                instr->Dump(std::cerr);
+#endif
         }
     }
 

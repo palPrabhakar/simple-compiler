@@ -4,6 +4,7 @@
 #include "instruction.hpp"
 #include "transformer.hpp"
 #include "transformers/interpreter.hpp"
+#include "transformers/expression_simplifier.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -21,6 +22,7 @@ class DVNTransformer final : public Transformer {
   private:
     DominatorAnalyzer dom;
     Interpreter interpreter;
+    ExpressionSimplifier simplifier;
     std::vector<std::vector<size_t>> remove_instrs;
 
     class ScopedVTable {
@@ -61,8 +63,6 @@ class DVNTransformer final : public Transformer {
     void MarkForRemoval(Block *block, size_t idx);
 
     InstructionBase *FoldConstInstruction(InstructionBase *instr, size_t idx);
-
-    bool CheckIdentity(Block *block, InstructionBase *instr, size_t idx);
 
     std::pair<std::string, OperandBase *>
     GetKeyAndVN(InstructionBase *instr) const;
