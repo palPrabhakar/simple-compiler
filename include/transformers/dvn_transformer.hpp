@@ -3,6 +3,7 @@
 #include "analyzers/dominator_analyzer.hpp"
 #include "instruction.hpp"
 #include "transformer.hpp"
+#include "transformers/interpreter.hpp"
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -19,6 +20,7 @@ class DVNTransformer final : public Transformer {
 
   private:
     DominatorAnalyzer dom;
+    Interpreter interpreter;
     std::vector<std::vector<size_t>> remove_instrs;
 
     class ScopedVTable {
@@ -50,13 +52,21 @@ class DVNTransformer final : public Transformer {
         std::vector<std::unordered_map<std::string, OperandBase *>> st;
     } vt; // value table
 
-
     void DVN(Block *block);
-    void Process(Block *block, InstructionBase *instr, size_t idx);
+
+    void Process(InstructionBase *instr, size_t idx);
+
     bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
+
     void MarkForRemoval(Block *block, size_t idx);
-    void RemoveInstructions();
+
+    InstructionBase *FoldConstInstruction(InstructionBase *instr, size_t idx);
+
     bool CheckIdentity(Block *block, InstructionBase *instr, size_t idx);
-    std::pair<std::string, OperandBase *> GetKeyAndVN(InstructionBase *instr) const;
+
+    std::pair<std::string, OperandBase *>
+    GetKeyAndVN(InstructionBase *instr) const;
+
+    void RemoveInstructions();
 };
 } // namespace sc

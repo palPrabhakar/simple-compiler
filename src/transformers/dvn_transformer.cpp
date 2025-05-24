@@ -2,6 +2,7 @@
 #include "instruction.hpp"
 #include "opcodes.hpp"
 #include "operand.hpp"
+#include <memory>
 #include <ranges>
 
 namespace sc {
@@ -95,7 +96,7 @@ void DVNTransformer::DVN(Block *block) {
                 // Need to set the value number for the dest
                 vt.Insert(instr->GetDest()->GetName(), instr->GetDest());
             } else {
-                Process(block, instr, i);
+                Process(instr, i);
             }
         }
     }
@@ -111,7 +112,7 @@ void DVNTransformer::DVN(Block *block) {
     vt.PopScope();
 }
 
-void DVNTransformer::Process(Block *block, InstructionBase *instr, size_t idx) {
+void DVNTransformer::Process(InstructionBase *instr, size_t idx) {
     if (instr->GetOperandSize() == 2) {
         assert(instr->GetOperand(0) == vt.Get(instr->GetOperand(0)->GetName()));
         assert(instr->GetOperand(1) == vt.Get(instr->GetOperand(1)->GetName()));
@@ -120,41 +121,25 @@ void DVNTransformer::Process(Block *block, InstructionBase *instr, size_t idx) {
         auto *vn_lop = instr->GetOperand(0);
         auto *vn_rop = instr->GetOperand(1);
 
-        // if (vn_lop->GetDef()->GetOpcode() == Opcode::CONST &&
-        //     vn_rop->GetDef()->GetOpcode() == Opcode::CONST) {
-        //     // Create a new const instruction
-        //     // Remove old instruction
-
-        //     // Add, Mul, Sub, Div
-        //     // FAdd, FMul, FSub, FDiv
-        //     // EQ, LT, GT, LE, GE
-        //     // FEQ, FLT, FGT, FLE, FGE
-        //     // AND, OR
-        //     auto *lop = vn_lop->GetDef()->GetOperand(0);
-        //     auto *rop = vn_rop->GetDef()->GetOperand(0);
-        //     assert(lop->GetType() == rop->GetType());
-        //     switch (lop->GetType()) {
-        //     case DataType::FLOAT:
-        //     case DataType::INT:
-        //     case DataType::BOOL:
-        //     default:
-        //         assert(false);
-        //     }
-        // }
+        // TODO:
+        // This check is a workaround since the function
+        // arguments have no defining instructions
+        if (vn_lop->GetDef() && vn_rop->GetDef()) {
+            if (vn_lop->GetDef()->GetOpcode() == Opcode::CONST &&
+                vn_rop->GetDef()->GetOpcode() == Opcode::CONST) {
+                instr = FoldConstInstruction(instr, idx);
+            }
+        }
 
         // if (CheckIdentity(block, instr, idx)) {
         //     return;
         // }
     } else {
-        // if (instr->GetOpcode() == Opcode::NOT) {
-        //     // Check for const operand
-        //     auto *vn_op = instr->GetOperand(0);
-        //     if (vn_op->GetDef()->GetOpcode() == Opcode::CONST) {
-        //         // Create a new const instruction
-        //         // Remove old instruction
-        //         return;
-        //     }
-        // }
+        if (instr->GetOpcode() == Opcode::NOT &&
+            instr->GetOperand(0)->GetDef() &&
+            instr->GetOperand(0)->GetDef()->GetOpcode() == Opcode::CONST) {
+            instr = FoldConstInstruction(instr, idx);
+        }
     }
 
     auto [key, oprnd] = GetKeyAndVN(instr);
@@ -163,7 +148,7 @@ void DVNTransformer::Process(Block *block, InstructionBase *instr, size_t idx) {
     if (oprnd) {
         vt.Insert(dest->GetName(), oprnd);
         ReplaceUses(dest, oprnd);
-        MarkForRemoval(block, idx);
+        MarkForRemoval(instr->GetBlock(), idx);
     } else {
         vt.Insert(dest->GetName(), dest);
         vt.Insert(key, dest);
@@ -233,10 +218,16 @@ void DVNTransformer::MarkForRemoval(Block *block, size_t idx) {
     remove_instrs[block->GetIndex()].push_back(idx);
 }
 
-void DVNTransformer::RemoveInstructions() {
-    for (auto *block : func->GetBlocks()) {
-        block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]));
-    }
+InstructionBase *DVNTransformer::FoldConstInstruction(InstructionBase *instr,
+                                                      size_t idx) {
+    auto *block = instr->GetBlock();
+    auto new_inst = std::make_unique<ConstInstruction>();
+    SetDestAndDef(new_inst.get(), instr->GetDest());
+    auto *op = interpreter.ProcessInstruction(instr);
+    SetOperandAndUse(new_inst.get(), op);
+    instr = new_inst.get();
+    block->AddInstruction(std::move(new_inst), idx);
+    return instr;
 }
 
 std::pair<std::string, OperandBase *>
@@ -280,5 +271,12 @@ DVNTransformer::GetKeyAndVN(InstructionBase *instr) const {
         }
     }
 }
+
+void DVNTransformer::RemoveInstructions() {
+    for (auto *block : func->GetBlocks()) {
+        block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]));
+    }
+}
+
 // DVNTransformer end
 } // namespace sc

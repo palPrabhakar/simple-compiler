@@ -28,10 +28,14 @@ class Block {
     void SetIndex(size_t _idx) { idx = _idx; }
 
     void AddInstruction(instr_ptr instr) {
+        instr->SetBlock(this);
         instructions.push_back(std::move(instr));
     }
 
     void AddInstruction(instr_ptr instr, size_t idx) {
+        /*
+         * Replaces the instruction at idx
+         */
         assert(idx < instructions.size());
         instr->SetBlock(this);
         instructions[idx] = std::move(instr);
@@ -47,6 +51,10 @@ class Block {
     }
 
     void InsertInstruction(instr_ptr instr, size_t idx) {
+        /*
+         * Doesn't replace the instruction at idx
+         * Moves the instr at idx to idx + 1
+         */
         instr->SetBlock(this);
         instructions.insert(instructions.begin() + static_cast<long>(idx),
                             std::move(instr));
