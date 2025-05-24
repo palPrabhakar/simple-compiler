@@ -41,21 +41,21 @@ static void BuildCFGImpl(Function *func) {
     };
     for (auto *block : func->GetBlocks()) {
         auto *instr = LAST_INSTR(block);
-        switch (instr->GetOpCode()) {
-        case OpCode::JMP: {
+        switch (instr->GetOpcode()) {
+        case Opcode::JMP: {
             auto jmp_blk =
                 static_cast<JmpInstruction *>(instr)->GetJmpDest()->GetBlock();
             add_nodes(block, jmp_blk);
         } break;
-        case OpCode::BR: {
+        case Opcode::BR: {
             auto *br = static_cast<BranchInstruction *>(instr);
             add_nodes(block, br->GetTrueDest()->GetBlock());
             add_nodes(block, br->GetFalseDest()->GetBlock());
         } break;
-        case OpCode::RET:
+        case Opcode::RET:
             break;
         default:
-            assert(false && "FunctionBuild::CFG - Unexpected opcode found\n");
+            assert(false && "FunctionBuild::CFG - Unexpected Opcode found\n");
         }
     }
 }

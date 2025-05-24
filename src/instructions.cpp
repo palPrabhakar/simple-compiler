@@ -1,5 +1,5 @@
 #include "instruction.hpp"
-#include "opcodes.hpp"
+#include "instruction_visitor.hpp"
 #include "operand.hpp"
 #include <cassert>
 #include <iomanip>
@@ -17,82 +17,107 @@
         << " " << dest->GetStrType() << " = " #name " "                        \
         << operands[0]->GetName() << ";\n";
 
+#define ADD_VISITOR(name)                                                      \
+    void name##Instruction::Visit(InstructionVisitor *visitor) {               \
+        visitor->Visit##name##Instruction(this);                               \
+    }
+
 namespace sc {
 // clang-format off
-static const std::unordered_map<std::string, OpCode> str_to_opcodes = {
+static const std::unordered_map<std::string, Opcode> str_to_Opcodes = {
     // Arithmetic
-    {"add", OpCode::ADD},
-    {"mul", OpCode::MUL},
-    {"sub", OpCode::SUB},
-    {"div", OpCode::DIV},
+    {"add", Opcode::ADD},
+    {"mul", Opcode::MUL},
+    {"sub", Opcode::SUB},
+    {"div", Opcode::DIV},
     // Comparison
-    {"eq", OpCode::EQ},
-    {"lt", OpCode::LT},
-    {"gt", OpCode::GT},
-    {"le", OpCode::LE},
-    {"ge", OpCode::GE},
+    {"eq", Opcode::EQ},
+    {"lt", Opcode::LT},
+    {"gt", Opcode::GT},
+    {"le", Opcode::LE},
+    {"ge", Opcode::GE},
     // Logic
-    {"not", OpCode::NOT},
-    {"and", OpCode::AND},
-    {"or", OpCode::OR},
+    {"not", Opcode::NOT},
+    {"and", Opcode::AND},
+    {"or", Opcode::OR},
     // Control
-    {"jmp", OpCode::JMP},
-    {"br", OpCode::BR},
-    {"call", OpCode::CALL},
-    {"ret", OpCode::RET},
+    {"jmp", Opcode::JMP},
+    {"br", Opcode::BR},
+    {"call", Opcode::CALL},
+    {"ret", Opcode::RET},
     // SSA
-    {"get", OpCode::GET},
-    {"set", OpCode::SET},
-    {"undef", OpCode::UNDEF},
+    {"get", Opcode::GET},
+    {"set", Opcode::SET},
+    {"undef", Opcode::UNDEF},
     // Memory
-    {"alloc", OpCode::ALLOC},
-    {"free", OpCode::FREE},
-    {"load", OpCode::LOAD},
-    {"store", OpCode::STORE},
-    {"ptradd", OpCode::PTRADD},
+    {"alloc", Opcode::ALLOC},
+    {"free", Opcode::FREE},
+    {"load", Opcode::LOAD},
+    {"store", Opcode::STORE},
+    {"ptradd", Opcode::PTRADD},
     // Floating
-    {"fadd", OpCode::FADD},
-    {"fmul", OpCode::FMUL},
-    {"fsub", OpCode::FSUB},
-    {"fdiv", OpCode::FDIV},
+    {"fadd", Opcode::FADD},
+    {"fmul", Opcode::FMUL},
+    {"fsub", Opcode::FSUB},
+    {"fdiv", Opcode::FDIV},
     // FComparisons
-    {"feq", OpCode::FEQ},
-    {"flt", OpCode::FLT},
-    {"fle", OpCode::FLE},
-    {"fgt", OpCode::FGT},
-    {"fge", OpCode::FGE},
+    {"feq", Opcode::FEQ},
+    {"flt", Opcode::FLT},
+    {"fle", Opcode::FLE},
+    {"fgt", Opcode::FGT},
+    {"fge", Opcode::FGE},
     // Miscellaneous
-    {"id", OpCode::ID},
-    {"const", OpCode::CONST},
-    {"print", OpCode::PRINT},
-    {"nop", OpCode::NOP},
+    {"id", Opcode::ID},
+    {"const", Opcode::CONST},
+    {"print", Opcode::PRINT},
+    {"nop", Opcode::NOP},
 };
 // clang-format on
 
-OpCode GetOpCodeFromStr(std::string op_code) {
-    assert(str_to_opcodes.contains(op_code) &&
-           "GetOpCodeFromStr: Invalid opcode str\n");
-    return str_to_opcodes.at(op_code);
+Opcode GetOpcodeFromStr(std::string op_code) {
+    assert(str_to_Opcodes.contains(op_code) &&
+           "GetOpcodeFromStr: Invalid Opcode str\n");
+    return str_to_Opcodes.at(op_code);
 }
 
 // Arithmetic Instructions
+// clang-format off
 void AddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(add) }
 void MulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(mul) }
 void SubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(sub) }
 void DivInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(div) }
 
+ADD_VISITOR(Add)
+ADD_VISITOR(Mul)
+ADD_VISITOR(Sub)
+ADD_VISITOR(Div)
+
+// clang-format on
+
 // Comparsion Instructions
+// clang-format off
 void EqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(eq) }
 void LtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(lt) }
 void GtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(gt) }
 void LeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(le) }
 void GeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(ge) }
 
+ADD_VISITOR(Eq)
+ADD_VISITOR(Lt)
+ADD_VISITOR(Gt)
+ADD_VISITOR(Le)
+ADD_VISITOR(Ge)
+// clang-format on
+
 // Logic Instructions
 // clang-format off
 void AndInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(and) }
 void OrInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(or) }
 void NotInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(not) }
+
+ADD_VISITOR(And)
+ADD_VISITOR(Or)
+ADD_VISITOR(Not)
 // clang-format on
 
 // Control Instructions
@@ -124,6 +149,13 @@ void RetInstruction::Dump(std::ostream &out) const {
     out << ";\n";
 }
 
+// clang-format off
+ADD_VISITOR(Jmp)
+ADD_VISITOR(Branch)
+ADD_VISITOR(Call)
+ADD_VISITOR(Ret)
+// clang-format on
+
 // Control Instructions
 void SetInstruction::Dump(std::ostream &out) const {
     out << "set " << shadow->GetName() << " " << operands[0]->GetName()
@@ -139,6 +171,12 @@ void UndefInstruction::Dump(std::ostream &out) const {
     out << dest->GetName() << ":"
         << " " << dest->GetStrType() << " = undef;\n";
 }
+
+// clang-format off
+ADD_VISITOR(Set)
+ADD_VISITOR(Get)
+ADD_VISITOR(Undef)
+// clang-format on
 
 // Memory Instructions
 void AllocInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(alloc); }
@@ -159,11 +197,26 @@ void StoreInstruction::Dump(std::ostream &out) const {
 
 void PtraddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(ptradd) }
 
+// clang-format off
+ADD_VISITOR(Alloc)
+ADD_VISITOR(Free)
+ADD_VISITOR(Load)
+ADD_VISITOR(Store)
+ADD_VISITOR(Ptradd)
+// clang-format on
+
 // Floating-Point Arithmetic Instructions
 void FAddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fadd) }
 void FMulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fmul) }
 void FSubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fsub) }
 void FDivInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fdiv) }
+
+// clang-format off
+ADD_VISITOR(FAdd)
+ADD_VISITOR(FMul)
+ADD_VISITOR(FSub)
+ADD_VISITOR(FDiv)
+// clang-format of
 
 // Floating-Point Comparsion Instructions
 void FEqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(feq) }
@@ -171,6 +224,14 @@ void FLtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(flt) }
 void FGtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fgt) }
 void FLeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fle) }
 void FGeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fge) }
+
+//clang-format off
+ADD_VISITOR(FEq)
+ADD_VISITOR(FLt)
+ADD_VISITOR(FGt)
+ADD_VISITOR(FLe)
+ADD_VISITOR(FGe)
+//clang-format on
 
 // Miscellaneous Instructions
 void IdInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(id) }
@@ -209,4 +270,12 @@ void PrintInstruction::Dump(std::ostream &out) const {
 }
 
 void NopInstruction::Dump(std::ostream &out) const { out << "nop;\n"; }
+
+//clang-format off
+ADD_VISITOR(Id)
+ADD_VISITOR(Const)
+ADD_VISITOR(Print)
+ADD_VISITOR(Nop)
+//clang-format on
+
 } // namespace sc

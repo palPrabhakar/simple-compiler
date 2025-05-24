@@ -1,7 +1,8 @@
-#include "instruction.hpp"
 #include "operand.hpp"
+#include "instruction.hpp"
 #include <cassert>
 #include <memory>
+#include <unordered_map>
 
 namespace sc {
 DataType GetDataTypeFromStr(std::string type_str) {
@@ -84,19 +85,31 @@ std::unique_ptr<OperandBase> PtrOperand::Clone() const {
     return clone;
 }
 
-std::unique_ptr<OperandBase> IntOperand::CloneImpl() const {
-    auto clone = std::make_unique<IntOperand>(name, val);
-    return clone;
+IntOperand *IntOperand::GetOperand(val_type value) {
+    static std::unordered_map<val_type, std::unique_ptr<IntOperand>> store;
+    if (!store.contains(value)) {
+        store.emplace(value, std::unique_ptr<IntOperand>(new IntOperand(
+                                 "_$IK_" + std::to_string(value), value)));
+    }
+    return store[value].get();
 }
 
-std::unique_ptr<OperandBase> FloatOperand::CloneImpl() const {
-    auto clone = std::make_unique<FloatOperand>(name, val);
-    return clone;
+FloatOperand *FloatOperand::GetOperand(val_type value) {
+    static std::unordered_map<val_type, std::unique_ptr<FloatOperand>> store;
+    if (!store.contains(value)) {
+        store.emplace(value, std::unique_ptr<FloatOperand>(new FloatOperand(
+                                 "_$FK_" + std::to_string(value), value)));
+    }
+    return store[value].get();
 }
 
-std::unique_ptr<OperandBase> BoolOperand::CloneImpl() const {
-    auto clone = std::make_unique<BoolOperand>(name, val);
-    return clone;
+BoolOperand *BoolOperand::GetOperand(val_type value) {
+    static std::unique_ptr<BoolOperand> store[2];
+    if (store[value] == nullptr) {
+        store[value] = std::unique_ptr<BoolOperand>(
+            new BoolOperand(value ? "true" : "false", value));
+    }
+    return store[value].get();
 }
 
 UndefOperand *UndefOperand::ptr = nullptr;

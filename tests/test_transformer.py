@@ -71,8 +71,10 @@ def run_all(pipeline, files):
 
     results = {}
     for f in files:
+        # name = f.split('/')[-1]
         try:
             out, err = run_test(pipeline, f, timeout)
+            # print(name, err)
             results[f] = [convert(r) for r in out.splitlines() if r.strip()]
         except subprocess.TimeoutExpired:
             results[f] = 'fail'
@@ -82,7 +84,7 @@ def run_all(pipeline, files):
 def baseline(files):
     pipeline = [
         "bril2json",
-        "brilirs {args}",
+        "brilirs -p {args}",
     ]
     return run_all(pipeline, files)
 
@@ -98,7 +100,7 @@ def transformer(files, expected):
         "bril2json",
         "../build/sc",
         "bril2json",
-        "brilirs {args}",
+        "brilirs -p {args}",
     ]
     result = run_all(pipeline, files)
     for f in files:

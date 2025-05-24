@@ -34,13 +34,13 @@ bool CFTransformer::Clean() {
                   << "\n";
 #endif
         auto instr = LAST_INSTR(block);
-        if (instr->GetOpCode() == OpCode::BR &&
+        if (instr->GetOpcode() == Opcode::BR &&
             static_cast<BranchInstruction *>(instr)->GetTrueDest() ==
                 static_cast<BranchInstruction *>(instr)->GetFalseDest()) {
             ReplaceBrWithJmp(block);
             ret = true;
         }
-        if (instr->GetOpCode() == OpCode::JMP) {
+        if (instr->GetOpcode() == Opcode::JMP) {
             // Do not remove the block if it's the entry block
             // unique entry block! Otherwise there won't be an
             // unique exit block in reverse CFG
@@ -59,7 +59,7 @@ bool CFTransformer::Clean() {
                 ret = true;
             }
             if (succ_blk && succ_blk->GetInstructionSize() == 1 &&
-                LAST_INSTR(succ_blk)->GetOpCode() == OpCode::BR) {
+                LAST_INSTR(succ_blk)->GetOpcode() == Opcode::BR) {
                 // change block jmp with succ_blk br
                 HoistBranch(block);
                 ret = true;
@@ -115,12 +115,12 @@ void CFTransformer::RemoveEmptyBlock(Block *block) {
 
     for (auto *pred_blk : block->GetPredecessors()) {
         auto lst_instr = LAST_INSTR(pred_blk);
-        if (lst_instr->GetOpCode() == OpCode::JMP) {
+        if (lst_instr->GetOpcode() == Opcode::JMP) {
             static_cast<JmpInstruction *>(lst_instr)->SetJmpDest(
                 succ_blk->GetLabel());
             pred_blk->AddSuccessor(succ_blk, 0);
         } else {
-            assert(lst_instr->GetOpCode() == OpCode::BR);
+            assert(lst_instr->GetOpcode() == Opcode::BR);
             auto *br = static_cast<BranchInstruction *>(lst_instr);
             if (br->GetTrueDest()->GetBlock() == block) {
                 br->SetTrueDest(succ_blk->GetLabel());

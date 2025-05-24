@@ -2,7 +2,7 @@
 
 namespace sc {
 // clang-format off
-enum class OpCode {
+enum class Opcode {
     // Arithmetic
     ADD,
     MUL,

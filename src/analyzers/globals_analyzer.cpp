@@ -18,8 +18,8 @@ void GlobalsAnalyzer::ComputeGlobalNames() {
 
     for (auto *block : func->GetBlocks()) {
         for (auto *instr : block->GetInstructions()) {
-            auto opcode = instr->GetOpCode();
-            assert(opcode != OpCode::GET && opcode != OpCode::SET);
+            auto Opcode = instr->GetOpcode();
+            assert(Opcode != Opcode::GET && Opcode != Opcode::SET);
             Process(var_kill, instr, block);
         }
         // Clear the var_kill set before the start of next iteration!

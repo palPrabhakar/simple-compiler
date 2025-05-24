@@ -1,11 +1,13 @@
 #pragma once
 
-#include "transformer.hpp"
 #include "analyzers/dominator_analyzer.hpp"
 #include "instruction.hpp"
-#include <vector>
+#include "transformer.hpp"
+#include "transformers/interpreter.hpp"
+#include "transformers/expression_simplifier.hpp"
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace sc {
 
@@ -19,6 +21,8 @@ class DVNTransformer final : public Transformer {
 
   private:
     DominatorAnalyzer dom;
+    Interpreter interpreter;
+    ExpressionSimplifier simplifier;
     std::vector<std::vector<size_t>> remove_instrs;
 
     class ScopedVTable {
@@ -50,11 +54,19 @@ class DVNTransformer final : public Transformer {
         std::vector<std::unordered_map<std::string, OperandBase *>> st;
     } vt; // value table
 
+    void DVN(Block *block);
+
+    void Process(InstructionBase *instr, size_t idx);
 
     bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
-    void DVN(Block *block);
+
     void MarkForRemoval(Block *block, size_t idx);
+
+    InstructionBase *FoldConstInstruction(InstructionBase *instr, size_t idx);
+
+    std::pair<std::string, OperandBase *>
+    GetKeyAndVN(InstructionBase *instr) const;
+
     void RemoveInstructions();
-    std::string GetKey(InstructionBase *instr) const;
 };
 } // namespace sc

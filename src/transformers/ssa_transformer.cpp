@@ -102,9 +102,9 @@ void SSATransformer::Rename(Block *block) {
 
     for (size_t i = 0; i < block->GetInstructionSize(); ++i) {
         auto *instr = block->GetInstruction(i);
-        auto opcode = instr->GetOpCode();
+        auto Opcode = instr->GetOpcode();
 
-        if (opcode == OpCode::GET) {
+        if (Opcode == Opcode::GET) {
             Process(pop_count, instr);
 
             auto *geti = static_cast<GetInstruction *>(instr);
@@ -121,7 +121,7 @@ void SSATransformer::Rename(Block *block) {
                 seti->Dump(std::cerr);
 #endif
             }
-        } else if (opcode == OpCode::SET) {
+        } else if (Opcode == Opcode::SET) {
             if (name[instr->GetOperand(0)].empty()) {
                 auto undef_instr = std::make_unique<UndefInstruction>();
                 auto *ndest = NewDest(instr->GetOperand(0));
@@ -187,12 +187,12 @@ void SSATransformer::Process(
             auto op = name[instr->GetOperand(i)].top();
             SetOperandAndUse(instr, op, i);
         } else {
-            assert(instr->GetOpCode() == OpCode::RET ||
-                   instr->GetOpCode() == OpCode::NOP ||
-                   instr->GetOpCode() == OpCode::GET ||
-                   instr->GetOpCode() == OpCode::JMP ||
-                   instr->GetOpCode() == OpCode::CALL ||
-                   instr->GetOpCode() == OpCode::CONST);
+            assert(instr->GetOpcode() == Opcode::RET ||
+                   instr->GetOpcode() == Opcode::NOP ||
+                   instr->GetOpcode() == Opcode::GET ||
+                   instr->GetOpcode() == Opcode::JMP ||
+                   instr->GetOpcode() == Opcode::CALL ||
+                   instr->GetOpcode() == Opcode::CONST);
         }
     }
 
