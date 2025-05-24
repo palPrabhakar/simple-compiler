@@ -1,0 +1,13 @@
+1dconv.bril total_dyn_inst: 402
+ackermann.bril total_dyn_inst: 1808698
+bubblesort.bril total_dyn_inst: 265
+collatz.bril total_dyn_inst: 157
+cordic.bril total_dyn_inst: 516
+dot-product.bril total_dyn_inst: 90
+euler.bril total_dyn_inst: 1910
+gcd.bril total_dyn_inst: 48
+permutation.bril total_dyn_inst: 135
+quadratic.bril total_dyn_inst: 793
+quicksort.bril total_dyn_inst: 272
+riemann.bril total_dyn_inst: 302
+two-sum.bril total_dyn_inst: 101

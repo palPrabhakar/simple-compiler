@@ -144,14 +144,14 @@ FuncPtr BrilParser::MakeConstInstruction(FuncPtr func, sjp::Json &instr) {
     DataType type = GetDataTypeFromStr(type_str);
     switch (type) {
     case DataType::INT:
-        return BuildConstInstruction<IntOperand, DataType::INT>(
-            std::move(func), instr, std::move(type_str));
+        return BuildConstInstruction<IntOperand, DataType::INT>(std::move(func),
+                                                                instr);
     case DataType::FLOAT:
         return BuildConstInstruction<FloatOperand, DataType::FLOAT>(
-            std::move(func), instr, std::move(type_str));
+            std::move(func), instr);
     case DataType::BOOL:
         return BuildConstInstruction<BoolOperand, DataType::BOOL>(
-            std::move(func), instr, std::move(type_str));
+            std::move(func), instr);
     default:
         assert(false && "Unexpected type found in MakeConstInstruction\n");
         break;

@@ -22,10 +22,10 @@ void EarlyIRTransformer::CanonicalizeIR() {
 #endif
         if (block->GetInstructionSize()) {
             auto *instr = LAST_INSTR(block);
-            if (instr->GetOpCode() == OpCode::RET) {
+            if (instr->GetOpcode() == Opcode::RET) {
                 rb.push_back(block);
-            } else if (instr->GetOpCode() != OpCode::BR &&
-                       instr->GetOpCode() != OpCode::JMP) {
+            } else if (instr->GetOpcode() != Opcode::BR &&
+                       instr->GetOpcode() != Opcode::JMP) {
                 InsertJmpInstruction(block,
                                      func->GetBlock(block->GetIndex() + 1));
             }
@@ -40,7 +40,7 @@ void EarlyIRTransformer::CanonicalizeIR() {
               << " Processing block:  " << block->GetName() << "\n";
 #endif
     if (block->GetInstructionSize() &&
-        LAST_INSTR(block)->GetOpCode() == OpCode::RET) {
+        LAST_INSTR(block)->GetOpcode() == Opcode::RET) {
         rb.push_back(block);
     } else if (!block->GetInstructionSize() || !rb.size()) {
         // can only add a ret instr if function is void
@@ -53,9 +53,9 @@ void EarlyIRTransformer::CanonicalizeIR() {
     }
 
     // last block can only end in these instructions
-    assert(LAST_INSTR(block)->GetOpCode() == OpCode::RET ||
-           LAST_INSTR(block)->GetOpCode() == OpCode::JMP ||
-           LAST_INSTR(block)->GetOpCode() == OpCode::BR);
+    assert(LAST_INSTR(block)->GetOpcode() == Opcode::RET ||
+           LAST_INSTR(block)->GetOpcode() == Opcode::JMP ||
+           LAST_INSTR(block)->GetOpcode() == Opcode::BR);
 
     if (rb.size() > 1) {
         AddUniqueExitBlock();

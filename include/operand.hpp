@@ -4,9 +4,9 @@
 #include <cassert>
 #include <memory>
 #include <mutex>
+#include <span>
 #include <string>
 #include <vector>
-#include <span>
 
 namespace sc {
 // clang-format off
@@ -126,56 +126,54 @@ class LabelOperand final : public OperandBase {
 };
 
 template <typename C> class ImmedOperand : public OperandBase {
-    // TODO:
-    // Ensure there is unique copy per ImmedOperand for a given value
-  public:
+  protected:
     std::unique_ptr<OperandBase> Clone() const override {
-        return static_cast<const C *>(this)->CloneImpl();
+        assert(false);
+        return nullptr;
     }
 
-  protected:
     ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
 };
 
 class IntOperand final : public ImmedOperand<IntOperand> {
   public:
     using val_type = ValType::INT;
-    IntOperand(std::string name, val_type val)
-        : ImmedOperand<IntOperand>(DataType::INT, name), val(val) {}
-
-    std::unique_ptr<OperandBase> CloneImpl() const;
+    static IntOperand *GetOperand(val_type value);
 
     val_type GetValue() const { return val; }
 
-  private:
+  protected:
+    IntOperand(std::string name, val_type val)
+        : ImmedOperand<IntOperand>(DataType::INT, name), val(val) {}
+
     val_type val;
 };
 
 class FloatOperand final : public ImmedOperand<FloatOperand> {
   public:
     using val_type = ValType::FLOAT;
-    FloatOperand(std::string name, val_type val)
-        : ImmedOperand<FloatOperand>(DataType::FLOAT, name), val(val) {}
-
-    std::unique_ptr<OperandBase> CloneImpl() const;
+    static FloatOperand *GetOperand(val_type value);
 
     val_type GetValue() const { return val; }
 
-  private:
+  protected:
+    FloatOperand(std::string name, val_type val)
+        : ImmedOperand<FloatOperand>(DataType::FLOAT, name), val(val) {}
+
     val_type val;
 };
 
 class BoolOperand final : public ImmedOperand<BoolOperand> {
   public:
     using val_type = ValType::BOOL;
-    BoolOperand(std::string name, val_type val)
-        : ImmedOperand<BoolOperand>(DataType::BOOL, name), val(val) {}
-
-    std::unique_ptr<OperandBase> CloneImpl() const;
+    static BoolOperand *GetOperand(val_type value);
 
     val_type GetValue() const { return val; }
 
-  private:
+  protected:
+    BoolOperand(std::string name, val_type val)
+        : ImmedOperand<BoolOperand>(DataType::BOOL, name), val(val) {}
+
     val_type val;
 };
 

@@ -1,11 +1,11 @@
 #pragma once
 
-#include "transformer.hpp"
 #include "analyzers/dominator_analyzer.hpp"
 #include "instruction.hpp"
-#include <vector>
+#include "transformer.hpp"
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace sc {
 
@@ -51,10 +51,12 @@ class DVNTransformer final : public Transformer {
     } vt; // value table
 
 
-    bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
     void DVN(Block *block);
+    void Process(Block *block, InstructionBase *instr, size_t idx);
+    bool IsUselessOrRedundant(GetInstruction *geti, std::string &key);
     void MarkForRemoval(Block *block, size_t idx);
     void RemoveInstructions();
-    std::string GetKey(InstructionBase *instr) const;
+    bool CheckIdentity(Block *block, InstructionBase *instr, size_t idx);
+    std::pair<std::string, OperandBase *> GetKeyAndVN(InstructionBase *instr) const;
 };
 } // namespace sc
