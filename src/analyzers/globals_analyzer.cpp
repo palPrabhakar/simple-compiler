@@ -2,19 +2,12 @@
 #include "instruction.hpp"
 #include "operand.hpp"
 #include <iostream>
-#include <ranges>
 #include <unordered_set>
 
 namespace sc {
 // GlobalsAnalyzer begin
 void GlobalsAnalyzer::ComputeGlobalNames() {
     auto var_kill = std::unordered_set<OperandBase *>();
-
-    auto *block = func->GetBlock(0);
-    for (auto *arg : func->GetArgs()) {
-        var_kill.insert(arg);
-        blocks[arg].insert(block);
-    }
 
     for (auto *block : func->GetBlocks()) {
         for (auto *instr : block->GetInstructions()) {

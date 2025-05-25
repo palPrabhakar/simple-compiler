@@ -66,6 +66,9 @@ class InstructionVisitor {
     virtual void VisitConstInstruction(ConstInstruction *instr) DEFAUL_IMPL
     virtual void VisitPrintInstruction(PrintInstruction *instr) DEFAUL_IMPL
     virtual void VisitNopInstruction(NopInstruction *instr) DEFAUL_IMPL
+
+    // Internal
+    virtual void VisitGetArgInstruction(GetArgInstruction *instr) DEFAUL_IMPL
 };
 // clang-format on
 

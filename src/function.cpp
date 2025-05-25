@@ -7,9 +7,11 @@ void Function::Dump(std::ostream &out) const {
     out << "@" << name;
     if (args.size()) {
         out << "(";
-        out << args[0]->GetName() << ": " << args[0]->GetStrType();
+        out << args[0]->GetDest()->GetName() << ": "
+            << args[0]->GetDest()->GetStrType();
         for (size_t i = 1; i < args.size(); ++i) {
-            out << ", " << args[i]->GetName() << ": " << args[i]->GetStrType();
+            out << ", " << args[i]->GetDest()->GetName() << ": "
+                << args[i]->GetDest()->GetStrType();
         }
         out << ")";
     }

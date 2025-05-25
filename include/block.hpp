@@ -158,7 +158,9 @@ class Block {
 
     void Dump(std::ostream &out = std::cout, std::string prefix = "") const {
         for (auto &i : instructions) {
-            i->Dump(out << prefix);
+            if (i->GetOpcode() != Opcode::GETARG) {
+                i->Dump(out << prefix);
+            }
         }
     }
 

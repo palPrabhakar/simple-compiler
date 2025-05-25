@@ -554,6 +554,18 @@ class NopInstruction final : public InstructionBase {
     void Visit(InstructionVisitor *visitor) override;
 };
 
+// Internal
+class GetArgInstruction final : public InstructionBase {
+  public:
+    GetArgInstruction() : InstructionBase(Opcode::GETARG) {}
+
+    void Dump(std::ostream &out = std::cout) const override;
+
+    void Visit(InstructionVisitor *visitor) override;
+
+    bool HasDest() const override { return true; }
+};
+
 // Helper functions
 // Only meaningful in SSA-form
 inline void SetDestAndDef(InstructionBase *instr, OperandBase *oprnd) {

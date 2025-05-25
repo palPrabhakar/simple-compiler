@@ -83,11 +83,6 @@ void SSATransformer::RewriteInSSAForm() {
     std::cerr << "\n";
 #endif
 
-    // TODO:
-    for (auto *arg : func->GetArgs()) {
-        name[arg].push(arg);
-    }
-
     dom.BuildDominatorTree();
     Rename(func->GetBlock(0));
 }

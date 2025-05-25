@@ -11,6 +11,10 @@
 
 namespace sc {
 
+/*
+ * Dominator-based value numbering with const propagation, const folding,
+ * expression simplification. See Cooper and Torczon Ch 8.5.
+ */
 class DVNTransformer final : public Transformer {
     // Dominator-based Value Numbering
   public:

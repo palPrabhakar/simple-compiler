@@ -1,3 +1,4 @@
+// clang-format off
 #include "instruction.hpp"
 #include "instruction_visitor.hpp"
 #include "operand.hpp"
@@ -23,7 +24,6 @@
     }
 
 namespace sc {
-// clang-format off
 static const std::unordered_map<std::string, Opcode> str_to_Opcodes = {
     // Arithmetic
     {"add", Opcode::ADD},
@@ -72,7 +72,6 @@ static const std::unordered_map<std::string, Opcode> str_to_Opcodes = {
     {"print", Opcode::PRINT},
     {"nop", Opcode::NOP},
 };
-// clang-format on
 
 Opcode GetOpcodeFromStr(std::string op_code) {
     assert(str_to_Opcodes.contains(op_code) &&
@@ -81,7 +80,6 @@ Opcode GetOpcodeFromStr(std::string op_code) {
 }
 
 // Arithmetic Instructions
-// clang-format off
 void AddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(add) }
 void MulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(mul) }
 void SubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(sub) }
@@ -92,10 +90,7 @@ ADD_VISITOR(Mul)
 ADD_VISITOR(Sub)
 ADD_VISITOR(Div)
 
-// clang-format on
-
 // Comparsion Instructions
-// clang-format off
 void EqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(eq) }
 void LtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(lt) }
 void GtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(gt) }
@@ -107,10 +102,8 @@ ADD_VISITOR(Lt)
 ADD_VISITOR(Gt)
 ADD_VISITOR(Le)
 ADD_VISITOR(Ge)
-// clang-format on
 
 // Logic Instructions
-// clang-format off
 void AndInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(and) }
 void OrInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(or) }
 void NotInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(not) }
@@ -118,7 +111,6 @@ void NotInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(not) }
 ADD_VISITOR(And)
 ADD_VISITOR(Or)
 ADD_VISITOR(Not)
-// clang-format on
 
 // Control Instructions
 void JmpInstruction::Dump(std::ostream &out) const {
@@ -149,12 +141,10 @@ void RetInstruction::Dump(std::ostream &out) const {
     out << ";\n";
 }
 
-// clang-format off
 ADD_VISITOR(Jmp)
 ADD_VISITOR(Branch)
 ADD_VISITOR(Call)
 ADD_VISITOR(Ret)
-// clang-format on
 
 // Control Instructions
 void SetInstruction::Dump(std::ostream &out) const {
@@ -172,11 +162,9 @@ void UndefInstruction::Dump(std::ostream &out) const {
         << " " << dest->GetStrType() << " = undef;\n";
 }
 
-// clang-format off
 ADD_VISITOR(Set)
 ADD_VISITOR(Get)
 ADD_VISITOR(Undef)
-// clang-format on
 
 // Memory Instructions
 void AllocInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(alloc); }
@@ -195,28 +183,26 @@ void StoreInstruction::Dump(std::ostream &out) const {
     out << ";\n";
 }
 
-void PtraddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(ptradd) }
+void PtraddInstruction::Dump(std::ostream &out) const {PRINT_HELPER3(ptradd)}
 
-// clang-format off
 ADD_VISITOR(Alloc)
 ADD_VISITOR(Free)
 ADD_VISITOR(Load)
 ADD_VISITOR(Store)
 ADD_VISITOR(Ptradd)
-// clang-format on
 
 // Floating-Point Arithmetic Instructions
-void FAddInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fadd) }
+void FAddInstruction::Dump(std::ostream &out) const {
+    PRINT_HELPER3(fadd)
+}
 void FMulInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fmul) }
 void FSubInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fsub) }
-void FDivInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fdiv) }
+void FDivInstruction::Dump(std::ostream &out) const {PRINT_HELPER3(fdiv)}
 
-// clang-format off
 ADD_VISITOR(FAdd)
 ADD_VISITOR(FMul)
 ADD_VISITOR(FSub)
 ADD_VISITOR(FDiv)
-// clang-format of
 
 // Floating-Point Comparsion Instructions
 void FEqInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(feq) }
@@ -225,13 +211,11 @@ void FGtInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fgt) }
 void FLeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fle) }
 void FGeInstruction::Dump(std::ostream &out) const { PRINT_HELPER3(fge) }
 
-//clang-format off
 ADD_VISITOR(FEq)
 ADD_VISITOR(FLt)
 ADD_VISITOR(FGt)
 ADD_VISITOR(FLe)
 ADD_VISITOR(FGe)
-//clang-format on
 
 // Miscellaneous Instructions
 void IdInstruction::Dump(std::ostream &out) const { PRINT_HELPER2(id) }
@@ -271,11 +255,18 @@ void PrintInstruction::Dump(std::ostream &out) const {
 
 void NopInstruction::Dump(std::ostream &out) const { out << "nop;\n"; }
 
-//clang-format off
 ADD_VISITOR(Id)
 ADD_VISITOR(Const)
 ADD_VISITOR(Print)
 ADD_VISITOR(Nop)
-//clang-format on
+
+// Internal
+void GetArgInstruction::Dump(std::ostream &out) const {
+    out << dest->GetName() << ":"
+        << " " << dest->GetStrType() << " = GetArgument;\n";
+}
+
+ADD_VISITOR(GetArg)
 
 } // namespace sc
+// clang-format on

@@ -1,4 +1,6 @@
 #include "transformers/early_ir_transformer.hpp"
+#include "instruction.hpp"
+#include <memory>
 
 // #define PRINT_DEBUG
 #undef PRINT_DEBUG
@@ -10,6 +12,8 @@ void EarlyIRTransformer::Transform() {
     std::cout << __PRETTY_FUNCTION__
               << "Processing function:  " << func->GetName() << "\n";
 #endif
+
+
     CanonicalizeIR();
 }
 

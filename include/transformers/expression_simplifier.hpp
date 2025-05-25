@@ -53,10 +53,7 @@ class ExpressionSimplifier final : private InstructionVisitor {
     template <typename T, typename T::val_type value>
     bool CheckValue(InstructionBase *instr, size_t i) {
         auto *def = instr->GetOperand(i)->GetDef();
-        // TODO:
-        // This check is a workaround since the function
-        // arguments have no defining instructions
-        if (def && def->GetOpcode() == Opcode::CONST &&
+        if (def->GetOpcode() == Opcode::CONST &&
             static_cast<T *>(def->GetOperand(0))->GetValue() == value) {
             return true;
         }

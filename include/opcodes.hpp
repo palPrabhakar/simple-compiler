@@ -49,7 +49,9 @@ enum class Opcode {
     CONST,
     PRINT,
     LABEL,
-    NOP
+    NOP,
+    // Internal
+    GETARG
 };
 // clang-format on
 }; // namespace sc

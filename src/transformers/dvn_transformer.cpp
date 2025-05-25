@@ -12,13 +12,6 @@ namespace sc {
 
 // DVNTransformer begin
 void DVNTransformer::Transform() {
-    if (func->GetArgsSize()) {
-        vt.PushScope();
-        for (auto *arg : func->GetArgs()) {
-            vt.Insert(arg->GetName(), arg);
-        }
-    }
-
     dom.BuildRPODominatorTree();
     DVN(func->GetBlock(0));
     RemoveInstructions();
@@ -44,9 +37,9 @@ void DVNTransformer::DVN(Block *block) {
 #ifdef PRINT_DEBUG
             instr->Dump(std::cerr << "  ");
 #endif
-            auto Opcode = instr->GetOpcode();
+            auto opcode = instr->GetOpcode();
 
-            if (Opcode == Opcode::GET) {
+            if (opcode == Opcode::GET) {
                 // check if all set pair set the same value
                 auto *geti = static_cast<GetInstruction *>(instr);
                 bool removei = false;
@@ -87,8 +80,8 @@ void DVNTransformer::DVN(Block *block) {
 #endif
                     }
                 }
-            } else if (Opcode == Opcode::CALL || Opcode == Opcode::UNDEF ||
-                       Opcode == Opcode::ALLOC) {
+            } else if (opcode == Opcode::CALL || opcode == Opcode::UNDEF ||
+                       opcode == Opcode::ALLOC || opcode == Opcode::GETARG) {
                 /*
                  * Call Instruction can have side-effect
                  */
@@ -121,38 +114,31 @@ void DVNTransformer::Process(InstructionBase *instr, size_t idx) {
         auto *vn_lop = instr->GetOperand(0);
         auto *vn_rop = instr->GetOperand(1);
 
-        // TODO:
-        // This check is a workaround since the function
-        // arguments have no defining instructions
-        if (vn_lop->GetDef() && vn_rop->GetDef()) {
-            if (vn_lop->GetDef()->GetOpcode() == Opcode::CONST &&
-                vn_rop->GetDef()->GetOpcode() == Opcode::CONST) {
-                instr = FoldConstInstruction(instr, idx);
+        if (vn_lop->GetDef()->GetOpcode() == Opcode::CONST &&
+            vn_rop->GetDef()->GetOpcode() == Opcode::CONST) {
+            instr = FoldConstInstruction(instr, idx);
 
 #ifdef PRINT_DEBUG
-                std::cerr << "    After folding: ";
-                instr->Dump(std::cerr);
+            std::cerr << "    After folding: ";
+            instr->Dump(std::cerr);
 #endif
-            }
-        } else {
-            if (instr->GetOpcode() != Opcode::PTRADD) {
-                instr = simplifier.ProcessInstruction(instr, idx);
+        }
+        else if (instr->GetOpcode() != Opcode::PTRADD) {
+            instr = simplifier.ProcessInstruction(instr, idx);
 
 #ifdef PRINT_DEBUG
-                std::cerr << "    After simplifying: ";
-                instr->Dump(std::cerr);
+            std::cerr << "    After simplifying: ";
+            instr->Dump(std::cerr);
 #endif
-            }
         }
 
     } else {
         if (instr->GetOpcode() == Opcode::NOT &&
-            instr->GetOperand(0)->GetDef() &&
             instr->GetOperand(0)->GetDef()->GetOpcode() == Opcode::CONST) {
             instr = FoldConstInstruction(instr, idx);
 #ifdef PRINT_DEBUG
-                std::cerr << "    After folding: ";
-                instr->Dump(std::cerr);
+            std::cerr << "    After folding: ";
+            instr->Dump(std::cerr);
 #endif
         }
     }

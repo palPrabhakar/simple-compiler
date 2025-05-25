@@ -15,13 +15,15 @@ namespace sc {
 #define APPEND_INSTR(fun, instr)                                               \
     LAST_BLK(func)->AddInstruction(std::move(instr))
 
+class InstructionBase;
+
 class Function {
   public:
     Function(std::string _name, DataType _ret_type)
         : name(_name), ret_type(_ret_type) {}
     virtual ~Function() = default;
 
-    void AddArgs(OperandBase *operand) { args.push_back(std::move(operand)); }
+    void AddArgument(InstructionBase *argument) { args.push_back(argument); }
 
     void AddOperand(std::unique_ptr<OperandBase> operand) {
         operands.push_back(std::move(operand));
@@ -36,11 +38,14 @@ class Function {
     DataType GetRetType() const { return ret_type; }
 
     size_t GetOperandSize() const { return operands.size(); }
+
     OperandBase *GetOperand(size_t idx) const { return operands[idx].get(); }
 
     size_t GetArgsSize() const { return args.size(); }
-    OperandBase *GetArgs(size_t idx) const { return args[idx]; }
-    std::span<OperandBase *> GetArgs() { return std::span(args); }
+
+    InstructionBase *GetArgument(size_t idx) const { return args[idx]; }
+
+    std::span<InstructionBase *> GetArguments() { return std::span(args); }
 
     size_t GetBlockSize() const { return blocks.size(); }
 
@@ -86,9 +91,7 @@ class Function {
   protected:
     std::vector<std::unique_ptr<Block>> blocks;
     std::vector<std::unique_ptr<OperandBase>> operands;
-    // TODO:
-    // Create internal instr
-    std::vector<OperandBase *> args;
+    std::vector<InstructionBase *> args;
     std::string name;
     DataType ret_type;
 };
