@@ -22,14 +22,13 @@ FuncPtr BrilParser::MakeNewBlock(FuncPtr func, std::string name) {
     // Check if label already exists
     if (labels.contains(name)) {
         // label for this block already exist
-        LAST_BLK(func)->SetLabel(labels[name]);
+        LAST_BLK(func)->SetLabel(std::move(lbl_store[name]));
         LAST_BLK(func)->GetLabel()->SetBlock(LAST_BLK(func));
     } else {
         auto operand = std::make_unique<LabelOperand>(name);
         labels[name] = operand.get();
-        LAST_BLK(func)->SetLabel(operand.get());
         operand->SetBlock(LAST_BLK(func));
-        func->AddOperand(std::move(operand));
+        LAST_BLK(func)->SetLabel(std::move(operand));
     }
 
     return func;
@@ -50,7 +49,7 @@ FuncPtr BrilParser::MakeJmpInstruction(FuncPtr func, sjp::Json &instr) {
         auto operand = std::make_unique<LabelOperand>(lbl);
         labels[lbl] = operand.get();
         instr_ptr->SetJmpDest(operand.get());
-        func->AddOperand(std::move(operand));
+        lbl_store.insert({lbl, std::move(operand)});
     }
 
     APPEND_INSTR(func, instr_ptr);
@@ -84,7 +83,7 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
             } else {
                 instr_ptr->SetFalseDest(operand.get());
             }
-            func->AddOperand(std::move(operand));
+            lbl_store.insert({lbl, std::move(operand)});
         }
     }
 
@@ -94,7 +93,7 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
     // comes later in text but happens before in control flow
     assert(operands.contains(arg) &&
            "todo: add support of parsing args before def\n");
-    instr_ptr->SetOperand(operands[arg]);
+    instr_ptr->SetOperand(operands[arg].get());
 
     APPEND_INSTR(func, instr_ptr);
 
@@ -118,8 +117,9 @@ FuncPtr BrilParser::MakeCallInstruction(FuncPtr func, sjp::Json &instr) {
     iptr->SetFuncName(jfuncs.Get(0)->Get<std::string>().value());
     iptr->SetRetVal(has_dest);
 
-    auto *dest = has_dest ? iptr->GetDest() : VoidOperand::GetVoidOperand();
-    iptr->SetDest(dest);
+    if (!has_dest) {
+        iptr->SetDest(VoidOperand::GetVoidOperand());
+    }
 
     return func;
 }
@@ -132,7 +132,7 @@ FuncPtr BrilParser::MakeRetInstruction(FuncPtr func, sjp::Json &instr) {
     auto iptr = static_cast<RetInstruction *>(LAST_INSTR(block));
 
     if (!iptr->GetOperandSize()) {
-        iptr->SetOperand(VoidOperand::GetVoidOperand());
+        iptr->SetOperand(VoidOperand::GetVoidOperand().get());
     }
 
     return func;
@@ -303,6 +303,10 @@ std::unique_ptr<Function> BrilParser::ParseBody(std::unique_ptr<Function> func,
 }
 
 FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
+    // Set the args to true
+    func->SetArgs(true);
+    func->SetArgsSize(args.Size());
+
     for (size_t i : std::views::iota(0UL, args.Size())) {
         auto jop = args.Get(i).value();
         std::string name = jop.Get("name")->Get<std::string>().value();
@@ -313,21 +317,19 @@ FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
                             func->GetName(), name));
         }
 
-        std::unique_ptr<OperandBase> operand = nullptr;
+        std::shared_ptr<OperandBase> operand = nullptr;
         if (jop.Get("type")->type == sjp::JsonType::jobject) {
-            operand = ParsePtrType(std::make_unique<PtrOperand>(name), jop);
+            operand = ParsePtrType(std::make_shared<PtrOperand>(name), jop);
         } else {
             std::string type = jop.Get("type")->Get<std::string>().value();
             operand =
-                std::make_unique<RegOperand>(GetDataTypeFromStr(type), name);
+                std::make_shared<RegOperand>(GetDataTypeFromStr(type), name);
         }
 
         auto *block = func->GetBlock(0);
         auto new_inst = std::make_unique<GetArgInstruction>();
-        new_inst->SetDest(operand.get());
-        func->AddArgument(new_inst.get());
-        operands[name] = operand.get();
-        func->AddOperand(std::move(operand));
+        operands[name] = operand;
+        new_inst->SetDest(std::move(operand));
         block->AddInstruction(std::move(new_inst));
     }
     return func;
@@ -371,12 +373,16 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
     return func;
 }
 
-std::unique_ptr<Program> BrilParser::ParseProgram() {
+std::unique_ptr<Program> BrilParser::ParseProgram(std::istream &input) {
+    auto json_parser = sjp::Parser(input);
+    sjp::Json data = json_parser.Parse();
+
     auto program = std::make_unique<Program>();
     auto functions = data.Get("functions");
     for (size_t i : std::views::iota(0UL, functions->Size())) {
         auto jfunc = functions->Get(i).value();
-        program->AddFunction(ParseFunction(jfunc));
+        auto parser = BrilParser();
+        program->AddFunction(parser.ParseFunction(jfunc));
     }
     return program;
 }

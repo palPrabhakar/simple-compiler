@@ -51,7 +51,7 @@ void EarlyIRTransformer::CanonicalizeIR() {
         assert(func->GetRetType() == DataType::VOID &&
                "Non-void function with no return instruction.\n");
         auto ret_instr = std::make_unique<RetInstruction>();
-        ret_instr->SetOperand(VoidOperand::GetVoidOperand());
+        ret_instr->SetOperand(VoidOperand::GetVoidOperand().get());
         block->AddInstruction(std::move(ret_instr));
         rb.push_back(block);
     }
@@ -78,26 +78,28 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     // create new lbl operand to store jmp dest
     auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__");
     lbl_op->SetBlock(LAST_BLK(func));
-    LAST_BLK(func)->SetLabel(lbl_op.get());
+    auto *exit_lbl = lbl_op.get();
+    LAST_BLK(func)->SetLabel(std::move(lbl_op));
+
 
     // create new ret instruction
     auto ret_instr = std::make_unique<RetInstruction>();
     // create new temp ret operand
-    std::unique_ptr<OperandBase> ret_op = nullptr;
+    std::shared_ptr<OperandBase> ret_op = nullptr;
     // only add operand if not void
     if (func->GetRetType() != DataType::VOID) {
         if (func->GetRetType() == DataType::PTR) {
-            ret_op = std::make_unique<PtrOperand>("__rret__");
+            ret_op = std::make_shared<PtrOperand>("__rret__");
             for (auto dt : static_cast<PtrFunction *>(func)->GetPtrChain()) {
                 static_cast<PtrOperand *>(ret_op.get())->AppendPtrChain(dt);
             }
         } else {
             ret_op =
-                std::make_unique<RegOperand>(func->GetRetType(), "__rret__");
+                std::make_shared<RegOperand>(func->GetRetType(), "__rret__");
         }
         ret_instr->SetOperand(ret_op.get());
     } else {
-        ret_instr->SetOperand(VoidOperand::GetVoidOperand());
+        ret_instr->SetOperand(VoidOperand::GetVoidOperand().get());
     }
     // add new unique ret instr to the exit block
     LAST_BLK(func)->AddInstruction(std::move(ret_instr));
@@ -107,12 +109,16 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     for (auto *block : rb) {
         auto *ret_instr = LAST_INSTR(block);
         auto jmp_instr = std::make_unique<JmpInstruction>();
-        jmp_instr->SetJmpDest(lbl_op.get());
+        jmp_instr->SetJmpDest(exit_lbl);
 
         if (func->GetRetType() != DataType::VOID) {
             auto id_instr = std::make_unique<IdInstruction>();
-            id_instr->SetDest(ret_op.get());
             id_instr->SetOperand(ret_instr->GetOperand(0));
+
+            // Still not in SSA-form need to store the reference
+            // to the same ret_op in multiple isntructions
+            id_instr->SetDest(ret_op);
+
             block->AddInstruction(std::move(id_instr),
                                   block->GetInstructionSize() - 1);
             block->AddInstruction(std::move(jmp_instr));
@@ -122,10 +128,6 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
                                   block->GetInstructionSize() - 1);
         }
     }
-
-    // add ret operand to function
-    func->AddOperand(std::move(lbl_op));
-    func->AddOperand(std::move(ret_op));
 }
 
 void EarlyIRTransformer::InsertJmpInstruction(Block *blk, Block *jmp_blk) {

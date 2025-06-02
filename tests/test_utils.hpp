@@ -9,8 +9,7 @@
 
 #define READ_PROGRAM(x)                                                        \
     std::ifstream ifs(x);                                                      \
-    auto parser = sc::BrilParser(ifs);                                         \
-    auto program = parser.ParseProgram();
+    auto program = sc::BrilParser::ParseProgram(ifs);
 
 #define BUILD_CFG()                                                            \
     program =                                                                  \

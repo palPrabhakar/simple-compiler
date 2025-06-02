@@ -6,6 +6,7 @@
 #include <ostream>
 #include <span>
 #include <vector>
+#include <memory>
 
 namespace sc {
 
@@ -27,7 +28,7 @@ class InstructionBase {
 
     void SetBlock(Block *blk) { block = blk; };
 
-    void SetDest(OperandBase *oprnd) { dest = oprnd; }
+    void SetDest(std::shared_ptr<OperandBase> oprnd) { dest = std::move(oprnd); }
 
     void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
 
@@ -40,7 +41,11 @@ class InstructionBase {
 
     size_t GetOperandSize() const { return operands.size(); }
 
-    OperandBase *GetDest() const { return dest; }
+    OperandBase *GetDest() const { return dest.get(); }
+
+    std::shared_ptr<OperandBase> CopyDest() const { return dest; }
+
+    std::shared_ptr<OperandBase> ReleaseDest() const { return std::move(dest); }
 
     OperandBase *GetOperand(size_t idx) const {
         assert(idx < operands.size());
@@ -58,7 +63,10 @@ class InstructionBase {
 
   protected:
     InstructionBase(Opcode _opcode) : opcode(_opcode) {}
-    OperandBase *dest;
+    // Since the same instruction class is used to represent
+    // the IR in both SSA and non-SSA form. In case of SSA
+    // form the reference count must be 1.
+    std::shared_ptr<OperandBase> dest;
     std::vector<OperandBase *> operands; // non-owning pointers
 
   private:
@@ -340,6 +348,10 @@ class GetInstruction final : public InstructionBase {
 
     bool HasDest() const override { return true; }
 
+    void SetShadow(OperandBase *oprnd) { shadow = oprnd; }
+
+    OperandBase *GetShadow() const { return shadow; }
+
     void SetSetPair(SetInstruction *instr) { sets.push_back(instr); }
 
     size_t GetSetPairSize() const { return sets.size(); }
@@ -352,6 +364,7 @@ class GetInstruction final : public InstructionBase {
     std::span<SetInstruction *> GetSetPairs() { return std::span(sets); }
 
   private:
+    OperandBase *shadow;
     // There is atleast two set instr per get instr
     std::vector<SetInstruction *> sets;
 };
@@ -568,7 +581,7 @@ class GetArgInstruction final : public InstructionBase {
 
 // Helper functions
 // Only meaningful in SSA-form
-inline void SetDestAndDef(InstructionBase *instr, OperandBase *oprnd) {
+inline void SetDestAndDef(InstructionBase *instr, std::shared_ptr<OperandBase> oprnd) {
     oprnd->SetDef(instr);
     instr->SetDest(oprnd);
 }

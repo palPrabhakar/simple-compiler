@@ -121,12 +121,13 @@ def main():
         Path("/home/pal/workspace/external-projects/bril/benchmarks/mem/"),
         Path("/home/pal/workspace/external-projects/bril/benchmarks/mixed/")
     ]
-    for path in paths:
-        print("\n=======================\n")
-        files = [str(f.resolve()) for f in path.glob("*.bril")]
-        results = baseline(files)
-        transformer(files, results)
-        print("\n=======================\n")
+    for _ in range(1):
+        for path in paths:
+            print("\n=======================\n")
+            files = [str(f.resolve()) for f in path.glob("*.bril")]
+            results = baseline(files)
+            transformer(files, results)
+            print("\n=======================\n")
 
 
 if __name__ == '__main__':

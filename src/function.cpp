@@ -5,13 +5,18 @@
 namespace sc {
 void Function::Dump(std::ostream &out) const {
     out << "@" << name;
-    if (args.size()) {
+    if (args) {
         out << "(";
-        out << args[0]->GetDest()->GetName() << ": "
-            << args[0]->GetDest()->GetStrType();
-        for (size_t i = 1; i < args.size(); ++i) {
-            out << ", " << args[i]->GetDest()->GetName() << ": "
-                << args[i]->GetDest()->GetStrType();
+        auto *arg = blocks[0]->GetInstruction(0);
+        assert(arg->GetOpcode() == Opcode::GETARG);
+
+        out << arg->GetDest()->GetName() << ": "
+            << arg->GetDest()->GetStrType();
+        for (size_t i = 1; i < args_size; ++i) {
+            arg = blocks[0]->GetInstruction(i);
+            assert(arg->GetOpcode() == Opcode::GETARG);
+            out << ", " << arg->GetDest()->GetName() << ": "
+                << arg->GetDest()->GetStrType();
         }
         out << ")";
     }

@@ -42,7 +42,7 @@ class OperandBase {
     OperandBase(const OperandBase &) = delete;
     OperandBase &operator=(const OperandBase &) = delete;
 
-    virtual std::unique_ptr<OperandBase> Clone() const = 0;
+    virtual std::shared_ptr<OperandBase> Clone() const = 0;
 
     void SetName(std::string _name) { name = _name; }
 
@@ -90,14 +90,14 @@ class RegOperand : public OperandBase {
   public:
     RegOperand(DataType type, std::string name) : OperandBase(type, name) {}
 
-    virtual std::unique_ptr<OperandBase> Clone() const override;
+    virtual std::shared_ptr<OperandBase> Clone() const override;
 };
 
 class PtrOperand final : public RegOperand {
   public:
     PtrOperand(std::string name) : RegOperand(DataType::PTR, name) {}
 
-    std::unique_ptr<OperandBase> Clone() const override;
+    std::shared_ptr<OperandBase> Clone() const override;
 
     void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
 
@@ -112,9 +112,8 @@ class LabelOperand final : public OperandBase {
     LabelOperand(std::string name)
         : OperandBase(DataType::LABEL, name), block(nullptr) {}
 
-    std::unique_ptr<OperandBase> Clone() const override {
-        assert(false && "LabelOperand cannot be cloned\n");
-        return nullptr;
+    std::shared_ptr<OperandBase> Clone() const override {
+        throw std::runtime_error("LabelOperand cannot be cloned.\n");
     }
 
     void SetBlock(Block *blk) { block = blk; }
@@ -127,9 +126,8 @@ class LabelOperand final : public OperandBase {
 
 template <typename C> class ImmedOperand : public OperandBase {
   protected:
-    std::unique_ptr<OperandBase> Clone() const override {
-        assert(false);
-        return nullptr;
+    std::shared_ptr<OperandBase> Clone() const override {
+        throw std::runtime_error("ImmedOperand cannot be cloned.\n");
     }
 
     ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
@@ -180,41 +178,43 @@ class BoolOperand final : public ImmedOperand<BoolOperand> {
 // Undef Sentinel Singleton
 class UndefOperand : public OperandBase {
   public:
-    static UndefOperand *GetUndefOperand() {
-        std::call_once(flag, [] { ptr = new UndefOperand(); });
+    static std::shared_ptr<UndefOperand> GetUndefOperand() {
+        std::call_once(flag, [] {
+            ptr = std::shared_ptr<UndefOperand>(new UndefOperand());
+        });
         return ptr;
     }
 
   private:
-    static UndefOperand *ptr;
+    static std::shared_ptr<UndefOperand> ptr;
     static std::once_flag flag;
 
-    std::unique_ptr<OperandBase> Clone() const override {
-        assert(false && "LabelOperand cannot be cloned\n");
-        return nullptr;
+    std::shared_ptr<OperandBase> Clone() const override {
+        throw std::runtime_error("UndefOperand cannot be cloned.\n");
     }
 
-    UndefOperand() : OperandBase(DataType::VOID, "undef") {}
+    UndefOperand() : OperandBase(DataType::VOID, "__undef__") {}
 };
 
 // Void Sentinel Singleteon
 class VoidOperand : public OperandBase {
   public:
-    static VoidOperand *GetVoidOperand() {
-        std::call_once(flag, [] { ptr = new VoidOperand(); });
+    static std::shared_ptr<VoidOperand> GetVoidOperand() {
+        std::call_once(flag, [] {
+            ptr = std::shared_ptr<VoidOperand>(new VoidOperand());
+        });
         return ptr;
     }
 
   private:
-    static VoidOperand *ptr;
+    static std::shared_ptr<VoidOperand> ptr;
     static std::once_flag flag;
 
-    std::unique_ptr<OperandBase> Clone() const override {
-        assert(false && "LabelOperand cannot be cloned\n");
-        return nullptr;
+    std::shared_ptr<OperandBase> Clone() const override {
+        throw std::runtime_error("VoidOperand cannot be cloned.\n");
     }
 
-    VoidOperand() : OperandBase(DataType::VOID, "undef") {}
+    VoidOperand() : OperandBase(DataType::VOID, "__void__") {}
 };
 
 } // namespace sc

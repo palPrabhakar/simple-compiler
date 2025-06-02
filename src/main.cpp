@@ -17,12 +17,10 @@ std::unique_ptr<Program> ParseProgram(sjp::Json);
 int main(int argc, char *argv[]) {
     std::unique_ptr<sc::Program> program;
     if (argc < 2) {
-        auto parser = sc::BrilParser(std::cin);
-        program = parser.ParseProgram();
+        program = sc::BrilParser::ParseProgram(std::cin);
     } else {
         std::ifstream ifs(argv[1]);
-        auto parser = sc::BrilParser(ifs);
-        program = parser.ParseProgram();
+        program = sc::BrilParser::ParseProgram(ifs);
     }
 
     program =
@@ -30,9 +28,9 @@ int main(int argc, char *argv[]) {
     program = sc::BuildCFG(std::move(program));
     program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
-    program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
-
+    // program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
     program->Dump();
+
 
     return 0;
 }

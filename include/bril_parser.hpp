@@ -11,24 +11,25 @@
 #include <unordered_map>
 
 namespace sc {
-using OprndTbl = std::unordered_map<std::string, OperandBase *>;
+using OprndTbl = std::unordered_map<std::string, std::shared_ptr<OperandBase>>;
 using LabelTbl = std::unordered_map<std::string, LabelOperand *>;
+using LabelStore =
+    std::unordered_map<std::string, std::unique_ptr<LabelOperand>>;
 using FuncPtr = std::unique_ptr<Function>;
 
 class BrilParser {
   public:
-    BrilParser(std::istream &program) {
-        auto json_parser = sjp::Parser(program);
-        data = json_parser.Parse();
-    }
-
-    std::unique_ptr<Program> ParseProgram();
+    static std::unique_ptr<Program> ParseProgram(std::istream &program);
 
   private:
-    sjp::Json data;
+    BrilParser() {}
+
     OprndTbl operands;
     LabelTbl labels;
     bool check;
+
+    // Temp label store to help with the parsing
+    LabelStore lbl_store;
 
     FuncPtr ParseFunction(sjp::Json &jfunc);
     FuncPtr ParseArguments(FuncPtr func, sjp::Json &args);
@@ -54,20 +55,18 @@ class BrilParser {
                 instr_ptr->SetDest(operands[dest]);
             } else {
                 // create new dest reg operand
-                std::unique_ptr<OperandBase> dest_oprnd = nullptr;
+                std::shared_ptr<OperandBase> dest_oprnd = nullptr;
                 if (instr.Get("type")->type == sjp::JsonType::jobject) {
-                    // dest_oprnd = MakePtrOperand(dest, instr);
                     dest_oprnd =
-                        ParsePtrType(std::make_unique<PtrOperand>(dest), instr);
+                        ParsePtrType(std::make_shared<PtrOperand>(dest), instr);
                 } else {
                     std::string type =
                         instr.Get("type")->Get<std::string>().value();
-                    dest_oprnd = std::make_unique<RegOperand>(
+                    dest_oprnd = std::make_shared<RegOperand>(
                         GetDataTypeFromStr(type), dest);
                 }
-                operands[dest] = dest_oprnd.get();
-                instr_ptr->SetDest(dest_oprnd.get());
-                func->AddOperand(std::move(dest_oprnd));
+                operands[dest] = dest_oprnd;
+                instr_ptr->SetDest(std::move(dest_oprnd));
             }
         }
 
@@ -79,7 +78,7 @@ class BrilParser {
                 // comes later in text but happens before in control flow
                 assert(operands.contains(arg) &&
                        "todo: add support of parsing args before def\n");
-                instr_ptr->SetOperand(operands[arg]);
+                instr_ptr->SetOperand(operands[arg].get());
             }
         }
 
@@ -102,10 +101,9 @@ class BrilParser {
             instr_ptr->SetDest(operands[dest]);
         } else {
             // create new dest reg operand
-            auto dest_oprnd = std::make_unique<RegOperand>(type, dest);
-            operands[dest] = dest_oprnd.get();
-            instr_ptr->SetDest(dest_oprnd.get());
-            func->AddOperand(std::move(dest_oprnd));
+            auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
+            operands[dest] = dest_oprnd;
+            instr_ptr->SetDest(std::move(dest_oprnd));
         }
 
         // ImmedOperands are not own by function

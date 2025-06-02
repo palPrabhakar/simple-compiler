@@ -20,32 +20,24 @@ class InstructionBase;
 class Function {
   public:
     Function(std::string _name, DataType _ret_type)
-        : name(_name), ret_type(_ret_type) {}
+        : name(_name), ret_type(_ret_type), args(false), args_size(0) {}
     virtual ~Function() = default;
-
-    void AddArgument(InstructionBase *argument) { args.push_back(argument); }
-
-    void AddOperand(std::unique_ptr<OperandBase> operand) {
-        operands.push_back(std::move(operand));
-    }
 
     void AddBlock(std::unique_ptr<Block> block) {
         blocks.push_back(std::move(block));
     }
 
+    void SetArgs(bool has_args) { args = has_args; }
+
+    void SetArgsSize(size_t size) { args_size = size; }
+
     std::string GetName() const { return name; }
 
     DataType GetRetType() const { return ret_type; }
 
-    size_t GetOperandSize() const { return operands.size(); }
+    bool HasArgs() const { return args; }
 
-    OperandBase *GetOperand(size_t idx) const { return operands[idx].get(); }
-
-    size_t GetArgsSize() const { return args.size(); }
-
-    InstructionBase *GetArgument(size_t idx) const { return args[idx]; }
-
-    std::span<InstructionBase *> GetArguments() { return std::span(args); }
+    size_t GetArgsSize() const  { return args_size; }
 
     size_t GetBlockSize() const { return blocks.size(); }
 
@@ -90,10 +82,10 @@ class Function {
 
   protected:
     std::vector<std::unique_ptr<Block>> blocks;
-    std::vector<std::unique_ptr<OperandBase>> operands;
-    std::vector<InstructionBase *> args;
     std::string name;
     DataType ret_type;
+    bool args;
+    size_t args_size;
 };
 
 class PtrFunction final : public Function {

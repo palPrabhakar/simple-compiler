@@ -22,8 +22,10 @@ using instr_ptr = std::unique_ptr<InstructionBase>;
 class Block {
   public:
     Block(std::string _name) : name(_name) {}
+    Block(std::string _name, std::unique_ptr<LabelOperand> lbl)
+        : name(_name), label(std::move(lbl)) {}
 
-    void SetLabel(LabelOperand *lbl) { label = lbl; }
+    void SetLabel(std::unique_ptr<LabelOperand> lbl) { label = std::move(lbl); }
 
     void SetIndex(size_t _idx) { idx = _idx; }
 
@@ -128,7 +130,7 @@ class Block {
 
     size_t GetIndex() const { return idx; }
 
-    LabelOperand *GetLabel() const { return label; }
+    LabelOperand *GetLabel() const { return label.get(); }
 
     size_t GetInstructionSize() const { return instructions.size(); }
 
@@ -170,6 +172,6 @@ class Block {
     std::vector<Block *> predecessors; // cfg predecessors
     std::string name;
     size_t idx;
-    LabelOperand *label = nullptr;
+    std::unique_ptr<LabelOperand> label = nullptr;
 };
 } // namespace sc

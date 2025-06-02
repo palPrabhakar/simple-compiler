@@ -75,12 +75,12 @@ std::string OperandBase::GetStrType() const {
     }
 }
 
-std::unique_ptr<OperandBase> RegOperand::Clone() const {
-    return std::make_unique<RegOperand>(type, name);
+std::shared_ptr<OperandBase> RegOperand::Clone() const {
+    return std::make_shared<RegOperand>(type, name);
 }
 
-std::unique_ptr<OperandBase> PtrOperand::Clone() const {
-    auto clone = std::make_unique<PtrOperand>(name);
+std::shared_ptr<OperandBase> PtrOperand::Clone() const {
+    auto clone = std::make_shared<PtrOperand>(name);
     clone->ptr_chain = ptr_chain;
     return clone;
 }
@@ -112,10 +112,10 @@ BoolOperand *BoolOperand::GetOperand(val_type value) {
     return store[value].get();
 }
 
-UndefOperand *UndefOperand::ptr = nullptr;
+std::shared_ptr<UndefOperand> UndefOperand::ptr = nullptr;
 std::once_flag UndefOperand::flag;
 
-VoidOperand *VoidOperand::ptr = nullptr;
+std::shared_ptr<VoidOperand> VoidOperand::ptr = nullptr;
 std::once_flag VoidOperand::flag;
 
 } // namespace sc

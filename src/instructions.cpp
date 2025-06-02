@@ -135,7 +135,7 @@ void CallInstruction::Dump(std::ostream &out) const {
 
 void RetInstruction::Dump(std::ostream &out) const {
     out << "ret";
-    if (operands.size() && operands[0] != VoidOperand::GetVoidOperand()) {
+    if (operands.size() && operands[0] != VoidOperand::GetVoidOperand().get()) {
         out << " " << operands[0]->GetName();
     }
     out << ";\n";
@@ -153,8 +153,13 @@ void SetInstruction::Dump(std::ostream &out) const {
 }
 
 void GetInstruction::Dump(std::ostream &out) const {
-    out << dest->GetName() << ":"
-        << " " << dest->GetStrType() << " = get;\n";
+    if(dest) {
+        out << dest->GetName() << ":"
+            << " " << dest->GetStrType() << " = get;\n";
+    } else {
+        out << shadow->GetName() << ":"
+            << " " << shadow->GetStrType() << " = get;\n";
+    }
 }
 
 void UndefInstruction::Dump(std::ostream &out) const {

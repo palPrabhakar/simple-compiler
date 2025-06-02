@@ -19,7 +19,7 @@ void SSATransformer::RewriteInSSAForm() {
 
     for (auto *op : globals.GetGlobals()) {
 #ifdef PRINT_DEBUG
-        std::cerr << "Global: " << op->GetName() << "\n\n";
+        std::cerr << "Global: " << op->GetName() << "\n" << std::endl;
 #endif
         auto gblocks = globals.GetBlocks(op);
         auto worklist = std::vector<Block *>(gblocks.begin(), gblocks.end());
@@ -43,7 +43,7 @@ void SSATransformer::RewriteInSSAForm() {
 
                 gets[d->GetIndex()].insert(op);
                 auto get_instr = std::make_unique<GetInstruction>();
-                get_instr->SetDest(op);
+                get_instr->SetShadow(op);
 
                 // add set instructions
                 for (auto *pred : d->GetPredecessors()) {
@@ -97,9 +97,9 @@ void SSATransformer::Rename(Block *block) {
 
     for (size_t i = 0; i < block->GetInstructionSize(); ++i) {
         auto *instr = block->GetInstruction(i);
-        auto Opcode = instr->GetOpcode();
+        auto opcode = instr->GetOpcode();
 
-        if (Opcode == Opcode::GET) {
+        if (opcode == Opcode::GET) {
             Process(pop_count, instr);
 
             auto *geti = static_cast<GetInstruction *>(instr);
@@ -112,23 +112,24 @@ void SSATransformer::Rename(Block *block) {
                 seti->SetShadow(geti->GetDest());
 
 #ifdef PRINT_DEBUG
-                std::cerr << "\n\t\t  After: ";
+                std::cerr << "\t\t  After: ";
                 seti->Dump(std::cerr);
 #endif
             }
-        } else if (Opcode == Opcode::SET) {
+        } else if (opcode == Opcode::SET) {
             if (name[instr->GetOperand(0)].empty()) {
                 auto undef_instr = std::make_unique<UndefInstruction>();
-                auto *ndest = NewDest(instr->GetOperand(0));
-                SetDestAndDef(undef_instr.get(), ndest);
+                SetDestAndDef(undef_instr.get(), NewDest(instr->GetOperand(0)));
                 SetOperandAndUse(undef_instr.get(),
-                                 UndefOperand::GetUndefOperand());
+                                 UndefOperand::GetUndefOperand().get());
 
 #ifdef PRINT_DEBUG
                 std::cerr << "\n\tInsert: ";
                 undef_instr->Dump(std::cerr);
 #endif
-                func->GetBlock(0)->InsertInstruction(std::move(undef_instr), 0);
+                size_t insert_pos = func->HasArgs() ? func->GetArgsSize() : 0;
+                func->GetBlock(0)->InsertInstruction(std::move(undef_instr),
+                                                     insert_pos);
                 if (func->GetBlock(0) == block) {
                     ++i;
                 }
@@ -155,18 +156,12 @@ void SSATransformer::Rename(Block *block) {
     }
 }
 
-OperandBase *SSATransformer::NewDest(OperandBase *op) {
-    // TODO:
-    // cleanup old operands that are not
-    // used for SSA transformation
+std::shared_ptr<OperandBase> SSATransformer::NewDest(OperandBase *op) {
     auto i = counter[op]++;
     auto nop = op->Clone();
     name[op].push(nop.get());
-
     nop->SetName(std::format("{}.{}", op->GetName(), i));
-    func->AddOperand(std::move(nop));
-
-    return name[op].top();
+    return nop;
 }
 
 void SSATransformer::Process(
@@ -183,18 +178,21 @@ void SSATransformer::Process(
             SetOperandAndUse(instr, op, i);
         } else {
             assert(instr->GetOpcode() == Opcode::RET ||
-                   instr->GetOpcode() == Opcode::NOP ||
-                   instr->GetOpcode() == Opcode::GET ||
-                   instr->GetOpcode() == Opcode::JMP ||
                    instr->GetOpcode() == Opcode::CALL ||
                    instr->GetOpcode() == Opcode::CONST);
         }
     }
 
     if (instr->HasDest()) {
-        pop_count[instr->GetDest()]++;
-        auto *ndest = NewDest(instr->GetDest());
-        SetDestAndDef(instr, ndest);
+        if (instr->GetOpcode() == Opcode::GET) {
+            auto *op = static_cast<GetInstruction *>(instr)->GetShadow();
+            pop_count[op]++;
+            SetDestAndDef(instr, NewDest(op));
+        } else {
+            temp_store.insert(instr->CopyDest());
+            pop_count[instr->GetDest()]++;
+            SetDestAndDef(instr, NewDest(instr->GetDest()));
+        }
     }
 
 #ifdef PRINT_DEBUG
