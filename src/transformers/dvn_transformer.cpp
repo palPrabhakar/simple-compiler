@@ -223,7 +223,7 @@ InstructionBase *DVNTransformer::FoldConstInstruction(InstructionBase *instr,
                                                       size_t idx) {
     auto *block = instr->GetBlock();
     auto new_inst = std::make_unique<ConstInstruction>();
-    SetDestAndDef(new_inst.get(), instr->GetDest());
+    SetDestAndDef(new_inst.get(), instr->ReleaseDest());
     auto *op = interpreter.ProcessInstruction(instr);
     SetOperandAndUse(new_inst.get(), op);
     instr = new_inst.get();

@@ -28,7 +28,7 @@ int main(int argc, char *argv[]) {
     program = sc::BuildCFG(std::move(program));
     program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
-    // program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
+    program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
     program->Dump();
 
 

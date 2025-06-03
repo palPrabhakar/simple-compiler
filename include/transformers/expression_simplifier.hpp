@@ -66,7 +66,7 @@ class ExpressionSimplifier final : private InstructionVisitor {
 
     void ReplaceWithIdInstruction(InstructionBase *instr, size_t i) {
         auto n_inst = std::make_unique<IdInstruction>();
-        SetDestAndDef(n_inst.get(), instr->GetDest());
+        SetDestAndDef(n_inst.get(), instr->ReleaseDest());
         SetOperandAndUse(n_inst.get(), instr->GetOperand(i));
         ret_instr = n_inst.get();
         instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx);
@@ -76,7 +76,7 @@ class ExpressionSimplifier final : private InstructionVisitor {
     void ReplaceWithConstInstruction(InstructionBase *instr,
                                      T::val_type value) {
         auto n_inst = std::make_unique<ConstInstruction>();
-        SetDestAndDef(n_inst.get(), instr->GetDest());
+        SetDestAndDef(n_inst.get(), instr->ReleaseDest());
         SetOperandAndUse(n_inst.get(), T::GetOperand(value));
         ret_instr = n_inst.get();
         instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx);
