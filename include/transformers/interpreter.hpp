@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instruction_visitor.hpp"
+#include <type_traits>
 
 namespace sc {
 class Interpreter final : private InstructionVisitor {
@@ -51,11 +52,13 @@ class Interpreter final : private InstructionVisitor {
 
         auto value = op(lop->GetValue(), rop->GetValue());
 
-        if constexpr (std::is_same_v<typename Op<U>::result_type,
-                                     typename T::val_type>) {
+        using ret_type = std::invoke_result_t<decltype(op), typename T::val_type,
+                                            typename T::val_type>;
+
+        if constexpr (std::is_same_v<ret_type, typename T::val_type>) {
             return T::GetOperand(value);
         } else {
-            static_assert(std::is_same_v<typename Op<U>::result_type, bool>);
+            static_assert(std::is_same_v<ret_type, bool>);
             return BoolOperand::GetOperand(value);
         }
     }

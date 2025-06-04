@@ -17,5 +17,5 @@ void RemoveElements(std::vector<T> &vec, std::vector<size_t> indexes) {
             vec[cur++] = std::move(vec[i]);
         }
     }
-    vec.erase(vec.begin() + cur, vec.end());
+    vec.erase(vec.begin() + static_cast<long>(cur), vec.end());
 }

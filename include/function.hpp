@@ -37,7 +37,7 @@ class Function {
 
     bool HasArgs() const { return args; }
 
-    size_t GetArgsSize() const  { return args_size; }
+    size_t GetArgsSize() const { return args_size; }
 
     size_t GetBlockSize() const { return blocks.size(); }
 

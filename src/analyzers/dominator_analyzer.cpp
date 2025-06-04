@@ -1,5 +1,4 @@
 #include "analyzers/dominator_analyzer.hpp"
-#include "analyzers/cfg.hpp"
 #include <ranges>
 
 namespace sc {
@@ -11,7 +10,7 @@ void DominatorAnalyzer::ComputeDominance() {
         dom.emplace_back(func->GetBlockSize(), true);
     }
 
-    auto rpo = GetReversePostOrder(func);
+    auto rpo = GetReversePostOrder(cfg.get());
 
     bool changed = true;
     while (changed) {
@@ -97,7 +96,7 @@ void DominatorAnalyzer::BuildRPODominatorTree() {
     }
 
     dtree = std::vector<std::vector<Block *>>(func->GetBlockSize());
-    auto rpo = GetReversePostOrder(func);
+    auto rpo = GetReversePostOrder(cfg.get());
     for (auto *blk : rpo) {
         if (blk == func->GetBlock(0)) {
             continue;

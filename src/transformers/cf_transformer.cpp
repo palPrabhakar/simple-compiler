@@ -13,11 +13,13 @@ void CFTransformer::Transform() {
               << " Processing Function:  " << func->GetName() << "\n";
 #endif
     do {
-        traverse_order = GetPostOrder(func);
+        auto cfg = ForwardCFG(func);
+        traverse_order = GetPostOrder(&cfg);
     } while (Clean());
 
     // Remove all unreachable nodes
-    traverse_order = GetPostOrder(func);
+    auto cfg = ForwardCFG(func);
+    traverse_order = GetPostOrder(&cfg);
     if (traverse_order.size() != func->GetBlockSize()) {
         RemoveUnreachableCFNode();
     }

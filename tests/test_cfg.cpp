@@ -1,5 +1,5 @@
-#include "test_utils.hpp"
 #include "block.hpp"
+#include "test_utils.hpp"
 #include <gtest/gtest.h>
 
 #define CHECKER0(i)                                                            \
@@ -39,7 +39,8 @@
                           func->GetBlock(predecessors[f][b][p]));              \
             }                                                                  \
         }                                                                      \
-        auto po = sc::GetPostOrder(func);                                      \
+        auto cfg = sc::ForwardCFG(func);                                           \
+        auto po = sc::GetPostOrder(&cfg);                                      \
         EXPECT_EQ(po.size(), postorder[f].size());                             \
         for (auto o : std::views::iota(0UL, po.size())) {                      \
             EXPECT_EQ(po[o], func->GetBlock(postorder[f][o]));                 \

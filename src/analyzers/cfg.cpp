@@ -1,12 +1,11 @@
 #include "analyzers/cfg.hpp"
 #include <algorithm>
 #include <memory>
-#include <ranges>
 #include <unordered_set>
 
 namespace sc {
 
-static void PostOrderImpl(Block *block, std::vector<Block *> &post_order,
+static void PostOrderImpl(CFG *cfg, Block *block, std::vector<Block *> &post_order,
                           std::unordered_set<Block *> &visited) {
     if (visited.contains(block)) {
         return;
@@ -14,22 +13,22 @@ static void PostOrderImpl(Block *block, std::vector<Block *> &post_order,
 
     visited.insert(block);
 
-    for (auto *succ : block->GetSuccessors()) {
-        PostOrderImpl(succ, post_order, visited);
+    for (auto *succ : cfg->GetSuccessors(block)) {
+        PostOrderImpl(cfg, succ, post_order, visited);
     }
 
     post_order.push_back(block);
 }
 
-const std::vector<Block *> GetPostOrder(Function *func) {
+const std::vector<Block *> GetPostOrder(CFG *cfg) {
     std::vector<Block *> post_order;
     std::unordered_set<Block *> visited;
-    PostOrderImpl(func->GetBlock(0), post_order, visited);
+    PostOrderImpl(cfg, cfg->GetRoot(), post_order, visited);
     return post_order;
 }
 
-const std::vector<Block *> GetReversePostOrder(Function *func) {
-    auto post_order = GetPostOrder(func);
+const std::vector<Block *> GetReversePostOrder(CFG *cfg) {
+    auto post_order = GetPostOrder(cfg);
     std::reverse(post_order.begin(), post_order.end());
     return post_order;
 }
@@ -61,6 +60,9 @@ static void BuildCFGImpl(Function *func) {
 }
 
 std::unique_ptr<Program> BuildCFG(std::unique_ptr<Program> program) {
+    // This function sets the successors and predecessors of
+    // each block in a function. Once the sucessors/predecessors
+    // are built use the CFGContainers to perform operations on them.
     for (auto &f : *program) {
         BuildCFGImpl(f.get());
     }

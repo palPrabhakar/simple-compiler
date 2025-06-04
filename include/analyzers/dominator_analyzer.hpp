@@ -1,14 +1,22 @@
 #pragma once
 
+#include "analyzers/cfg.hpp"
 #include "function.hpp"
 #include "index_set.hpp"
-#include <vector>
 #include <iostream>
+#include <memory>
+#include <vector>
 
 namespace sc {
 class DominatorAnalyzer {
   public:
-    DominatorAnalyzer(Function *f) : func(f) {}
+    DominatorAnalyzer(Function *f, bool reverse = false) : func(f) {
+        if (reverse) {
+            cfg = std::make_unique<ReverseCFG>(func);
+        } else {
+            cfg = std::make_unique<ForwardCFG>(func);
+        }
+    }
 
     void ComputeDominance();
     void ComputeImmediateDominators();
@@ -43,6 +51,7 @@ class DominatorAnalyzer {
 
   private:
     Function *func;
+    std::unique_ptr<CFG> cfg;
     std::vector<IndexSet> dom;
     std::vector<IndexSet> df;
     std::vector<Block *> idom;
