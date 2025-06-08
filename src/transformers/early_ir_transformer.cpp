@@ -117,7 +117,7 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
 
             // Still not in SSA-form need to store the reference
             // to the same ret_op in multiple isntructions
-            id_instr->SetDest(ret_op);
+            id_instr->AddDest(ret_op);
 
             block->AddInstruction(std::move(id_instr),
                                   block->GetInstructionSize() - 1);

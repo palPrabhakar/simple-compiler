@@ -44,26 +44,29 @@ class OperandBase {
 
     virtual std::shared_ptr<OperandBase> Clone() const = 0;
 
+    /*
+     * Name & Type
+     *
+     */
     void SetName(std::string _name) { name = _name; }
-
-    void SetDef(InstructionBase *instr) { def = instr; }
-
-    void SetUse(InstructionBase *instr) { uses.push_back(instr); }
-
-    void RemoveUse(InstructionBase *instr) {
-        auto it = std::find(uses.begin(), uses.end(), instr);
-        if (it != uses.end()) {
-            uses.erase(it);
-        }
-    }
-
-    std::string GetStrType() const;
-
-    DataType GetType() const { return type; }
 
     std::string GetName() const { return name; }
 
+    DataType GetType() const { return type; }
+
+    std::string GetStrType() const;
+
+    /*
+     * Def
+     */
+    void SetDef(InstructionBase *instr) { def = instr; }
+
     InstructionBase *GetDef() const { return def; }
+
+    /*
+     * Use
+     */
+    void SetUse(InstructionBase *instr) { uses.push_back(instr); }
 
     size_t GetUsesSize() const { return uses.size(); }
 
@@ -73,6 +76,13 @@ class OperandBase {
     }
 
     std::span<InstructionBase *> GetUses() { return std::span(uses); }
+
+    void RemoveUse(InstructionBase *instr) {
+        auto it = std::find(uses.begin(), uses.end(), instr);
+        if (it != uses.end()) {
+            uses.erase(it);
+        }
+    }
 
   protected:
     OperandBase(DataType _type, std::string _name)

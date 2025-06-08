@@ -52,7 +52,7 @@ class BrilParser {
             auto dest = instr.Get("dest")->Get<std::string>().value();
             if (operands.contains(dest)) {
                 // dest already exists
-                instr_ptr->SetDest(operands[dest]);
+                instr_ptr->AddDest(operands[dest]);
             } else {
                 // create new dest reg operand
                 std::shared_ptr<OperandBase> dest_oprnd = nullptr;
@@ -66,7 +66,7 @@ class BrilParser {
                         GetDataTypeFromStr(type), dest);
                 }
                 operands[dest] = dest_oprnd;
-                instr_ptr->SetDest(std::move(dest_oprnd));
+                instr_ptr->AddDest(std::move(dest_oprnd));
             }
         }
 
@@ -98,12 +98,12 @@ class BrilParser {
         auto dest = instr.Get("dest")->Get<std::string>().value();
         if (operands.contains(dest)) {
             // dest already exists
-            instr_ptr->SetDest(operands[dest]);
+            instr_ptr->AddDest(operands[dest]);
         } else {
             // create new dest reg operand
             auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
             operands[dest] = dest_oprnd;
-            instr_ptr->SetDest(std::move(dest_oprnd));
+            instr_ptr->AddDest(std::move(dest_oprnd));
         }
 
         // ImmedOperands are not own by function

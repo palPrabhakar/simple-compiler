@@ -23,21 +23,35 @@ class Function {
         : name(_name), ret_type(_ret_type), args(false), args_size(0) {}
     virtual ~Function() = default;
 
-    void AddBlock(std::unique_ptr<Block> block) {
-        blocks.push_back(std::move(block));
-    }
+    /*
+     * Name
+     */
+    std::string GetName() const { return name; }
 
+    /*
+     * RetType
+     */
+    virtual std::string GetStrRetType() const;
+
+    DataType GetRetType() const { return ret_type; }
+
+    /*
+     * Args
+     */
     void SetArgs(bool has_args) { args = has_args; }
 
     void SetArgsSize(size_t size) { args_size = size; }
 
-    std::string GetName() const { return name; }
-
-    DataType GetRetType() const { return ret_type; }
-
     bool HasArgs() const { return args; }
 
     size_t GetArgsSize() const { return args_size; }
+
+    /*
+     * Blocks
+     */
+    void AddBlock(std::unique_ptr<Block> block) {
+        blocks.push_back(std::move(block));
+    }
 
     size_t GetBlockSize() const { return blocks.size(); }
 
@@ -74,7 +88,9 @@ class Function {
         }
     }
 
-    virtual std::string GetStrRetType() const;
+    /*
+     * Dump
+     */
     void Dump(std::ostream &out = std::cout) const;
     void DumpBlocks(std::ostream &out = std::cout) const;
     void DumpCFG(std::ostream &out = std::cout) const;

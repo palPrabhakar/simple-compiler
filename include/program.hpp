@@ -12,10 +12,13 @@ using func_ptr = std::unique_ptr<Function>;
 class Program {
   public:
     ~Program() = default;
+
     void AddFunction(std::unique_ptr<Function> func) {
         functions.push_back(std::move(func));
     }
+
     size_t GetSize() const { return functions.size(); }
+
     // non-owning pointer
     Function *GetFunction(size_t idx) { return functions[idx].get(); }
 

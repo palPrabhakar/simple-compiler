@@ -118,7 +118,7 @@ FuncPtr BrilParser::MakeCallInstruction(FuncPtr func, sjp::Json &instr) {
     iptr->SetRetVal(has_dest);
 
     if (!has_dest) {
-        iptr->SetDest(VoidOperand::GetVoidOperand());
+        iptr->AddDest(VoidOperand::GetVoidOperand());
     }
 
     return func;
@@ -329,7 +329,7 @@ FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
         auto *block = func->GetBlock(0);
         auto new_inst = std::make_unique<GetArgInstruction>();
         operands[name] = operand;
-        new_inst->SetDest(std::move(operand));
+        new_inst->AddDest(std::move(operand));
         block->AddInstruction(std::move(new_inst));
     }
     return func;

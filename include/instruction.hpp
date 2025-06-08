@@ -19,17 +19,46 @@ Opcode GetOpcodeFromStr(std::string);
 class InstructionBase {
   public:
     virtual ~InstructionBase() = default;
-
     virtual void Dump(std::ostream &out = std::cout) const = 0;
-
+    virtual void Visit(InstructionVisitor *visitor) = 0;
     virtual bool HasDest() const { return false; }
 
-    virtual void Visit(InstructionVisitor *visitor) = 0;
+    /*
+     * Opcode
+     */
+    Opcode GetOpcode() const { return opcode; }
 
+    /*
+     * Block
+     */
     void SetBlock(Block *blk) { block = blk; };
 
-    void SetDest(std::shared_ptr<OperandBase> oprnd) { dest = std::move(oprnd); }
+    Block *GetBlock() const {
+        assert(block != nullptr && "No owning block.\n");
+        return block;
+    }
 
+    /*
+     * Index
+     */
+    void SetIndex(size_t index) { idx = index; }
+
+    size_t GetIndex() const { return idx; }
+
+    /*
+     * Dest
+     */
+    void AddDest(std::shared_ptr<OperandBase> oprnd) { dest = std::move(oprnd); }
+
+    OperandBase *GetDest() const { return dest.get(); }
+
+    std::shared_ptr<OperandBase> CopyDest() const { return dest; }
+
+    std::shared_ptr<OperandBase> ReleaseDest() const { return std::move(dest); }
+
+    /*
+     * Operand
+     */
     void SetOperand(OperandBase *oprnd) { operands.push_back(oprnd); }
 
     void SetOperand(OperandBase *oprnd, size_t idx) {
@@ -37,15 +66,7 @@ class InstructionBase {
         operands[idx] = oprnd;
     }
 
-    Opcode GetOpcode() const { return opcode; }
-
     size_t GetOperandSize() const { return operands.size(); }
-
-    OperandBase *GetDest() const { return dest.get(); }
-
-    std::shared_ptr<OperandBase> CopyDest() const { return dest; }
-
-    std::shared_ptr<OperandBase> ReleaseDest() const { return std::move(dest); }
 
     OperandBase *GetOperand(size_t idx) const {
         assert(idx < operands.size());
@@ -54,11 +75,6 @@ class InstructionBase {
 
     std::span<OperandBase *> GetOperands() {
         return std::span<OperandBase *>(operands);
-    }
-
-    Block *GetBlock() const {
-        assert(block != nullptr && "No owning block.\n");
-        return block;
     }
 
   protected:
@@ -72,6 +88,7 @@ class InstructionBase {
   private:
     Opcode opcode;
     Block *block;
+    size_t idx;
 };
 
 // NewInstructionClass
@@ -583,7 +600,7 @@ class GetArgInstruction final : public InstructionBase {
 // Only meaningful in SSA-form
 inline void SetDestAndDef(InstructionBase *instr, std::shared_ptr<OperandBase> oprnd) {
     oprnd->SetDef(instr);
-    instr->SetDest(oprnd);
+    instr->AddDest(oprnd);
 }
 
 inline void SetOperandAndUse(InstructionBase *instr, OperandBase *oprnd) {

@@ -1,6 +1,7 @@
 #include "analyzers/cfg.hpp"
 #include "bril_parser.hpp"
 #include "program.hpp"
+#include "transformers/dce_transformer.hpp"
 #include "transformers/transformer.hpp"
 #include "transformers/early_ir_transformer.hpp"
 #include "transformers/cf_transformer.hpp"
@@ -29,6 +30,7 @@ int main(int argc, char *argv[]) {
     program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
+    program = sc::ApplyTransformation<sc::DCETransformer>(std::move(program));
     program->Dump();
 
 

@@ -1,7 +1,8 @@
 #include "analyzers/dominator_analyzer.hpp"
-#include "transformers/transformer.hpp"
-#include "transformers/cf_transformer.hpp"
+#include "function.hpp"
 #include "test_utils.hpp"
+#include "transformers/cf_transformer.hpp"
+#include "transformers/transformer.hpp"
 #include <gtest/gtest.h>
 #include <ranges>
 #include <vector>
@@ -62,6 +63,50 @@ TEST(DominatorAnalyzerTest, TestAckermann) {
     READ_PROGRAM("../tests/bril/ackermann.json")
     BUILD_CFG()
     DOM_ANALYSIS()
+}
+
+TEST(DominatorAnalyzerTest, TestRAckermann) {
+    READ_PROGRAM("../tests/bril/ackermann.json")
+    BUILD_CFG()
+
+    program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
+    auto *func = program->GetFunction(0);
+    auto rdom = sc::DominatorAnalyzer(func, true);
+
+    rdom.ComputeImmediateDominators();
+    for (auto k : std::views::iota(0ul, func->GetBlockSize() - 1)) {
+        EXPECT_EQ(rdom.GetImmediateDominator(k), LAST_BLK(func));
+    }
+
+    rdom.ComputeDominanceFrontier();
+
+    // entry
+    auto df = rdom.GetDominanceFrontier(func->GetBlock(0));
+    EXPECT_EQ(df.size(), 0);
+
+    // exit
+    df = rdom.GetDominanceFrontier(LAST_BLK(func));
+    EXPECT_EQ(df.size(), 0);
+
+    // m_zero
+    df = rdom.GetDominanceFrontier(func->GetBlock(1));
+    EXPECT_EQ(df.size(), 1);
+    EXPECT_EQ(df[0], func->GetBlock(0));
+
+    // m_nonzero
+    df = rdom.GetDominanceFrontier(func->GetBlock(2));
+    EXPECT_EQ(df.size(), 1);
+    EXPECT_EQ(df[0], func->GetBlock(0));
+
+    // n_zero
+    df = rdom.GetDominanceFrontier(func->GetBlock(3));
+    EXPECT_EQ(df.size(), 1);
+    EXPECT_EQ(df[0], func->GetBlock(2));
+
+    // n_nonzero
+    df = rdom.GetDominanceFrontier(func->GetBlock(4));
+    EXPECT_EQ(df.size(), 1);
+    EXPECT_EQ(df[0], func->GetBlock(2));
 }
 
 TEST(DominatorAnalyzerTest, Test1dconv) {
