@@ -53,11 +53,17 @@ class Block {
         instructions.push_back(std::move(instr));
     }
 
-    void AddInstruction(instr_ptr instr, size_t idx) {
+    void AddInstruction(instr_ptr instr, size_t idx, bool remove_from_usage = false) {
         /*
          * Replaces the instruction at idx
          */
         assert(idx < instructions.size());
+        if (remove_from_usage) {
+            for (auto *op : instructions[idx]->GetOperands()) {
+                op->RemoveUse(instructions[idx].get());
+            }
+        }
+
         instr->SetBlock(this);
         instr->SetIndex(instructions.size());
         instructions[idx] = std::move(instr);
@@ -101,13 +107,28 @@ class Block {
                std::views::transform([](auto &i) { return i.get(); });
     }
 
-    void RemoveInstruction(size_t idx) {
+    void RemoveInstruction(size_t idx, bool remove_from_usage = false) {
         assert(idx < instructions.size());
+        if (remove_from_usage) {
+            for (auto *op : instructions[idx]->GetOperands()) {
+                op->RemoveUse(instructions[idx].get());
+            }
+        }
+
         instructions.erase(instructions.begin() + static_cast<long>(idx));
         FixIndex(idx);
     }
 
-    void RemoveInstructions(std::vector<size_t> indexes) {
+    void RemoveInstructions(std::vector<size_t> indexes,
+                            bool remove_from_usage = false) {
+        if (remove_from_usage) {
+            for (auto idx : indexes) {
+                for (auto *op : instructions[idx]->GetOperands()) {
+                    op->RemoveUse(instructions[idx].get());
+                }
+            }
+        }
+
         RemoveElements(instructions, std::move(indexes));
         FixIndex(0);
     }

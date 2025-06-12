@@ -122,8 +122,7 @@ void DVNTransformer::Process(InstructionBase *instr, size_t idx) {
             std::cerr << "    After folding: ";
             instr->Dump(std::cerr);
 #endif
-        }
-        else if (instr->GetOpcode() != Opcode::PTRADD) {
+        } else if (instr->GetOpcode() != Opcode::PTRADD) {
             instr = simplifier.ProcessInstruction(instr, idx);
 
 #ifdef PRINT_DEBUG
@@ -212,22 +211,21 @@ bool DVNTransformer::IsUselessOrRedundant(GetInstruction *geti,
 }
 
 void DVNTransformer::MarkForRemoval(Block *block, size_t idx) {
-    auto *instr = block->GetInstruction(idx);
-    for (auto *op : instr->GetOperands()) {
-        op->RemoveUse(instr);
-    }
     remove_instrs[block->GetIndex()].push_back(idx);
 }
 
 InstructionBase *DVNTransformer::FoldConstInstruction(InstructionBase *instr,
                                                       size_t idx) {
     auto *block = instr->GetBlock();
+
     auto new_inst = std::make_unique<ConstInstruction>();
     SetDestAndDef(new_inst.get(), instr->ReleaseDest());
     auto *op = interpreter.ProcessInstruction(instr);
     SetOperandAndUse(new_inst.get(), op);
+
     instr = new_inst.get();
-    block->AddInstruction(std::move(new_inst), idx);
+    block->AddInstruction(std::move(new_inst), idx, true);
+
     return instr;
 }
 
@@ -275,7 +273,7 @@ DVNTransformer::GetKeyAndVN(InstructionBase *instr) const {
 
 void DVNTransformer::RemoveInstructions() {
     for (auto *block : func->GetBlocks()) {
-        block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]));
+        block->RemoveInstructions(std::move(remove_instrs[block->GetIndex()]), true);
     }
 }
 

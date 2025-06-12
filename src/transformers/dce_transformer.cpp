@@ -79,9 +79,9 @@ void DCETransformer::Sweep() {
                             jmp_inst->SetBlock(block);
                             jmp_inst->SetJmpDest(pdom->GetLabel());
 
-                            block->AddInstruction(std::move(jmp_inst),
-                                                  block->GetInstructionSize() -
-                                                      1);
+                            block->AddInstruction(
+                                std::move(jmp_inst),
+                                block->GetInstructionSize() - 1, true);
                         } else {
                             curr = pdom->GetIndex();
                         }
@@ -92,7 +92,7 @@ void DCETransformer::Sweep() {
             }
         }
 
-        block->RemoveInstructions(remove_list);
+        block->RemoveInstructions(remove_list, true);
     }
 }
 

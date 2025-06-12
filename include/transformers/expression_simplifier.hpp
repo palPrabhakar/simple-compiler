@@ -69,7 +69,7 @@ class ExpressionSimplifier final : private InstructionVisitor {
         SetDestAndDef(n_inst.get(), instr->ReleaseDest());
         SetOperandAndUse(n_inst.get(), instr->GetOperand(i));
         ret_instr = n_inst.get();
-        instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx);
+        instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx, true);
     }
 
     template <typename T>
@@ -79,7 +79,7 @@ class ExpressionSimplifier final : private InstructionVisitor {
         SetDestAndDef(n_inst.get(), instr->ReleaseDest());
         SetOperandAndUse(n_inst.get(), T::GetOperand(value));
         ret_instr = n_inst.get();
-        instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx);
+        instr->GetBlock()->AddInstruction(std::move(n_inst), cur_idx, true);
     }
 
     template <typename T> void ProcessAdd(auto *instr) {

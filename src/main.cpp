@@ -7,6 +7,7 @@
 #include "transformers/cf_transformer.hpp"
 #include "transformers/ssa_transformer.hpp"
 #include "transformers/dvn_transformer.hpp"
+#include "transformers/sscp_transformer.hpp"
 
 #include <fstream>
 #include <iostream>
@@ -31,8 +32,8 @@ int main(int argc, char *argv[]) {
     program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DCETransformer>(std::move(program));
+    // program = sc::ApplyTransformation<sc::SSCPTransformer>(std::move(program));
     program->Dump();
-
 
     return 0;
 }

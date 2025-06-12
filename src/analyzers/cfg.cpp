@@ -5,7 +5,8 @@
 
 namespace sc {
 
-static void PostOrderImpl(CFG *cfg, Block *block, std::vector<Block *> &post_order,
+static void PostOrderImpl(CFG *cfg, Block *block,
+                          std::vector<Block *> &post_order,
                           std::unordered_set<Block *> &visited) {
     if (visited.contains(block)) {
         return;
@@ -68,5 +69,4 @@ std::unique_ptr<Program> BuildCFG(std::unique_ptr<Program> program) {
     }
     return program;
 }
-
 } // namespace sc
