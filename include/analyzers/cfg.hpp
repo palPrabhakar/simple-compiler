@@ -8,6 +8,7 @@ namespace sc {
 
 class CFGContainer {
   public:
+    virtual ~CFGContainer() = default;
     virtual bool HasSuccessors(Block *) = 0;
     virtual std::span<Block *> GetSuccessors(Block *) = 0;
 

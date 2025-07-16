@@ -12,6 +12,8 @@ namespace sc {
 // clang-format off
 class InstructionVisitor {
   public:
+    virtual ~InstructionVisitor() = default;
+
     // Arithmetic
     virtual void VisitAddInstruction(AddInstruction *instr) DEFAULT_IMPL
     virtual void VisitMulInstruction(MulInstruction *instr) DEFAULT_IMPL

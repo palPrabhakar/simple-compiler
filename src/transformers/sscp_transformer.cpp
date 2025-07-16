@@ -1,6 +1,8 @@
 #include "transformers/sscp_transformer.hpp"
 #include "instruction.hpp"
 #include "opcodes.hpp"
+#include "transformers/transformer.hpp"
+#include <memory>
 
 namespace sc {
 
@@ -13,6 +15,9 @@ void RemoveSetInstruction(GetInstruction *instr) {
         sblk->RemoveInstruction(seti->GetIndex(), true);
     }
 }
+
+SSCPTransformer::SSCPTransformer(Function *f)
+    : Transformer(f), propagator(std::make_unique<ConstantPropagator>(this)) {}
 
 void SSCPTransformer::Initialize() {
     for (auto *blk : func->GetBlocks()) {

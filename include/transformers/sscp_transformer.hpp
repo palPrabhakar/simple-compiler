@@ -16,9 +16,7 @@ class ConstantPropagator;
 
 class SSCPTransformer final : public Transformer {
   public:
-    SSCPTransformer(Function *f)
-        : Transformer(f),
-          propagator(std::make_unique<ConstantPropagator>(this)) {}
+    SSCPTransformer(Function *f);
 
     void Transform() override {
         Initialize();
@@ -27,13 +25,14 @@ class SSCPTransformer final : public Transformer {
     }
 
   private:
+    friend ConstantPropagator;
+
     std::unordered_map<OperandBase *, LVT> values;
     std::unordered_map<OperandBase *, OperandBase *> constants;
     std::vector<OperandBase *> worklist;
     std::unique_ptr<ConstantPropagator> propagator;
     std::vector<size_t> remove;
 
-    friend ConstantPropagator;
 
     void Initialize();
     void Propagate();
