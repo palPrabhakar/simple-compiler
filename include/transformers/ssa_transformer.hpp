@@ -12,11 +12,11 @@ namespace sc {
 
 template <typename T> using stack = std::stack<T, std::vector<T>>;
 
-class SSATransformer final : public Transformer {
+class SSAInTransformer final : public Transformer {
     // TODO:
     // Build def-uses links
   public:
-    SSATransformer(Function *_f)
+    SSAInTransformer(Function *_f)
         : Transformer(_f), dom(_f), globals(_f), gets(_f->GetBlockSize()) {}
 
     void Transform() override { RewriteInSSAForm(); }
@@ -25,7 +25,7 @@ class SSATransformer final : public Transformer {
     DominatorAnalyzer dom;
     GlobalsAnalyzer globals;
 
-    // key: block idex
+    // key: block idx
     // This ensures a unique get per operand per block
     std::vector<std::unordered_set<OperandBase *>> gets;
 
@@ -43,6 +43,16 @@ class SSATransformer final : public Transformer {
     std::shared_ptr<OperandBase> NewDest(OperandBase *op);
     void Process(std::unordered_map<OperandBase *, size_t> &pop_count,
                  InstructionBase *instr);
+};
+
+class SSAOutTransformer final : public Transformer {
+  public:
+    SSAOutTransformer(Function *_f) : Transformer(_f) {}
+
+    void Transform() override { InsertCopies(); };
+
+  private:
+    void InsertCopies();
 };
 
 }; // namespace sc
