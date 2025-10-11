@@ -29,10 +29,11 @@ int main(int argc, char *argv[]) {
         sc::ApplyTransformation<sc::EarlyIRTransformer>(std::move(program));
     program = sc::BuildCFG(std::move(program));
     program = sc::ApplyTransformation<sc::CFTransformer>(std::move(program));
-    program = sc::ApplyTransformation<sc::SSATransformer>(std::move(program));
+    program = sc::ApplyTransformation<sc::SSAInTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DCETransformer>(std::move(program));
     // program = sc::ApplyTransformation<sc::SSCPTransformer>(std::move(program));
+    // program = sc::ApplyTransformation<sc::SSAOutTransformer>(std::move(program));
     program->Dump();
 
     return 0;

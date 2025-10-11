@@ -3,10 +3,10 @@
 #include "operand.hpp"
 #include <cassert>
 #include <iostream>
+#include <memory>
 #include <ostream>
 #include <span>
 #include <vector>
-#include <memory>
 
 namespace sc {
 
@@ -48,7 +48,9 @@ class InstructionBase {
     /*
      * Dest
      */
-    void AddDest(std::shared_ptr<OperandBase> oprnd) { dest = std::move(oprnd); }
+    virtual void AddDest(std::shared_ptr<OperandBase> oprnd) {
+        dest = std::move(oprnd);
+    }
 
     OperandBase *GetDest() const { return dest.get(); }
 
@@ -359,13 +361,21 @@ class GetInstruction final : public InstructionBase {
   public:
     GetInstruction() : InstructionBase(Opcode::GET) {}
 
+    void AddDest(std::shared_ptr<OperandBase> oprnd) override {
+        shadow = oprnd.get();
+        InstructionBase::AddDest(oprnd);
+    }
+
     void Dump(std::ostream &out = std::cout) const override;
 
     void Visit(InstructionVisitor *visitor) override;
 
     bool HasDest() const override { return true; }
 
-    void SetShadow(OperandBase *oprnd) { shadow = oprnd; }
+    void SetShadow(OperandBase *oprnd) {
+        assert(dest == nullptr);
+        shadow = oprnd;
+    }
 
     OperandBase *GetShadow() const { return shadow; }
 
@@ -598,7 +608,8 @@ class GetArgInstruction final : public InstructionBase {
 
 // Helper functions
 // Only meaningful in SSA-form
-inline void SetDestAndDef(InstructionBase *instr, std::shared_ptr<OperandBase> oprnd) {
+inline void SetDestAndDef(InstructionBase *instr,
+                          std::shared_ptr<OperandBase> oprnd) {
     oprnd->SetDef(instr);
     instr->AddDest(oprnd);
 }

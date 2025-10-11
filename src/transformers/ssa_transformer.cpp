@@ -1,15 +1,17 @@
 #include "transformers/ssa_transformer.hpp"
 #include "instruction.hpp"
+#include "opcodes.hpp"
 #include "operand.hpp"
 #include <format>
+#include <memory>
 #include <ranges>
 
 // #define PRINT_DEBUG
 #undef PRINT_DEBUG
 
 namespace sc {
-// SSATransformer begin
-void SSATransformer::RewriteInSSAForm() {
+// SSAInTransformer begin
+void SSAInTransformer::RewriteInSSAForm() {
 #ifdef PRINT_DEBUG
     std::cerr << __PRETTY_FUNCTION__
               << " Processing Function:  " << func->GetName() << "\n\n";
@@ -43,6 +45,8 @@ void SSATransformer::RewriteInSSAForm() {
 
                 gets[d->GetIndex()].insert(op);
                 auto get_instr = std::make_unique<GetInstruction>();
+                // the destination will be defined
+                // during renaming
                 get_instr->SetShadow(op);
 
                 // add set instructions
@@ -54,6 +58,8 @@ void SSATransformer::RewriteInSSAForm() {
                     set_instr->SetGetPair(get_instr.get());
                     get_instr->SetSetPair(set_instr.get());
 
+                    // insert set instruction before block
+                    // terminating instruction
                     pred->InsertInstruction(std::move(set_instr),
                                             pred->GetInstructionSize() - 1);
 #ifdef PRINT_DEBUG
@@ -87,7 +93,7 @@ void SSATransformer::RewriteInSSAForm() {
     Rename(func->GetBlock(0));
 }
 
-void SSATransformer::Rename(Block *block) {
+void SSAInTransformer::Rename(Block *block) {
 #ifdef PRINT_DEBUG
     std::cerr << __PRETTY_FUNCTION__
               << " Processing Block:  " << block->GetName() << "\n";
@@ -156,7 +162,7 @@ void SSATransformer::Rename(Block *block) {
     }
 }
 
-std::shared_ptr<OperandBase> SSATransformer::NewDest(OperandBase *op) {
+std::shared_ptr<OperandBase> SSAInTransformer::NewDest(OperandBase *op) {
     auto i = counter[op]++;
     auto nop = op->Clone();
     name[op].push(nop.get());
@@ -164,7 +170,7 @@ std::shared_ptr<OperandBase> SSATransformer::NewDest(OperandBase *op) {
     return nop;
 }
 
-void SSATransformer::Process(
+void SSAInTransformer::Process(
     std::unordered_map<OperandBase *, size_t> &pop_count,
     InstructionBase *instr) {
 #ifdef PRINT_DEBUG
@@ -200,5 +206,55 @@ void SSATransformer::Process(
     instr->Dump(std::cerr);
 #endif
 }
-// SSATransformer end
+// SSAInTransformer end
+
+// SSAOutTransformer begin
+void SSAOutTransformer::InsertCopies() {
+    // iterate over all blocks
+    for (Block *blk : func->GetBlocks()) {
+        // iterate over all intructions in the blocks
+        for (size_t i : std::views::iota(0ul, blk->GetInstructionSize())) {
+            InstructionBase *inst = blk->GetInstruction(i);
+            // find get instructions
+            if (inst->GetOpcode() == Opcode::GET) {
+                // rename get variable (a -> a')
+                GetInstruction *geti = static_cast<GetInstruction *>(inst);
+                std::shared_ptr<OperandBase> dest = geti->ReleaseDest();
+                std::shared_ptr<OperandBase> new_dest = dest->Clone();
+                new_dest->SetName(std::format("__d_{}__", dest->GetName()));
+                SetDestAndDef(geti, std::move(new_dest));
+
+                // add mov insruction a = a' after get instruction
+                // might not be the most optimum way of inserting
+                // instructions when there are multiple get instr
+                auto copy_ssa = std::make_unique<IdInstruction>();
+                SetDestAndDef(copy_ssa.get(), std::move(dest));
+                SetOperandAndUse(copy_ssa.get(), geti->GetDest());
+                blk->InsertInstruction(std::move(copy_ssa), i + 1);
+
+                // find corresponding set instruction
+                for(size_t i : std::views::iota(0ul, geti->GetSetPairSize())) {
+                    // rename set shadow variable (a -> a')
+                    SetInstruction *seti = geti->GetSetPair(i);
+                    seti->SetShadow(geti->GetDest());
+                    OperandBase *oprnd = seti->GetOperand(0);
+
+                    // insert mov instruction a'i = ai before set
+                    auto copy_inst = std::make_unique<IdInstruction>();
+                    std::shared_ptr<OperandBase> new_dest = oprnd->Clone();
+                    new_dest->SetName(std::format("__d_{}__", oprnd->GetName()));
+                    SetDestAndDef(copy_inst.get(), std::move(new_dest));
+                    SetOperandAndUse(copy_inst.get(), oprnd);
+
+                    SetOperandAndUse(seti, copy_inst->GetDest(), 0);
+
+                    Block *sblk = seti->GetBlock();
+                    size_t idx = seti->GetIndex();
+                    sblk->InsertInstruction(std::move(copy_inst), idx);
+                }
+            }
+        }
+    }
+}
+// SSAOutTransformer end
 } // namespace sc
