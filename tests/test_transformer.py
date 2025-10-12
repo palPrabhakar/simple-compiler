@@ -1,6 +1,10 @@
+#!/usr/bin/env python3
+import os
 import subprocess
+import argparse
 import re
 import math
+import pickle
 from pathlib import Path
 from colorama import Fore, Style
 
@@ -113,22 +117,52 @@ def transformer(files, expected):
             print(Fore.RED + "Fail: {}".format(name) + Style.RESET_ALL)
 
 
-def main():
-    paths = [
-        Path("bril/transformer/"),
-        Path("/home/pal/workspace/external-projects/bril/benchmarks/core/"),
-        Path("/home/pal/workspace/external-projects/bril/benchmarks/float/"),
-        Path("/home/pal/workspace/external-projects/bril/benchmarks/mem/"),
-        Path("/home/pal/workspace/external-projects/bril/benchmarks/mixed/")
-    ]
-    for _ in range(1):
-        for path in paths:
-            print("\n=======================\n")
-            files = [str(f.resolve()) for f in path.glob("*.bril")]
-            results = baseline(files)
-            transformer(files, results)
-            print("\n=======================\n")
+def compute_baseline(files, result_name):
+    results = baseline(files)
+    with open(result_name, "wb") as f:
+        pickle.dump(results, f)
+    return results
+
+
+def main(suites, baseline):
+
+    path_minimal = "bril/transformer/"
+    path_benchmark = "/home/pal/workspace/external-projects/bril/benchmarks/"
+    for suite in suites:
+        if suite == "minimal":
+            path = Path(path_minimal)
+        else:
+            path = Path(path_benchmark + suite)
+        print("\n=======================\n")
+        files = [str(f.resolve()) for f in path.glob("*.bril")]
+        result_name = f".{suite}.pkl"
+        if baseline:
+            results = compute_baseline(files, result_name)
+        else:
+            if os.path.exists(result_name):
+                with open(result_name) as f:
+                    results = pickle.load(f)
+            else:
+                results = compute_baseline(files, result_name)
+        transformer(files, results)
+        print("\n=======================\n")
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser(
+        description="Run bril benchmarks and compare the"
+        "results with unoptimized reference")
+
+    suites = ['minimal', 'core', 'float', 'mem', 'mixed']
+    parser.add_argument("--suites",
+                        nargs='*',
+                        choices=suites,
+                        default=suites,
+                        help="List of benchmark suites to run")
+
+    parser.add_argument("--baseline", action="store_false",
+                        help="Regenarate Baseline")
+
+    args = parser.parse_args()
+
+    main(args.suites, args.baseline)
