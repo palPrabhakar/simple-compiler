@@ -2,7 +2,6 @@
 
 #include "transformer.hpp"
 #include <vector>
-#include <ranges>
 
 namespace sc {
 class CFTransformer final : public Transformer {

@@ -359,6 +359,7 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
     // will merge the redundant block. This ensures that there
     // is always a unique entry block
     func = MakeNewBlock(std::move(func), "__sc_entry__");
+    func->SetEntryBlock(LAST_BLK(func));
 
     // If function takes arguments parse them
     auto args = jfunc.Get("args");

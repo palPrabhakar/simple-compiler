@@ -1,5 +1,11 @@
 #include "transformers/cf_transformer.hpp"
 #include "analyzers/cfg.hpp"
+#include "block.hpp"
+#include "function.hpp"
+#include "instruction.hpp"
+#include "opcodes.hpp"
+
+#include <ranges>
 #include <unordered_set>
 
 // #define PRINT_DEBUG
@@ -24,7 +30,7 @@ void CFTransformer::Transform() {
         RemoveUnreachableCFNode();
     }
 #ifdef PRINT_DEBUG
-    std::cout<<"\n";
+    std::cout << "\n";
 #endif
 }
 
@@ -44,23 +50,32 @@ bool CFTransformer::Clean() {
         }
         if (instr->GetOpcode() == Opcode::JMP) {
             // Do not remove the block if it's the entry block
-            // unique entry block! Otherwise there won't be an
-            // unique exit block in reverse CFG
+            // Otherwise there won't be an unique exit block in
+            // reverse CFG
             if (block->GetInstructionSize() == 1 &&
-                block->GetPredecessorSize()) {
+                block != func->GetEntryBlock()) {
                 // Empty block one label and one jmp
                 RemoveEmptyBlock(block);
                 ret = true;
+                // not sure why the Algorithm in Keith
+                // Cooper doesn't break after this.
+                // Once the block has been removed
+                // there is no point in doing any
+                // further processing on it.
+                break;
             }
-            // exit node has no successor
-            auto *succ_blk =
-                block->GetSuccessorSize() ? block->GetSuccessor(0) : nullptr;
-            if (succ_blk && succ_blk->GetPredecessorSize() == 1) {
+            // block can never be exit block
+            // exit block will end with ret
+            // instruction. Canonicalization
+            // pass will ensure that!
+            assert(block != func->GetExitBlock());
+            auto *succ_blk = block->GetSuccessor(0);
+            if (succ_blk->GetPredecessorSize() == 1){
                 // combine current and next block
                 CombineBlocks(block);
                 ret = true;
             }
-            if (succ_blk && succ_blk->GetInstructionSize() == 1 &&
+            if (succ_blk->GetInstructionSize() == 1 &&
                 LAST_INSTR(succ_blk)->GetOpcode() == Opcode::BR) {
                 // change block jmp with succ_blk br
                 HoistBranch(block);
@@ -82,7 +97,8 @@ void CFTransformer::ReplaceBrWithJmp(Block *block) {
               << " Replacing branch with jmp in: " << block->GetName() << "\n";
 #endif
     auto jmp_instr = std::make_unique<JmpInstruction>();
-    jmp_instr->SetOperand(LAST_INSTR(block)->GetOperand(0));
+    BranchInstruction *br_instr = static_cast<BranchInstruction *>(LAST_INSTR(block));
+    jmp_instr->SetJmpDest(br_instr->GetTrueDest());
     block->AddInstruction(std::move(jmp_instr),
                           block->GetInstructionSize() - 1);
     block->RemoveSuccessor(block->GetSuccessorSize() - 1);
@@ -147,6 +163,10 @@ void CFTransformer::CombineBlocks(Block *block) {
     // Add succ blocks instr into current block
     auto *succ_blk = block->GetSuccessor(0);
 
+    if (succ_blk == func->GetExitBlock()) {
+        func->SetExitBlock(block);
+    }
+
 #ifdef PRINT_DEBUG
     std::cout << __PRETTY_FUNCTION__
               << " Combining block: " << succ_blk->GetName()
@@ -154,11 +174,11 @@ void CFTransformer::CombineBlocks(Block *block) {
 #endif
 
     auto instructions = succ_blk->ReleaseInstructions();
-    for (size_t i : std::views::iota(0UL, instructions.size())) {
+    for (size_t i : std::views::iota(0ul, instructions.size())) {
         block->AddInstruction(std::move(instructions[i]));
     }
 
-    block->RemoveSuccessor(static_cast<size_t>(0));
+    block->RemoveSuccessor(0ul);
 
     for (auto *ssucc : succ_blk->GetSuccessors()) {
         ssucc->RemovePredecessor(succ_blk);

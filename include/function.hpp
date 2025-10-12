@@ -20,7 +20,8 @@ class InstructionBase;
 class Function {
   public:
     Function(std::string _name, DataType _ret_type)
-        : name(_name), ret_type(_ret_type), args(false), args_size(0) {}
+        : name(_name), ret_type(_ret_type), args(false), args_size(0),
+          entry_block(nullptr), exit_block(nullptr) {}
     virtual ~Function() = default;
 
     /*
@@ -49,6 +50,10 @@ class Function {
     /*
      * Blocks
      */
+    void SetEntryBlock(Block *block) { entry_block = block; }
+
+    void SetExitBlock(Block *block) { exit_block = block; }
+
     void AddBlock(std::unique_ptr<Block> block) {
         blocks.push_back(std::move(block));
     }
@@ -56,12 +61,16 @@ class Function {
     size_t GetBlockSize() const { return blocks.size(); }
 
     // Non-owning pointer
-    Block *GetBlock(size_t idx) {
+    Block *GetEntryBlock() const { return entry_block; }
+
+    Block *GetExitBlock() const { return exit_block; }
+
+    Block *GetBlock(size_t idx) const {
         assert(idx < blocks.size());
         return blocks[idx].get();
     }
 
-    auto GetBlocks() {
+    auto GetBlocks() const {
         // the underlying data managed by this class
         // can change via call to this func
         return blocks |
@@ -69,7 +78,7 @@ class Function {
     }
 
     void RemoveBlock(size_t idx) {
-        // Not efficient avoid using.
+        // Not efficient if removing multiple blocks.
         // Use helper function in utils
         assert(idx < blocks.size());
         blocks.erase(blocks.begin() + static_cast<long>(idx));
@@ -102,6 +111,8 @@ class Function {
     DataType ret_type;
     bool args;
     size_t args_size;
+    Block *entry_block;
+    Block *exit_block;
 };
 
 class PtrFunction final : public Function {

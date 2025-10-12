@@ -1,6 +1,7 @@
 #pragma once
 
 #include "program.hpp"
+
 #include <memory>
 #include <vector>
 
@@ -25,7 +26,7 @@ class CFGContainer {
 
 class ForwardCFG : public CFGContainer {
   public:
-    ForwardCFG(Function *func) : CFGContainer(func->GetBlock(0)) {}
+    ForwardCFG(Function *func) : CFGContainer(func->GetEntryBlock()) {}
 
     bool HasSuccessors(Block *blk) override {
         return blk->GetSuccessorSize();
@@ -46,7 +47,7 @@ class ForwardCFG : public CFGContainer {
 
 class ReverseCFG : public CFGContainer {
   public:
-    ReverseCFG(Function *func) : CFGContainer(LAST_BLK(func)) {}
+    ReverseCFG(Function *func) : CFGContainer(func->GetExitBlock()) {}
 
     bool HasSuccessors(Block *blk) override {
         return blk->GetPredecessorSize();

@@ -1,4 +1,5 @@
 #include "transformers/early_ir_transformer.hpp"
+#include "function.hpp"
 #include "instruction.hpp"
 #include <memory>
 
@@ -12,7 +13,6 @@ void EarlyIRTransformer::Transform() {
     std::cout << __PRETTY_FUNCTION__
               << "Processing function:  " << func->GetName() << "\n";
 #endif
-
 
     CanonicalizeIR();
 }
@@ -63,6 +63,9 @@ void EarlyIRTransformer::CanonicalizeIR() {
 
     if (rb.size() > 1) {
         AddUniqueExitBlock();
+    } else {
+        assert(rb.size() == 1);
+        func->SetExitBlock(rb[0]);
     }
 }
 
@@ -74,13 +77,13 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     // add new exit block
     func->AddBlock(std::make_unique<Block>("__sc_exit__"));
     LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
+    func->SetExitBlock(LAST_BLK(func));
 
     // create new lbl operand to store jmp dest
     auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__");
     lbl_op->SetBlock(LAST_BLK(func));
     auto *exit_lbl = lbl_op.get();
     LAST_BLK(func)->SetLabel(std::move(lbl_op));
-
 
     // create new ret instruction
     auto ret_instr = std::make_unique<RetInstruction>();
