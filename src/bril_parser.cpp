@@ -3,6 +3,7 @@
 #include "function.hpp"
 #include "instruction.hpp"
 #include "json.hpp"
+#include "opcodes.hpp"
 #include "operand.hpp"
 #include "program.hpp"
 #include <format>
@@ -14,12 +15,20 @@
 
 namespace sc {
 FuncPtr BrilParser::MakeNewBlock(FuncPtr func, std::string name) {
+    /* BrilParser::MakeFunction auto inserts a entry block named
+     * __sc_entry__, however, if the input source also contains a
+     * block named __sc_entry__ this will lead to an issue!!
+     */
+
     // add the label to the block
     // add the block to the label
     func->AddBlock(std::make_unique<Block>(name));
     LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
 
     // Check if label already exists
+    // It is possible for a label to show up
+    // before the actual block like in a jmp
+    // or br instruction
     if (labels.contains(name)) {
         // label for this block already exist
         LAST_BLK(func)->SetLabel(std::move(lbl_store[name]));
@@ -67,23 +76,19 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
     auto instr_ptr = std::make_unique<BranchInstruction>();
 
     // Check branch targets
-    for (size_t i : std::views::iota(0UL, jlbl.Size())) {
+    for (size_t i : std::views::iota(0u, jlbl.Size())) {
         auto lbl = jlbl.Get(i)->Get<std::string>().value();
-        if (labels.contains(lbl)) {
-            if (i == 0) {
-                instr_ptr->SetTrueDest(labels[lbl]);
-            } else {
-                instr_ptr->SetFalseDest(labels[lbl]);
-            }
-        } else {
+        if (!labels.contains(lbl)) {
+            // the block for this label has yet not been processed
             auto operand = std::make_unique<LabelOperand>(lbl);
             labels[lbl] = operand.get();
-            if (i == 0) {
-                instr_ptr->SetTrueDest(operand.get());
-            } else {
-                instr_ptr->SetFalseDest(operand.get());
-            }
             lbl_store.insert({lbl, std::move(operand)});
+        }
+
+        if (i == 0) {
+            instr_ptr->SetTrueDest(labels[lbl]);
+        } else {
+            instr_ptr->SetFalseDest(labels[lbl]);
         }
     }
 
@@ -160,31 +165,35 @@ FuncPtr BrilParser::MakeConstInstruction(FuncPtr func, sjp::Json &instr) {
 }
 
 FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
-    Opcode Opcode = Opcode::NOP;
-    auto Opcode_str = instr.Get("op");
-    if (Opcode_str == std::nullopt) {
-        if (instr.Get("label") == std::nullopt) {
-            throw std::runtime_error(
-                std::format("Error parsing function {}. "
-                            "No valid instructions found.\n",
-                            func->GetName()));
-        }
-        Opcode = Opcode::LABEL;
+    Opcode opcode = Opcode::NOP;
+
+    // Instruction can be either `op` or `label`
+    if (instr.Get("op") != std::nullopt) {
+        // op instruction
+        opcode = GetOpcodeFromStr(instr.Get("op")->Get<std::string>().value());
+    } else if (instr.Get("label") != std::nullopt) {
+        // label instruction
+        opcode = Opcode::LABEL;
     } else {
-        Opcode = GetOpcodeFromStr(Opcode_str->Get<std::string>().value());
+        throw std::runtime_error(std::format("Error parsing function {}. "
+                                             "No valid instructions found.\n",
+                                             func->GetName()));
     }
 
     // If a br or jmp instr is processed then skip all instr until a label
     // is found since it is not possible to get to these instructions.
     // Since it is not possible to jmp to unnamed locations in bril[??]
-    if (check) {
-        check = Opcode != Opcode::LABEL;
-        if (check) {
-            return func;
+    if (check_label) {
+        if (opcode != Opcode::LABEL) {
+            throw std::runtime_error(
+                std::format("Error parsing function {}, expected label but "
+                            "found opcode: {}",
+                            func->GetName(), static_cast<int>(opcode)));
         }
+        check_label = false;
     }
 
-    switch (Opcode) {
+    switch (opcode) {
     // Arithmetic Instructions
     case Opcode::ADD:
         return MakeInstruction<AddInstruction>(std::move(func), instr);
@@ -215,12 +224,12 @@ FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
     // Control Instructions
     case Opcode::JMP: {
         // End block
-        check = true;
+        check_label = true;
         return MakeJmpInstruction(std::move(func), instr);
     }
     case Opcode::BR: {
         // End block
-        check = true;
+        check_label = true;
         return MakeBranchInstruction(std::move(func), instr);
     }
     case Opcode::CALL:
@@ -293,8 +302,8 @@ std::unique_ptr<Function> BrilParser::ParseBody(std::unique_ptr<Function> func,
                                                 sjp::Json &instrs) {
     assert(instrs.Size() > 0);
 
-    check = false;
-    for (size_t i : std::views::iota(0ul, instrs.Size())) {
+    check_label = false;
+    for (size_t i : std::views::iota(0u, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr);
     }
@@ -357,7 +366,7 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
 
     // Add this if it's not required the subsequent passes
     // will merge the redundant block. This ensures that there
-    // is always a unique entry block
+    // is always a unique entry block.
     func = MakeNewBlock(std::move(func), "__sc_entry__");
     func->SetEntryBlock(LAST_BLK(func));
 
@@ -380,7 +389,7 @@ std::unique_ptr<Program> BrilParser::ParseProgram(std::istream &input) {
 
     auto program = std::make_unique<Program>();
     auto functions = data.Get("functions");
-    for (size_t i : std::views::iota(0UL, functions->Size())) {
+    for (size_t i : std::views::iota(0u, functions->Size())) {
         auto jfunc = functions->Get(i).value();
         auto parser = BrilParser();
         program->AddFunction(parser.ParseFunction(jfunc));

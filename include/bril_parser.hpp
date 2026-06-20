@@ -26,9 +26,12 @@ class BrilParser {
 
     OprndTbl operands;
     LabelTbl labels;
-    bool check;
+    bool check_label;
 
     // Temp label store to help with the parsing
+    // lbl_store holds labels that have yet not been
+    // associated with their basic blocks. Like labels
+    // seen in br or jmp instruction before.
     LabelStore lbl_store;
 
     FuncPtr ParseFunction(sjp::Json &jfunc);
