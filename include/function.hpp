@@ -55,7 +55,18 @@ class Function {
     void SetExitBlock(Block *block) { exit_block = block; }
 
     void AddBlock(std::unique_ptr<Block> block) {
+        block->SetIndex(blocks.size());
         blocks.push_back(std::move(block));
+    }
+
+    void InsertBlock(std::unique_ptr<Block> block, size_t idx) {
+        block->SetIndex(idx);
+        blocks.insert(blocks.begin() + static_cast<long>(idx),
+                      std::move(block));
+
+        for (auto i : std::views::iota(idx + 1, blocks.size())) {
+            blocks[i]->SetIndex(i);
+        }
     }
 
     size_t GetBlockSize() const { return blocks.size(); }
@@ -66,7 +77,7 @@ class Function {
     Block *GetExitBlock() const { return exit_block; }
 
     Block *GetBlock(size_t idx) const {
-        assert(idx < blocks.size());
+        assert(idx < blocks.size() && "err: block idx out of range\n");
         return blocks[idx].get();
     }
 

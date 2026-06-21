@@ -40,3 +40,6 @@ compile_commands.json
 sc.core
 notes.txt
 instr.dump
+
+*.pkl
+

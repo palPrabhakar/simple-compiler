@@ -1,6 +1,7 @@
 #!/usr/bin/bash
 
 for f in `find . -name *.bril`; do
+    echo "testing $f"
     result=$(bril2json < $f | ../build/sc | bril2json | ./is_ssa.py)
     if [[ $result = "yes" ]]; then
         echo -e "\e[32mPass: $f\e[0m"

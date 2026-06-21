@@ -90,7 +90,7 @@ void SSATransformer::RewriteInSSAForm() {
 void SSATransformer::Rename(Block *block) {
 #ifdef PRINT_DEBUG
     std::cerr << __PRETTY_FUNCTION__
-              << "Processing Block:  " << block->GetName() << "\n";
+              << " Processing Block:  " << block->GetName() << "\n";
 #endif
 
     std::unordered_map<OperandBase *, size_t> pop_count;
@@ -128,9 +128,9 @@ void SSATransformer::Rename(Block *block) {
                 undef_instr->Dump(std::cerr);
 #endif
                 size_t insert_pos = func->HasArgs() ? func->GetArgsSize() : 0;
-                func->GetBlock(0)->InsertInstruction(std::move(undef_instr),
+                func->GetEntryBlock()->InsertInstruction(std::move(undef_instr),
                                                      insert_pos);
-                if (func->GetBlock(0) == block) {
+                if (func->GetEntryBlock() == block) {
                     ++i;
                 }
             }
@@ -172,7 +172,7 @@ void SSATransformer::Process(
     instr->Dump(std::cerr);
 #endif
 
-    for (auto i : std::views::iota(0ul, instr->GetOperandSize())) {
+    for (auto i : std::views::iota(0u, instr->GetOperandSize())) {
         if (name.contains(instr->GetOperand(i))) {
             auto op = name[instr->GetOperand(i)].top();
             SetOperandAndUse(instr, op, i);

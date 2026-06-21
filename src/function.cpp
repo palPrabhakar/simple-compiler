@@ -7,13 +7,13 @@ void Function::Dump(std::ostream &out) const {
     out << "@" << name;
     if (args) {
         out << "(";
-        auto *arg = blocks[0]->GetInstruction(0);
+        auto *arg = entry_block->GetInstruction(0);
         assert(arg->GetOpcode() == Opcode::GETARG);
 
         out << arg->GetDest()->GetName() << ": "
             << arg->GetDest()->GetStrType();
         for (size_t i = 1; i < args_size; ++i) {
-            arg = blocks[0]->GetInstruction(i);
+            arg = entry_block->GetInstruction(i);
             assert(arg->GetOpcode() == Opcode::GETARG);
             out << ", " << arg->GetDest()->GetName() << ": "
                 << arg->GetDest()->GetStrType();

@@ -15,15 +15,9 @@
 
 namespace sc {
 FuncPtr BrilParser::MakeNewBlock(FuncPtr func, std::string name) {
-    /* BrilParser::MakeFunction auto inserts a entry block named
-     * __sc_entry__, however, if the input source also contains a
-     * block named __sc_entry__ this will lead to an issue!!
-     */
-
     // add the label to the block
     // add the block to the label
     func->AddBlock(std::make_unique<Block>(name));
-    LAST_BLK(func)->SetIndex(func->GetBlockSize() - 1);
 
     // Check if label already exists
     // It is possible for a label to show up
@@ -169,8 +163,15 @@ FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
 
     // Instruction can be either `op` or `label`
     if (instr.Get("op") != std::nullopt) {
+        auto op_str = instr.Get("op")->Get<std::string>().value();
+        if (check_label) {
+            throw std::runtime_error(
+                std::format("Error parsing function {}, expected label but "
+                            "found opcode: {}\n",
+                            func->GetName(), op_str));
+        }
         // op instruction
-        opcode = GetOpcodeFromStr(instr.Get("op")->Get<std::string>().value());
+        opcode = GetOpcodeFromStr(op_str);
     } else if (instr.Get("label") != std::nullopt) {
         // label instruction
         opcode = Opcode::LABEL;
@@ -179,19 +180,7 @@ FuncPtr BrilParser::ParseInstructions(FuncPtr func, sjp::Json &instr) {
                                              "No valid instructions found.\n",
                                              func->GetName()));
     }
-
-    // If a br or jmp instr is processed then skip all instr until a label
-    // is found since it is not possible to get to these instructions.
-    // Since it is not possible to jmp to unnamed locations in bril[??]
-    if (check_label) {
-        if (opcode != Opcode::LABEL) {
-            throw std::runtime_error(
-                std::format("Error parsing function {}, expected label but "
-                            "found opcode: {}",
-                            func->GetName(), static_cast<int>(opcode)));
-        }
-        check_label = false;
-    }
+    check_label = false;
 
     switch (opcode) {
     // Arithmetic Instructions
@@ -303,6 +292,19 @@ std::unique_ptr<Function> BrilParser::ParseBody(std::unique_ptr<Function> func,
     assert(instrs.Size() > 0);
 
     check_label = false;
+
+    // If instr start with a label then don't create a
+    // entry block now. Check later if an entry block is
+    // required. Entry block will be required if it is
+    // possible to jump to current label
+    if (instrs.Get(0)->Get("label") == std::nullopt) {
+        // Block starts without a label. Create a new
+        // entry label and block. This will also be an
+        // unique entry point to the function.
+        func = MakeNewBlock(std::move(func), "__sc_entry__");
+        func->SetEntryBlock(LAST_BLK(func));
+    }
+
     for (size_t i : std::views::iota(0u, instrs.Size())) {
         auto instr = instrs.Get(i).value();
         func = ParseInstructions(std::move(func), instr);
@@ -316,7 +318,7 @@ FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
     func->SetArgs(true);
     func->SetArgsSize(args.Size());
 
-    for (size_t i : std::views::iota(0UL, args.Size())) {
+    for (size_t i : std::views::iota(0ul, args.Size())) {
         auto jop = args.Get(i).value();
         std::string name = jop.Get("name")->Get<std::string>().value();
         if (operands.contains(name)) {
@@ -335,12 +337,11 @@ FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
                 std::make_shared<RegOperand>(GetDataTypeFromStr(type), name);
         }
 
-        auto *block = func->GetBlock(0);
-        auto new_inst = std::make_unique<GetArgInstruction>();
+        args_vec.push_back(std::make_unique<GetArgInstruction>());
         operands[name] = operand;
-        new_inst->AddDest(std::move(operand));
-        block->AddInstruction(std::move(new_inst));
+        args_vec.back()->AddDest(std::move(operand));
     }
+
     return func;
 }
 
@@ -364,13 +365,8 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
         func = std::make_unique<Function>(fn_name, DataType::VOID);
     }
 
-    // Add this if it's not required the subsequent passes
-    // will merge the redundant block. This ensures that there
-    // is always a unique entry block.
-    func = MakeNewBlock(std::move(func), "__sc_entry__");
-    func->SetEntryBlock(LAST_BLK(func));
-
     // If function takes arguments parse them
+    // Parse the args before parsing the body.
     auto args = jfunc.Get("args");
     if (jfunc.Get("args").has_value()) {
         func = ParseArguments(std::move(func), args.value());
@@ -379,6 +375,15 @@ std::unique_ptr<Function> BrilParser::ParseFunction(sjp::Json &jfunc) {
     // Parse function body
     auto instrs = jfunc.Get("instrs");
     func = ParseBody(std::move(func), instrs.value());
+
+    // set the args in the first basic block, altough
+    // first basic block may not be the unique entry
+    // block for this function.
+    if (!args_vec.empty()) {
+        func->GetBlock(0)->InsertInstructions(std::move(args_vec), 0);
+    }
+
+    func->SetEntryBlock(func->GetBlock(0));
 
     return func;
 }

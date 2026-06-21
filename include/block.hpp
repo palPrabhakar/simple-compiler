@@ -10,6 +10,7 @@
 #include <ranges>
 #include <span>
 #include <string>
+#include <sys/stat.h>
 #include <utility>
 #include <vector>
 
@@ -53,7 +54,8 @@ class Block {
         instructions.push_back(std::move(instr));
     }
 
-    void AddInstruction(instr_ptr instr, size_t idx, bool remove_from_usage = false) {
+    void AddInstruction(instr_ptr instr, size_t idx,
+                        bool remove_from_usage = false) {
         /*
          * Replaces the instruction at idx
          */
@@ -138,6 +140,35 @@ class Block {
                               [](instr_ptr &ptr) { ptr->SetBlock(nullptr); });
 
         return std::move(instructions);
+    }
+
+    std::vector<instr_ptr> ReleaseInstructions(size_t start,
+                                               size_t end) {
+        assert(start <= end && end < instructions.size());
+
+        size_t size = end - start + 1;
+        std::ranges::for_each_n(instructions.begin() + start, size,
+                                [](instr_ptr &ptr) { ptr->SetBlock(nullptr); });
+
+        std::vector<instr_ptr> released(
+            std::make_move_iterator(instructions.begin() + start),
+            std::make_move_iterator(instructions.begin() + start + size));
+
+        instructions.erase(instructions.begin() + start,
+                           instructions.begin() + start + size);
+
+        FixIndex(0);
+        return released;
+    }
+
+    instr_ptr ReleaseInstruction(size_t idx) {
+        assert(idx < instructions.size());
+
+        instructions[idx]->SetBlock(nullptr);
+        auto instr = std::move(instructions[idx]);
+        instructions.erase(instructions.begin() + idx);
+        FixIndex(idx);
+        return instr;
     }
 
     /*

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "block.hpp"
 #include "parser.hpp"
 // sc includes
 #include "operand.hpp"
@@ -33,6 +34,12 @@ class BrilParser {
     // associated with their basic blocks. Like labels
     // seen in br or jmp instruction before.
     LabelStore lbl_store;
+
+    // Temp storage for args. Need to parse the args
+    // at the very start to avoid use befor def error
+    // for function args, however, cannot set the args
+    // in the entry block since it's not defined yet
+    std::vector<instr_ptr> args_vec;
 
     FuncPtr ParseFunction(sjp::Json &jfunc);
     FuncPtr ParseArguments(FuncPtr func, sjp::Json &args);
@@ -75,7 +82,7 @@ class BrilParser {
 
         if (instr.Get("args").has_value()) {
             auto args = instr.Get("args").value();
-            for (size_t i : std::views::iota(0UL, args.Size())) {
+            for (size_t i : std::views::iota(0ul, args.Size())) {
                 auto arg = args.Get(i)->Get<std::string>().value();
                 // It is possible that the block that defines the args
                 // comes later in text but happens before in control flow
