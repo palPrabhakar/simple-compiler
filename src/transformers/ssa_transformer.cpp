@@ -5,9 +5,9 @@
 #include <format>
 #include <memory>
 #include <ranges>
+#include <unordered_map>
 
 // #define PRINT_DEBUG
-#undef PRINT_DEBUG
 
 namespace sc {
 // SSAInTransformer begin
@@ -135,7 +135,7 @@ void SSAInTransformer::Rename(Block *block) {
 #endif
                 size_t insert_pos = func->HasArgs() ? func->GetArgsSize() : 0;
                 func->GetEntryBlock()->InsertInstruction(std::move(undef_instr),
-                                                     insert_pos);
+                                                         insert_pos);
                 if (func->GetEntryBlock() == block) {
                     ++i;
                 }
@@ -210,18 +210,24 @@ void SSAInTransformer::Process(
 
 // SSAOutTransformer begin
 void SSAOutTransformer::InsertCopies() {
+    // If a block has more than one set instructions
+    // set by the same variable then need to give
+    // different name to them to maintain the ssa property
+    std::unordered_map<std::string, int> seen;
+
     // iterate over all blocks
     for (Block *blk : func->GetBlocks()) {
         // iterate over all intructions in the blocks
-        for (size_t i : std::views::iota(0ul, blk->GetInstructionSize())) {
+        for (size_t i = 0; i < blk->GetInstructionSize(); ++i) {
             InstructionBase *inst = blk->GetInstruction(i);
+
             // find get instructions
             if (inst->GetOpcode() == Opcode::GET) {
                 // rename get variable (a -> a')
                 GetInstruction *geti = static_cast<GetInstruction *>(inst);
                 std::shared_ptr<OperandBase> dest = geti->ReleaseDest();
                 std::shared_ptr<OperandBase> new_dest = dest->Clone();
-                new_dest->SetName(std::format("__d_{}__", dest->GetName()));
+                new_dest->SetName(std::format("_d{}_", dest->GetName()));
                 SetDestAndDef(geti, std::move(new_dest));
 
                 // add mov insruction a = a' after get instruction
@@ -233,7 +239,7 @@ void SSAOutTransformer::InsertCopies() {
                 blk->InsertInstruction(std::move(copy_ssa), i + 1);
 
                 // find corresponding set instruction
-                for(size_t i : std::views::iota(0ul, geti->GetSetPairSize())) {
+                for (size_t i : std::views::iota(0u, geti->GetSetPairSize())) {
                     // rename set shadow variable (a -> a')
                     SetInstruction *seti = geti->GetSetPair(i);
                     seti->SetShadow(geti->GetDest());
@@ -242,7 +248,8 @@ void SSAOutTransformer::InsertCopies() {
                     // insert mov instruction a'i = ai before set
                     auto copy_inst = std::make_unique<IdInstruction>();
                     std::shared_ptr<OperandBase> new_dest = oprnd->Clone();
-                    new_dest->SetName(std::format("__d_{}__", oprnd->GetName()));
+                    new_dest->SetName(std::format("_d{}_{}_", oprnd->GetName(),
+                                                  seen[oprnd->GetName()]++));
                     SetDestAndDef(copy_inst.get(), std::move(new_dest));
                     SetOperandAndUse(copy_inst.get(), oprnd);
 
@@ -252,6 +259,30 @@ void SSAOutTransformer::InsertCopies() {
                     size_t idx = seti->GetIndex();
                     sblk->InsertInstruction(std::move(copy_inst), idx);
                 }
+            }
+        }
+    }
+}
+
+void SSAOutTransformer::Rename() {
+    for(auto *blk : func->GetBlocks()) {
+        // iterate over all intructions in the blocks
+        for (size_t i = 0; i < blk->GetInstructionSize(); ++i) {
+            auto *instr = blk->GetInstruction(i);
+
+            if (instr->GetOpcode() == Opcode::GET) {
+                auto *geti = static_cast<GetInstruction *>(instr);
+
+                for(auto *seti : geti->GetSetPairs()) {
+                    auto *oprnd = seti->GetOperand(0);
+                    auto *def = oprnd->GetDef();
+                    // don't need to remove it's usage because operand
+                    // that it this instruction uses is also deleted
+                    seti->GetBlock()->RemoveInstruction(seti->GetIndex());
+                    def->AddDest(geti->CopyDest());
+                }
+
+                blk->RemoveInstruction(geti->GetIndex());
             }
         }
     }

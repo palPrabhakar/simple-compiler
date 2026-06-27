@@ -143,7 +143,7 @@ void DominatorAnalyzer::DumpImmediateDominators(std::ostream &out) const {
     auto *block = func->GetBlock(0);
     out << block->GetName() << ":";
     out << "  \n";
-    for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
+    for (auto i : std::views::iota(1u, func->GetBlockSize())) {
         block = func->GetBlock(i);
         out << block->GetName() << ":";
         if (idom[i]) {

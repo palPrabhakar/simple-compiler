@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
     program = sc::ApplyTransformation<sc::DVNTransformer>(std::move(program));
     program = sc::ApplyTransformation<sc::DCETransformer>(std::move(program));
     // program = sc::ApplyTransformation<sc::SSCPTransformer>(std::move(program));
-    // program = sc::ApplyTransformation<sc::SSAOutTransformer>(std::move(program));
+    program = sc::ApplyTransformation<sc::SSAOutTransformer>(std::move(program));
     program->Dump();
 
     return 0;

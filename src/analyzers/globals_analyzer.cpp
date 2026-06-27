@@ -11,8 +11,8 @@ void GlobalsAnalyzer::ComputeGlobalNames() {
 
     for (auto *block : func->GetBlocks()) {
         for (auto *instr : block->GetInstructions()) {
-            auto Opcode = instr->GetOpcode();
-            assert(Opcode != Opcode::GET && Opcode != Opcode::SET);
+            auto opcode = instr->GetOpcode();
+            assert(opcode != Opcode::GET && opcode != Opcode::SET);
             Process(var_kill, instr, block);
         }
         // Clear the var_kill set before the start of next iteration!
@@ -43,6 +43,8 @@ void GlobalsAnalyzer::DumpBlocks(std::ostream &out) const {
 
 void GlobalsAnalyzer::Process(std::unordered_set<OperandBase *> &var_kill,
                               InstructionBase *instr, Block *block) {
+    /*
+     */
     for (auto *op : instr->GetOperands()) {
         if (!var_kill.contains(op)) {
             globals.insert(op);

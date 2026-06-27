@@ -49,10 +49,14 @@ class SSAOutTransformer final : public Transformer {
   public:
     SSAOutTransformer(Function *_f) : Transformer(_f) {}
 
-    void Transform() override { InsertCopies(); };
+    void Transform() override {
+        InsertCopies();
+        Rename();
+    };
 
   private:
     void InsertCopies();
+    void Rename();
 };
 
 }; // namespace sc
