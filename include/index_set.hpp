@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cassert>
-#include <cmath>
 #include <cstdint>
 #include <strings.h>
 #include <vector>
@@ -10,11 +9,13 @@ namespace sc {
 
 inline size_t Idx32(size_t num) { return num >> 5; }
 
-// Fast set union and intersection using bitwise operations.
-// Map each node in the CFG to a number between 0 - |N| - 1,
-// where |N| is the number of nodes in the CFG.
-// Now, a set of nodes can be represented using a bitset,
-// where 1 => element is present and 0 => not present.
+/*
+ * Fast set union and intersection using bitwise operations.
+ * Map each node in the CFG to a number between 0 - |N| - 1,
+ * where |N| is the number of nodes in the CFG.
+ * Now, a set of nodes can be represented using a bitset,
+ * where 1 => element is present and 0 => not present.
+ */
 class IndexSet {
   public:
     IndexSet(size_t sz, bool all_set = false)

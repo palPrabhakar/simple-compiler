@@ -1,11 +1,12 @@
 #pragma once
 
-#include "analyzers/cfg.hpp"
-#include "function.hpp"
-#include "index_set.hpp"
 #include <iostream>
 #include <memory>
 #include <vector>
+
+#include "analyzers/cfg.hpp"
+#include "function.hpp"
+#include "index_set.hpp"
 
 namespace sc {
 class DominatorAnalyzer {
