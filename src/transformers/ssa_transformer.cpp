@@ -164,7 +164,7 @@ void SSAInTransformer::Rename(Block *block) {
 
 std::shared_ptr<OperandBase> SSAInTransformer::NewDest(OperandBase *op) {
     auto i = counter[op]++;
-    auto nop = op->Clone();
+    auto nop = op->Clone(func->ctx.get_next_id());
     name[op].push(nop.get());
     nop->SetName(std::format("{}.{}", op->GetName(), i));
     return nop;
@@ -226,7 +226,7 @@ void SSAOutTransformer::InsertCopies() {
                 // rename get variable (a -> a')
                 GetInstruction *geti = static_cast<GetInstruction *>(inst);
                 std::shared_ptr<OperandBase> dest = geti->ReleaseDest();
-                std::shared_ptr<OperandBase> new_dest = dest->Clone();
+                std::shared_ptr<OperandBase> new_dest = dest->Clone(func->ctx.get_next_id());
                 new_dest->SetName(std::format("_d{}_", dest->GetName()));
                 SetDestAndDef(geti, std::move(new_dest));
 
@@ -247,7 +247,7 @@ void SSAOutTransformer::InsertCopies() {
 
                     // insert mov instruction a'i = ai before set
                     auto copy_inst = std::make_unique<IdInstruction>();
-                    std::shared_ptr<OperandBase> new_dest = oprnd->Clone();
+                    std::shared_ptr<OperandBase> new_dest = oprnd->Clone(func->ctx.get_next_id());
                     new_dest->SetName(std::format("_d{}_{}_", oprnd->GetName(),
                                                   seen[oprnd->GetName()]++));
                     SetDestAndDef(copy_inst.get(), std::move(new_dest));

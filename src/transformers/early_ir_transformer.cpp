@@ -135,7 +135,7 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     func->SetExitBlock(LAST_BLK(func));
 
     // create new lbl operand to store jmp dest
-    auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__");
+    auto lbl_op = std::make_unique<LabelOperand>("__sc_exit__", func->ctx.get_next_id());
     lbl_op->SetBlock(LAST_BLK(func));
     auto *exit_lbl = lbl_op.get();
     LAST_BLK(func)->SetLabel(std::move(lbl_op));
@@ -147,13 +147,13 @@ void EarlyIRTransformer::AddUniqueExitBlock() {
     // only add operand if not void
     if (func->GetRetType() != DataType::VOID) {
         if (func->GetRetType() == DataType::PTR) {
-            ret_op = std::make_shared<PtrOperand>("__rret__");
+            ret_op = std::make_shared<PtrOperand>("__rret__", func->ctx.get_next_id());
             for (auto dt : static_cast<PtrFunction *>(func)->GetPtrChain()) {
                 static_cast<PtrOperand *>(ret_op.get())->AppendPtrChain(dt);
             }
         } else {
             ret_op =
-                std::make_shared<RegOperand>(func->GetRetType(), "__rret__");
+                std::make_shared<RegOperand>(func->GetRetType(), "__rret__", func->ctx.get_next_id());
         }
         ret_instr->SetOperand(ret_op.get());
     } else {

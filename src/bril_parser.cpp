@@ -2,7 +2,7 @@
 #include "block.hpp"
 #include "function.hpp"
 #include "instruction.hpp"
-#include "json.hpp"
+#include "parser.hpp"
 #include "opcodes.hpp"
 #include "operand.hpp"
 #include "program.hpp"
@@ -28,7 +28,7 @@ FuncPtr BrilParser::MakeNewBlock(FuncPtr func, std::string name) {
         LAST_BLK(func)->SetLabel(std::move(lbl_store[name]));
         LAST_BLK(func)->GetLabel()->SetBlock(LAST_BLK(func));
     } else {
-        auto operand = std::make_unique<LabelOperand>(name);
+        auto operand = std::make_unique<LabelOperand>(name, func->ctx.get_next_id());
         labels[name] = operand.get();
         operand->SetBlock(LAST_BLK(func));
         LAST_BLK(func)->SetLabel(std::move(operand));
@@ -49,7 +49,7 @@ FuncPtr BrilParser::MakeJmpInstruction(FuncPtr func, sjp::Json &instr) {
     if (labels.contains(lbl)) {
         instr_ptr->SetJmpDest(labels[lbl]);
     } else {
-        auto operand = std::make_unique<LabelOperand>(lbl);
+        auto operand = std::make_unique<LabelOperand>(lbl, func->ctx.get_next_id());
         labels[lbl] = operand.get();
         instr_ptr->SetJmpDest(operand.get());
         lbl_store.insert({lbl, std::move(operand)});
@@ -74,7 +74,7 @@ FuncPtr BrilParser::MakeBranchInstruction(FuncPtr func, sjp::Json &instr) {
         auto lbl = jlbl.Get(i)->Get<std::string>().value();
         if (!labels.contains(lbl)) {
             // the block for this label has yet not been processed
-            auto operand = std::make_unique<LabelOperand>(lbl);
+            auto operand = std::make_unique<LabelOperand>(lbl, func->ctx.get_next_id());
             labels[lbl] = operand.get();
             lbl_store.insert({lbl, std::move(operand)});
         }
@@ -330,11 +330,11 @@ FuncPtr BrilParser::ParseArguments(FuncPtr func, sjp::Json &args) {
 
         std::shared_ptr<OperandBase> operand = nullptr;
         if (jop.Get("type")->type == sjp::JsonType::jobject) {
-            operand = ParsePtrType(std::make_shared<PtrOperand>(name), jop);
+            operand = ParsePtrType(std::make_shared<PtrOperand>(name, func->ctx.get_next_id()), jop);
         } else {
             std::string type = jop.Get("type")->Get<std::string>().value();
             operand =
-                std::make_shared<RegOperand>(GetDataTypeFromStr(type), name);
+                std::make_shared<RegOperand>(GetDataTypeFromStr(type), name, func->ctx.get_next_id());
         }
 
         args_vec.push_back(std::make_unique<GetArgInstruction>());

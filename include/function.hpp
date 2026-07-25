@@ -122,8 +122,24 @@ class Function {
     DataType ret_type;
     bool args;
     size_t args_size;
+
     Block *entry_block;
     Block *exit_block;
+
+  public:
+    struct Context {
+        /*
+         * Generate unique id for all
+         * operands that show up in the
+         * function. Helpful for set operations
+         * data flow analysis.
+         */
+        size_t get_next_id() { return count++; }
+        size_t get_id_count() { return count; }
+
+      private:
+        size_t count = 0;
+    } ctx;
 };
 
 class PtrFunction final : public Function {

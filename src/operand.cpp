@@ -75,12 +75,12 @@ std::string OperandBase::GetStrType() const {
     }
 }
 
-std::shared_ptr<OperandBase> RegOperand::Clone() const {
-    return std::make_shared<RegOperand>(type, name);
+std::shared_ptr<OperandBase> RegOperand::Clone(size_t id) const {
+    return std::make_shared<RegOperand>(type, name, id);
 }
 
-std::shared_ptr<OperandBase> PtrOperand::Clone() const {
-    auto clone = std::make_shared<PtrOperand>(name);
+std::shared_ptr<OperandBase> PtrOperand::Clone(size_t id) const {
+    auto clone = std::make_shared<PtrOperand>(name, id);
     clone->ptr_chain = ptr_chain;
     return clone;
 }
@@ -89,7 +89,8 @@ IntOperand *IntOperand::GetOperand(val_type value) {
     static std::unordered_map<val_type, std::unique_ptr<IntOperand>> store;
     if (!store.contains(value)) {
         store.emplace(value, std::unique_ptr<IntOperand>(new IntOperand(
-                                 "_$IK_" + std::to_string(value), value)));
+                                 "_$IK_" + std::to_string(value), value,
+                                 OperandBase::sentinel_id)));
     }
     return store[value].get();
 }
@@ -98,7 +99,8 @@ FloatOperand *FloatOperand::GetOperand(val_type value) {
     static std::unordered_map<val_type, std::unique_ptr<FloatOperand>> store;
     if (!store.contains(value)) {
         store.emplace(value, std::unique_ptr<FloatOperand>(new FloatOperand(
-                                 "_$FK_" + std::to_string(value), value)));
+                                 "_$FK_" + std::to_string(value), value,
+                                 OperandBase::sentinel_id)));
     }
     return store[value].get();
 }
@@ -106,8 +108,8 @@ FloatOperand *FloatOperand::GetOperand(val_type value) {
 BoolOperand *BoolOperand::GetOperand(val_type value) {
     static std::unique_ptr<BoolOperand> store[2];
     if (store[value] == nullptr) {
-        store[value] = std::unique_ptr<BoolOperand>(
-            new BoolOperand(value ? "true" : "false", value));
+        store[value] = std::unique_ptr<BoolOperand>(new BoolOperand(
+            value ? "true" : "false", value, OperandBase::sentinel_id));
     }
     return store[value].get();
 }

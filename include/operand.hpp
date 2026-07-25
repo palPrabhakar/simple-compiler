@@ -42,7 +42,12 @@ class OperandBase {
     OperandBase(const OperandBase &) = delete;
     OperandBase &operator=(const OperandBase &) = delete;
 
-    virtual std::shared_ptr<OperandBase> Clone() const = 0;
+    virtual std::shared_ptr<OperandBase> Clone(size_t id) const = 0;
+
+    /*
+     * Id
+     */
+    size_t GetId() const { return id; }
 
     /*
      * Name & Type
@@ -85,29 +90,35 @@ class OperandBase {
     }
 
   protected:
-    OperandBase(DataType _type, std::string _name)
-        : type(_type), name(std::move(_name)), def(nullptr) {}
+    OperandBase(DataType _type, std::string _name, size_t _id)
+        : type(_type), name(std::move(_name)), id(_id), def(nullptr) {}
 
     DataType type;
     std::string name;
+    const size_t id; // unique id for each operand
 
     // ssa-form single def
     InstructionBase *def;
     std::vector<InstructionBase *> uses;
+
+  public:
+    constexpr static size_t sentinel_id = -1ul;
 };
 
 class RegOperand : public OperandBase {
   public:
-    RegOperand(DataType type, std::string name) : OperandBase(type, name) {}
+    RegOperand(DataType type, std::string name, size_t id)
+        : OperandBase(type, name, id) {}
 
-    virtual std::shared_ptr<OperandBase> Clone() const override;
+    virtual std::shared_ptr<OperandBase> Clone(size_t id) const override;
 };
 
 class PtrOperand final : public RegOperand {
   public:
-    PtrOperand(std::string name) : RegOperand(DataType::PTR, name) {}
+    PtrOperand(std::string name, size_t id)
+        : RegOperand(DataType::PTR, name, id) {}
 
-    std::shared_ptr<OperandBase> Clone() const override;
+    std::shared_ptr<OperandBase> Clone(size_t id) const override;
 
     void AppendPtrChain(DataType type) { ptr_chain.push_back(type); }
 
@@ -119,10 +130,10 @@ class PtrOperand final : public RegOperand {
 
 class LabelOperand final : public OperandBase {
   public:
-    LabelOperand(std::string name)
-        : OperandBase(DataType::LABEL, name), block(nullptr) {}
+    LabelOperand(std::string name, size_t id)
+        : OperandBase(DataType::LABEL, name, id), block(nullptr) {}
 
-    std::shared_ptr<OperandBase> Clone() const override {
+    std::shared_ptr<OperandBase> Clone(size_t) const override {
         throw std::runtime_error("LabelOperand cannot be cloned.\n");
     }
 
@@ -136,11 +147,12 @@ class LabelOperand final : public OperandBase {
 
 template <typename C> class ImmedOperand : public OperandBase {
   protected:
-    std::shared_ptr<OperandBase> Clone() const override {
+    std::shared_ptr<OperandBase> Clone(size_t) const override {
         throw std::runtime_error("ImmedOperand cannot be cloned.\n");
     }
 
-    ImmedOperand(DataType type, std::string name) : OperandBase(type, name) {}
+    ImmedOperand(DataType type, std::string name, size_t id)
+        : OperandBase(type, name, id) {}
 };
 
 class IntOperand final : public ImmedOperand<IntOperand> {
@@ -151,8 +163,8 @@ class IntOperand final : public ImmedOperand<IntOperand> {
     val_type GetValue() const { return val; }
 
   protected:
-    IntOperand(std::string name, val_type val)
-        : ImmedOperand<IntOperand>(DataType::INT, name), val(val) {}
+    IntOperand(std::string name, val_type val, size_t id)
+        : ImmedOperand<IntOperand>(DataType::INT, name, id), val(val) {}
 
     val_type val;
 };
@@ -165,8 +177,8 @@ class FloatOperand final : public ImmedOperand<FloatOperand> {
     val_type GetValue() const { return val; }
 
   protected:
-    FloatOperand(std::string name, val_type val)
-        : ImmedOperand<FloatOperand>(DataType::FLOAT, name), val(val) {}
+    FloatOperand(std::string name, val_type val, size_t id)
+        : ImmedOperand<FloatOperand>(DataType::FLOAT, name, id), val(val) {}
 
     val_type val;
 };
@@ -179,8 +191,8 @@ class BoolOperand final : public ImmedOperand<BoolOperand> {
     val_type GetValue() const { return val; }
 
   protected:
-    BoolOperand(std::string name, val_type val)
-        : ImmedOperand<BoolOperand>(DataType::BOOL, name), val(val) {}
+    BoolOperand(std::string name, val_type val, size_t id)
+        : ImmedOperand<BoolOperand>(DataType::BOOL, name, id), val(val) {}
 
     val_type val;
 };
@@ -199,11 +211,12 @@ class UndefOperand : public OperandBase {
     static std::shared_ptr<UndefOperand> ptr;
     static std::once_flag flag;
 
-    std::shared_ptr<OperandBase> Clone() const override {
+    std::shared_ptr<OperandBase> Clone(size_t) const override {
         throw std::runtime_error("UndefOperand cannot be cloned.\n");
     }
 
-    UndefOperand() : OperandBase(DataType::VOID, "__undef__") {}
+    UndefOperand()
+        : OperandBase(DataType::VOID, "__undef__", OperandBase::sentinel_id) {}
 };
 
 // Void Sentinel Singleteon
@@ -220,11 +233,12 @@ class VoidOperand : public OperandBase {
     static std::shared_ptr<VoidOperand> ptr;
     static std::once_flag flag;
 
-    std::shared_ptr<OperandBase> Clone() const override {
+    std::shared_ptr<OperandBase> Clone(size_t) const override {
         throw std::runtime_error("VoidOperand cannot be cloned.\n");
     }
 
-    VoidOperand() : OperandBase(DataType::VOID, "__void__") {}
+    VoidOperand()
+        : OperandBase(DataType::VOID, "__void__", OperandBase::sentinel_id) {}
 };
 
 } // namespace sc

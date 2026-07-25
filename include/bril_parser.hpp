@@ -1,7 +1,7 @@
 #pragma once
 
 #include "block.hpp"
-#include "parser.hpp"
+#include "json.hpp"
 // sc includes
 #include "operand.hpp"
 #include "program.hpp"
@@ -68,12 +68,12 @@ class BrilParser {
                 std::shared_ptr<OperandBase> dest_oprnd = nullptr;
                 if (instr.Get("type")->type == sjp::JsonType::jobject) {
                     dest_oprnd =
-                        ParsePtrType(std::make_shared<PtrOperand>(dest), instr);
+                        ParsePtrType(std::make_shared<PtrOperand>(dest, func->ctx.get_next_id()), instr);
                 } else {
                     std::string type =
                         instr.Get("type")->Get<std::string>().value();
                     dest_oprnd = std::make_shared<RegOperand>(
-                        GetDataTypeFromStr(type), dest);
+                        GetDataTypeFromStr(type), dest, func->ctx.get_next_id());
                 }
                 operands[dest] = dest_oprnd;
                 instr_ptr->AddDest(std::move(dest_oprnd));
@@ -111,7 +111,7 @@ class BrilParser {
             instr_ptr->AddDest(operands[dest]);
         } else {
             // create new dest reg operand
-            auto dest_oprnd = std::make_shared<RegOperand>(type, dest);
+            auto dest_oprnd = std::make_shared<RegOperand>(type, dest, func->ctx.get_next_id());
             operands[dest] = dest_oprnd;
             instr_ptr->AddDest(std::move(dest_oprnd));
         }

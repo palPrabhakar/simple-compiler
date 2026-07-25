@@ -39,7 +39,7 @@ class InstructionBase {
     }
 
     /*
-     * Index
+     * Index in owning block
      */
     void SetIndex(size_t index) { idx = index; }
 
@@ -90,7 +90,7 @@ class InstructionBase {
   private:
     Opcode opcode;
     Block *block;
-    size_t idx;
+    size_t idx; // idx can be used to find the instr pos in owning blk
 };
 
 // NewInstructionClass
