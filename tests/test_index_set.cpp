@@ -160,8 +160,8 @@ TEST(IndexSetTest, TestIntersectionWithSelf) {
 }
 
 TEST(IndexSetTest, TestUnionWithNoCommonElements) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set1.Set(10);
@@ -174,12 +174,12 @@ TEST(IndexSetTest, TestUnionWithNoCommonElements) {
     EXPECT_TRUE(result.Get(10));
     EXPECT_TRUE(result.Get(15));
     EXPECT_TRUE(result.Get(20));
-    EXPECT_FALSE(result.Get(25));  // Not set in either set
+    EXPECT_FALSE(result.Get(25)); // Not set in either set
 }
 
 TEST(IndexSetTest, TestIntersectionWithNoCommonElements) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set1.Set(10);
@@ -188,15 +188,15 @@ TEST(IndexSetTest, TestIntersectionWithNoCommonElements) {
 
     IndexSet result = set1 & set2;
 
-    EXPECT_FALSE(result.Get(5));   // Not common
-    EXPECT_FALSE(result.Get(10));  // Not common
-    EXPECT_FALSE(result.Get(15));  // Not common
-    EXPECT_FALSE(result.Get(20));  // Not common
+    EXPECT_FALSE(result.Get(5));  // Not common
+    EXPECT_FALSE(result.Get(10)); // Not common
+    EXPECT_FALSE(result.Get(15)); // Not common
+    EXPECT_FALSE(result.Get(20)); // Not common
 }
 
 TEST(IndexSetTest, TestUnionWithAllElementsInCommon) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set1.Set(10);
@@ -205,14 +205,14 @@ TEST(IndexSetTest, TestUnionWithAllElementsInCommon) {
 
     IndexSet result = set1 | set2;
 
-    EXPECT_TRUE(result.Get(5));  // Common element
-    EXPECT_TRUE(result.Get(10)); // Common element
+    EXPECT_TRUE(result.Get(5));   // Common element
+    EXPECT_TRUE(result.Get(10));  // Common element
     EXPECT_FALSE(result.Get(20)); // Not set in either set
 }
 
 TEST(IndexSetTest, TestIntersectionWithAllElementsInCommon) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set1.Set(10);
@@ -221,14 +221,14 @@ TEST(IndexSetTest, TestIntersectionWithAllElementsInCommon) {
 
     IndexSet result = set1 & set2;
 
-    EXPECT_TRUE(result.Get(5));  // Common element
-    EXPECT_TRUE(result.Get(10)); // Common element
+    EXPECT_TRUE(result.Get(5));   // Common element
+    EXPECT_TRUE(result.Get(10));  // Common element
     EXPECT_FALSE(result.Get(20)); // Not set in either set
 }
 
 TEST(IndexSetTest, TestUnionWithSingleElement) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set2.Set(10);
@@ -241,8 +241,8 @@ TEST(IndexSetTest, TestUnionWithSingleElement) {
 }
 
 TEST(IndexSetTest, TestIntersectionWithSingleElement) {
-    IndexSet set1(64);  // 64-bit set
-    IndexSet set2(64);  // 64-bit set
+    IndexSet set1(64); // 64-bit set
+    IndexSet set2(64); // 64-bit set
 
     set1.Set(5);
     set2.Set(5);
@@ -254,8 +254,8 @@ TEST(IndexSetTest, TestIntersectionWithSingleElement) {
 }
 
 TEST(IndexSetTest, TestUnionWithLargeSetSize) {
-    IndexSet set1(128);  // 128-bit set
-    IndexSet set2(128);  // 128-bit set
+    IndexSet set1(128); // 128-bit set
+    IndexSet set2(128); // 128-bit set
 
     set1.Set(5);
     set1.Set(64);
@@ -264,15 +264,15 @@ TEST(IndexSetTest, TestUnionWithLargeSetSize) {
 
     IndexSet result = set1 | set2;
 
-    EXPECT_TRUE(result.Get(5));   // From set1
-    EXPECT_TRUE(result.Get(64));  // Common element
-    EXPECT_TRUE(result.Get(100)); // From set2
+    EXPECT_TRUE(result.Get(5));    // From set1
+    EXPECT_TRUE(result.Get(64));   // Common element
+    EXPECT_TRUE(result.Get(100));  // From set2
     EXPECT_FALSE(result.Get(120)); // Not set in either set
 }
 
 TEST(IndexSetTest, TestIntersectionWithLargeSetSize) {
-    IndexSet set1(128);  // 128-bit set
-    IndexSet set2(128);  // 128-bit set
+    IndexSet set1(128); // 128-bit set
+    IndexSet set2(128); // 128-bit set
 
     set1.Set(5);
     set1.Set(64);
@@ -281,14 +281,14 @@ TEST(IndexSetTest, TestIntersectionWithLargeSetSize) {
 
     IndexSet result = set1 & set2;
 
-    EXPECT_TRUE(result.Get(64));  // Common element
-    EXPECT_FALSE(result.Get(5));  // Not in set2
+    EXPECT_TRUE(result.Get(64));   // Common element
+    EXPECT_FALSE(result.Get(5));   // Not in set2
     EXPECT_FALSE(result.Get(100)); // Not in set1
 }
 
 TEST(IndexSetTest, TestUnionWithOverlappingAndNonOverlappingSets) {
-    IndexSet set1(128);  // 128-bit set
-    IndexSet set2(128);  // 128-bit set
+    IndexSet set1(128); // 128-bit set
+    IndexSet set2(128); // 128-bit set
 
     set1.Set(5);
     set1.Set(64);
@@ -297,15 +297,15 @@ TEST(IndexSetTest, TestUnionWithOverlappingAndNonOverlappingSets) {
 
     IndexSet result = set1 | set2;
 
-    EXPECT_TRUE(result.Get(5));   // From set1
-    EXPECT_TRUE(result.Get(10));  // From set2
-    EXPECT_TRUE(result.Get(64));  // Common element
+    EXPECT_TRUE(result.Get(5));    // From set1
+    EXPECT_TRUE(result.Get(10));   // From set2
+    EXPECT_TRUE(result.Get(64));   // Common element
     EXPECT_FALSE(result.Get(100)); // Not set in either set
 }
 
 TEST(IndexSetTest, TestIntersectionWithOverlappingAndNonOverlappingSets) {
-    IndexSet set1(128);  // 128-bit set
-    IndexSet set2(128);  // 128-bit set
+    IndexSet set1(128); // 128-bit set
+    IndexSet set2(128); // 128-bit set
 
     set1.Set(5);
     set1.Set(64);
@@ -321,8 +321,8 @@ TEST(IndexSetTest, TestIntersectionWithOverlappingAndNonOverlappingSets) {
 }
 
 TEST(IndexSetTest, TestUnionWithMaxSize) {
-    IndexSet set1(1000);  // 1000-bit set
-    IndexSet set2(1000);  // 1000-bit set
+    IndexSet set1(1000); // 1000-bit set
+    IndexSet set2(1000); // 1000-bit set
 
     for (size_t i = 0; i < 500; ++i) {
         set1.Set(i);
@@ -345,8 +345,8 @@ TEST(IndexSetTest, TestUnionWithMaxSize) {
 }
 
 TEST(IndexSetTest, TestIntersectionWithMaxSize) {
-    IndexSet set1(1000);  // 1000-bit set
-    IndexSet set2(1000);  // 1000-bit set
+    IndexSet set1(1000); // 1000-bit set
+    IndexSet set2(1000); // 1000-bit set
 
     for (size_t i = 0; i < 500; ++i) {
         set1.Set(i);
@@ -366,4 +366,17 @@ TEST(IndexSetTest, TestIntersectionWithMaxSize) {
     for (size_t i = 800; i < 1000; ++i) {
         EXPECT_FALSE(result.Get(i)); // Not set in either
     }
+}
+
+TEST(IndexSetTest, TestNot) {
+    IndexSet set1(32);
+    IndexSet set2(32);
+
+
+    for (int i = 0; i < 32; i += 2) {
+        set1.Set(i);
+        set2.Set(i + 1);
+    }
+
+    EXPECT_TRUE(set2 == !set1);
 }

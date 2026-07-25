@@ -49,7 +49,7 @@ void DominatorAnalyzer::ComputeImmediateDominators() {
     for (auto i : std::views::iota(0ul, func->GetBlockSize())) {
         auto sdom = dom[i];
         sdom.Reset(i);
-        auto dominators = sdom.GetBlocks();
+        auto dominators = sdom.GetValues();
         for (auto k : dominators) {
             if (sdom == dom[k]) {
                 idom[i] = func->GetBlock(k);
@@ -115,7 +115,7 @@ void DominatorAnalyzer::BuildRPODominatorTree() {
 
 std::vector<Block *>
 DominatorAnalyzer::GetDominanceFrontier(Block *block) const {
-    auto blocks = df.at(block->GetIndex()).GetBlocks();
+    auto blocks = df.at(block->GetIndex()).GetValues();
     std::vector<Block *> result;
     for (auto i : blocks) {
         result.push_back(func->GetBlock(i));

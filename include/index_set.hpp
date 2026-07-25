@@ -7,6 +7,7 @@
 
 namespace sc {
 
+inline size_t set_size(size_t size) { return ((size - 1) >> 5) + 1; }
 inline size_t Idx32(size_t num) { return num >> 5; }
 
 /*
@@ -19,7 +20,7 @@ inline size_t Idx32(size_t num) { return num >> 5; }
 class IndexSet {
   public:
     IndexSet(size_t sz, bool all_set = false)
-        : size(sz), sets(Idx32(sz) + 1, (all_set ? 0xFFFFFFFF : 0)) {}
+        : size(sz), sets(set_size(sz), (all_set ? 0xFFFFFFFF : 0)) {}
 
     void Set(size_t idx) {
         assert(idx < size);
@@ -43,7 +44,9 @@ class IndexSet {
 
     const std::vector<uint32_t> &GetData() const { return sets; }
 
-    std::vector<size_t> GetBlocks() const;
+    std::vector<size_t> GetValues() const;
+
+    IndexSet operator!();
 
   private:
     size_t size;

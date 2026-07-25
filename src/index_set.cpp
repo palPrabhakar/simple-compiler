@@ -1,6 +1,7 @@
 #include "index_set.hpp"
 #include <algorithm>
 #include <ranges>
+#include <iostream>
 
 namespace sc {
 IndexSet operator|(const IndexSet &lhs, const IndexSet &rhs) {
@@ -28,10 +29,19 @@ IndexSet operator&(const IndexSet &lhs, const IndexSet &rhs) {
     auto size = std::min(lhs.size, rhs.size);
     auto rset = IndexSet(size);
 
-    for (auto i : std::views::iota(0UL, min)) {
+    for (auto i : std::views::iota(0ul, min)) {
         rset.sets[i] = lhs.sets[i] & rhs.sets[i];
     }
 
+    return rset;
+}
+
+
+IndexSet IndexSet::operator!() {
+    auto rset = IndexSet(this->size);
+    for (auto i : std::views::iota(0ul, this->sets.size())) {
+        rset.sets[i] = ~this->sets[i];
+    }
     return rset;
 }
 
@@ -43,15 +53,15 @@ bool operator!=(const IndexSet &lhs, const IndexSet &rhs) {
     return !(lhs == rhs);
 }
 
-std::vector<size_t> IndexSet::GetBlocks() const {
+std::vector<size_t> IndexSet::GetValues() const {
     std::vector<size_t> indexes;
-    for (auto i : std::views::iota(0UL, sets.size())) {
+    for (auto i : std::views::iota(0ul, sets.size())) {
         auto bits = sets[i];
         uint k = 0;
         while (bits) {
-            if (bits & (1 << k)) {
+            if (bits & (1u << k)) {
                 indexes.push_back(i * 32 + k);
-                bits &= ~(1 << k);
+                bits &= ~(1u << k);
             }
             ++k;
         }
